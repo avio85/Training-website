@@ -69,6 +69,12 @@ def init_db():
         original_name TEXT NOT NULL,
         uploaded_at TEXT NOT NULL
     )""")
+    cur.execute("""CREATE TABLE IF NOT EXISTS app_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+    )""")
+    cur.execute("INSERT OR IGNORE INTO app_settings VALUES (?,?)", ("atpl_ai_url", "https://avioren-aviation-mvp.onrender.com/"))
+    cur.execute("INSERT OR IGNORE INTO app_settings VALUES (?,?)", ("atpl_ai_active", "false"))
     conn.commit()
 
     # default admin from env or demo
@@ -329,6 +335,102 @@ def aviation_met_connector(user=Depends(require_member)):
         raise HTTPException(502, f"Aviation.met.hu connection error: {str(e)}")
     except Exception as e:
         raise HTTPException(500, f"Aviation.met.hu connector error: {str(e)}")
+
+
+
+@app.get("/api/settings/atpl-ai")
+def get_atpl_ai_settings():
+    conn = db()
+    rows = conn.execute("SELECT key,value FROM app_settings WHERE key IN ('atpl_ai_url','atpl_ai_active')").fetchall()
+    conn.close()
+    settings = {r["key"]: r["value"] for r in rows}
+    return {
+        "url": settings.get("atpl_ai_url", "https://avioren-aviation-mvp.onrender.com/"),
+        "active": settings.get("atpl_ai_active", "false").lower() == "true"
+    }
+
+@app.post("/api/settings/atpl-ai")
+def update_atpl_ai_settings(url: str = Form(...), active: str = Form("false"), admin=Depends(require_admin)):
+    clean_url = url.strip()
+    if not (clean_url.startswith("https://") or clean_url.startswith("http://")):
+        raise HTTPException(400, "URL must start with http:// or https://")
+    is_active = str(active).lower() in ("true", "1", "yes", "on")
+    conn = db()
+    conn.execute("INSERT OR REPLACE INTO app_settings VALUES (?,?)", ("atpl_ai_url", clean_url))
+    conn.execute("INSERT OR REPLACE INTO app_settings VALUES (?,?)", ("atpl_ai_active", "true" if is_active else "false"))
+    conn.commit()
+    conn.close()
+    return {"url": clean_url, "active": is_active}
+
+
+
+AIRPORT_WEATHER = {
+    "LHKA": {"ids": ["LHKA", "LHBP", "LHPP", "LHKE"], "lat": 46.549, "lon": 18.942},
+    "LHBP": {"ids": ["LHBP"], "lat": 47.439, "lon": 19.261},
+    "LHPP": {"ids": ["LHPP", "LHBP"], "lat": 45.990, "lon": 18.240},
+    "LHKE": {"ids": ["LHKE", "LHBP", "LHPP"], "lat": 46.917, "lon": 19.749},
+}
+
+@app.get("/api/weather/airport/{icao}")
+def get_airport_weather(icao: str):
+    icao = icao.upper().strip()
+    if icao not in AIRPORT_WEATHER:
+        raise HTTPException(404, "Airport not configured")
+    cfg = AIRPORT_WEATHER[icao]
+    ids = ",".join(cfg["ids"])
+
+    def safe_get(url):
+        try:
+            r = requests.get(url, timeout=15, headers={"User-Agent": "AviOrenAviationTrainingPortal/1.0"})
+            if r.status_code == 200:
+                return r.text.strip()
+        except Exception:
+            return ""
+        return ""
+
+    metar = safe_get(f"https://aviationweather.gov/api/data/metar?ids={ids}&format=raw&taf=false")
+    taf = safe_get(f"https://aviationweather.gov/api/data/taf?ids={ids}&format=raw")
+
+    source_airport = icao
+    used_fallback = False
+    if metar:
+        first = metar.split()[0]
+        if len(first) == 4 and first != icao:
+            source_airport = first
+            used_fallback = True
+
+    summary = {}
+    try:
+        om = requests.get(
+            "https://api.open-meteo.com/v1/forecast",
+            params={
+                "latitude": cfg["lat"],
+                "longitude": cfg["lon"],
+                "current": "temperature_2m,surface_pressure,wind_speed_10m,wind_direction_10m,cloud_cover,visibility",
+                "wind_speed_unit": "kn",
+                "timezone": "Europe/Budapest",
+            },
+            timeout=15,
+        ).json()
+        c = om.get("current", {})
+        summary = {
+            "temperature": f"{round(c.get('temperature_2m'))}°C" if c.get("temperature_2m") is not None else "N/A",
+            "pressure": f"{round(c.get('surface_pressure'))} mb" if c.get("surface_pressure") is not None else "N/A",
+            "wind": f"{round(c.get('wind_direction_10m'))}° / {round(c.get('wind_speed_10m'))} kt" if c.get("wind_direction_10m") is not None and c.get("wind_speed_10m") is not None else "N/A",
+            "visibility": f"{round(c.get('visibility')/1000, 1)} km" if c.get("visibility") is not None else "N/A",
+            "clouds": f"{round(c.get('cloud_cover'))}%" if c.get("cloud_cover") is not None else "N/A",
+        }
+    except Exception:
+        summary = {"temperature": "N/A", "pressure": "N/A", "wind": "N/A", "visibility": "N/A", "clouds": "N/A"}
+
+    return {
+        "icao": icao,
+        "source_airport": source_airport,
+        "used_fallback": used_fallback,
+        "metar": metar,
+        "taf": taf,
+        "summary": summary,
+    }
 
 
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")

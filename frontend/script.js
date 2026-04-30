@@ -251,9 +251,19 @@ function renderPreloadedExercisePresentations(){
   }).join("");
 }
 
-let token=localStorage.getItem('token')||'';let userRole=localStorage.getItem('role')||'';let briefingCache=[];let selectedBriefingCategory='all';let scheduleCache=[];const pageTitles={dashboard:'Dashboard',schedule:'Training Schedule',briefingroom:'Briefing Room',weather:'Weather',aircraft:'Aircraft',modular:'Modular CPL',admin:'Admin Workspace'};const airportCharts={LHKA:{name:'Kalocsa Airfield',chart:'https://storage.hungarocontrol.hu/media/958/VFR_LHKA_print_5n.pdf?_gl=1*1rt6n80*_gcl_au*MjQ1MTUxNTQzLjE3Nzc1NTU3MjQ.'},LHJK:{name:'LHJK Airfield',chart:'https://ais-en.hungarocontrol.hu/vfrmanual/LHJK'},LHPP:{name:'LHPP Airfield',chart:'https://ais-en.hungarocontrol.hu/vfrmanual/LHPP'},LHSM:{name:'LHSM Airfield',chart:'https://ais-en.hungarocontrol.hu/vfrmanual/LHSM'}};function toast(m){const e=document.getElementById('toast');e.textContent=m;e.classList.remove('hidden');setTimeout(()=>e.classList.add('hidden'),2800)}function setAuthUi(){const l=!!token;document.getElementById('loginStatus').textContent=l?(userRole==='admin'?'Admin online':'Member online'):'Guest mode';document.getElementById('logoutBtn').classList.toggle('hidden',!l);document.querySelector('.topbar .primary-button').classList.toggle('hidden',l);document.querySelectorAll('.admin-only').forEach(e=>e.classList.toggle('hidden',userRole!=='admin'))}function showPage(id){
+let token=localStorage.getItem('token')||'';let userRole=localStorage.getItem('role')||'';let briefingCache=[];let selectedBriefingCategory='all';let scheduleCache=[];const pageTitles={dashboard:'Dashboard',schedule:'Training Schedule',briefingroom:'Briefing Room',weather:'Weather',aircraft:'Aircraft',modular:'Modular CPL',admin:'Admin Workspace'};const airportCharts={LHKA:{name:'Kalocsa Airfield',chart:'https://storage.hungarocontrol.hu/media/958/VFR_LHKA_print_5n.pdf?_gl=1*1rt6n80*_gcl_au*MjQ1MTUxNTQzLjE3Nzc1NTU3MjQ.'},LHJK:{name:'LHJK Airfield',chart:'https://ais-en.hungarocontrol.hu/vfrmanual/LHJK'},LHPP:{name:'LHPP Airfield',chart:'https://ais-en.hungarocontrol.hu/vfrmanual/LHPP'},LHSM:{name:'LHSM Airfield',chart:'https://ais-en.hungarocontrol.hu/vfrmanual/LHSM'}};function toast(m){const e=document.getElementById('toast');e.textContent=m;e.classList.remove('hidden');setTimeout(()=>e.classList.add('hidden'),2800)}function setAuthUi(){
+  const logged = !!token;
+  document.getElementById('loginStatus').textContent = logged ? (userRole === 'admin' ? 'Admin online' : 'Member online') : 'Guest mode';
+  document.getElementById('logoutBtn').classList.toggle('hidden', !logged);
+  const topLogin = document.querySelector('.topbar .primary-button');
+  if(topLogin) topLogin.classList.toggle('hidden', logged);
+  document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', userRole !== 'admin'));
+  document.querySelectorAll('.member-only').forEach(el => el.classList.toggle('hidden', !logged));
+  const scheduleNotice = document.getElementById('scheduleGuestNotice');
+  if(scheduleNotice) scheduleNotice.classList.toggle('hidden', logged);
+}function showPage(id){
   if(id === "schedule" && !token){ openLoginModal(); toast("Login required to view schedule"); return; }
-document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');document.getElementById('pageTitle').textContent=pageTitles[id]||'Avi Oren Aviation';document.querySelectorAll('.nav-item,.mobile-nav').forEach(b=>b.classList.toggle('active',b.dataset.page===id));if(id==='schedule')loadSchedule(false);if(id==='briefingroom')loadBriefings(false)}document.querySelectorAll('.nav-item,.mobile-nav').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));function authHeaders(){return token?{'Authorization':'Bearer '+token}:{}}function openLoginModal(){document.getElementById('loginModal').classList.remove('hidden')}function closeLoginModal(){document.getElementById('loginModal').classList.add('hidden')}function logout(){localStorage.removeItem('token');localStorage.removeItem('role');token='';userRole='';setAuthUi();toast('Logged out');showPage('dashboard')}document.getElementById('logoutBtn').addEventListener('click',logout);async function postForm(url,form){const res=await fetch(url,{method:'POST',headers:authHeaders(),body:new FormData(form)});const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error(data.detail||'Request failed');return data}document.getElementById('loginForm').addEventListener('submit',async e=>{e.preventDefault();try{const d=await postForm('/api/login',e.target);token=d.token;userRole=d.role;localStorage.setItem('token',token);localStorage.setItem('role',userRole);setAuthUi();closeLoginModal();toast(d.approved?'Logged in':'Logged in, waiting for approval');if(userRole==='admin')showPage('admin')}catch(err){toast(err.message)}});document.getElementById('signupForm').addEventListener('submit',async e=>{e.preventDefault();try{const d=await postForm('/api/signup',e.target);toast(d.message||'Signup created')}catch(err){toast(err.message)}});document.getElementById('scheduleForm').addEventListener('submit',async e=>{e.preventDefault();try{await postForm('/api/schedule',e.target);e.target.reset();e.target.instructor.value='Avi Oren';toast('Flight added');loadSchedule(true)}catch(err){toast(err.message)}});document.getElementById('studentForm').addEventListener('submit',async e=>{e.preventDefault();try{await postForm('/api/students',e.target);e.target.reset();toast('Student added')}catch(err){toast(err.message)}});document.getElementById('briefingForm').addEventListener('submit',async e=>{e.preventDefault();try{await postForm('/api/briefings',e.target);e.target.reset();toast('File uploaded');loadBriefings(true)}catch(err){toast(err.message)}});function formatEndTime(start,len){const[h,m]=start.split(':').map(Number);const end=h*60+m+Math.round(Number(len)*60);return `${String(Math.floor(end/60)%24).padStart(2,'0')}:${String(end%60).padStart(2,'0')}`}async function loadSchedule(showErrors=true){const empty=document.getElementById('scheduleEmpty'),tl=document.getElementById('scheduleTimeline');const res=await fetch('/api/schedule',{headers:authHeaders()});const data=await res.json().catch(()=>[]);if(!res.ok){scheduleCache=[];tl.innerHTML='';empty.classList.remove('hidden');if(showErrors)toast(data.detail||'Login required');return}scheduleCache=data;empty.classList.add('hidden');buildScheduleFilters();renderSchedule()}function buildScheduleFilters(){const mode=document.getElementById('scheduleMode').value,sel=document.getElementById('scheduleNameFilter'),cur=sel.value;let names=[];if(mode==='fi')names=[...new Set(scheduleCache.map(r=>r.instructor))];if(mode==='student')names=[...new Set(scheduleCache.map(r=>r.student))];sel.innerHTML='<option value="all">All</option>'+names.map(n=>`<option value="${n}">${n}</option>`).join('');if([...sel.options].some(o=>o.value===cur))sel.value=cur}function renderSchedule(){const tl=document.getElementById('scheduleTimeline');if(!scheduleCache.length){tl.innerHTML='<div class="empty-state">No flights scheduled yet.</div>';return}const mode=document.getElementById('scheduleMode').value,date=document.getElementById('scheduleDateFilter').value,name=document.getElementById('scheduleNameFilter').value;let data=[...scheduleCache];if(date)data=data.filter(r=>r.date===date);if(name!=='all')data=data.filter(r=>mode==='fi'?r.instructor===name:mode==='student'?r.student===name:true);data.sort((a,b)=>(a.date+a.start_time).localeCompare(b.date+b.start_time));if(!data.length){tl.innerHTML='<div class="empty-state">No flights match this filter.</div>';return}let group='';tl.innerHTML=data.map(r=>{const key=mode==='daily'?r.date:mode==='fi'?r.instructor:r.student;const header=key!==group?`<h3 class="timeline-group">${key}</h3>`:'';group=key;return `${header}<article class="timeline-card"><div><div class="time-block">${r.start_time}</div><div class="duration">until ${formatEndTime(r.start_time,r.length_hours)} · ${r.length_hours}h</div></div><div><div class="flight-title">${r.student}</div><div class="flight-meta"><span class="badge">${r.date}</span><span class="badge">${r.instructor}</span><span class="badge aircraft-badge">${r.aircraft_type} #${r.aircraft_number}</span></div>${r.notes?`<p>${r.notes}</p>`:''}</div><button class="ghost-button">Details</button></article>`}).join('')}function selectAirport(code){document.querySelectorAll('.airport-card').forEach(b=>b.classList.remove('active'));[...document.querySelectorAll('.airport-card')].find(b=>b.innerText.includes(code))?.classList.add('active');const item=airportCharts[code];document.getElementById('selectedAirportChip').textContent=code;document.getElementById('selectedAirportName').textContent=item.name;document.getElementById('chartOpenLink').href=item.chart;document.getElementById('chartFrame').src=item.chart}document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');selectedBriefingCategory=t.dataset.category;renderBriefings()}));async function loadBriefings(showErrors=true){const empty=document.getElementById('briefingsEmpty'),grid=document.getElementById('briefingGrid');const res=await fetch('/api/briefings',{headers:authHeaders()});const data=await res.json().catch(()=>[]);if(!res.ok){briefingCache=[];grid.innerHTML='';empty.classList.remove('hidden');if(showErrors)toast(data.detail||'Login required');return}briefingCache=data;empty.classList.toggle('hidden',data.length>0);renderBriefings()}function renderBriefings(){
+document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');document.getElementById('pageTitle').textContent=pageTitles[id]||'Avi Oren Aviation';document.querySelectorAll('.nav-item,.mobile-nav').forEach(b=>b.classList.toggle('active',b.dataset.page===id));if(id==='schedule')loadSchedule(false);if(id==='briefingroom')loadBriefings(false)}document.querySelectorAll('.nav-item,.mobile-nav').forEach(b=>b.addEventListener('click',(e)=>{ if(b.dataset.page === 'atplai') return; showPage(b.dataset.page); }));function authHeaders(){return token?{'Authorization':'Bearer '+token}:{}}function openLoginModal(){document.getElementById('loginModal').classList.remove('hidden')}function closeLoginModal(){document.getElementById('loginModal').classList.add('hidden')}function logout(){localStorage.removeItem('token');localStorage.removeItem('role');token='';userRole='';setAuthUi();toast('Logged out');showPage('dashboard')}document.getElementById('logoutBtn').addEventListener('click',logout);async function postForm(url,form){const res=await fetch(url,{method:'POST',headers:authHeaders(),body:new FormData(form)});const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error(data.detail||'Request failed');return data}document.getElementById('loginForm').addEventListener('submit',async e=>{e.preventDefault();try{const d=await postForm('/api/login',e.target);token=d.token;userRole=d.role;localStorage.setItem('token',token);localStorage.setItem('role',userRole);setAuthUi();closeLoginModal();toast(d.approved?'Logged in':'Logged in, waiting for approval');if(userRole==='admin')showPage('admin')}catch(err){toast(err.message)}});document.getElementById('signupForm').addEventListener('submit',async e=>{e.preventDefault();try{const d=await postForm('/api/signup',e.target);toast(d.message||'Signup created')}catch(err){toast(err.message)}});document.getElementById('scheduleForm').addEventListener('submit',async e=>{e.preventDefault();try{await postForm('/api/schedule',e.target);e.target.reset();e.target.instructor.value='Avi Oren';toast('Flight added');loadSchedule(true)}catch(err){toast(err.message)}});document.getElementById('studentForm').addEventListener('submit',async e=>{e.preventDefault();try{await postForm('/api/students',e.target);e.target.reset();toast('Student added')}catch(err){toast(err.message)}});document.getElementById('briefingForm').addEventListener('submit',async e=>{e.preventDefault();try{await postForm('/api/briefings',e.target);e.target.reset();toast('File uploaded');loadBriefings(true)}catch(err){toast(err.message)}});function formatEndTime(start,len){const[h,m]=start.split(':').map(Number);const end=h*60+m+Math.round(Number(len)*60);return `${String(Math.floor(end/60)%24).padStart(2,'0')}:${String(end%60).padStart(2,'0')}`}async function loadSchedule(showErrors=true){const empty=document.getElementById('scheduleEmpty'),tl=document.getElementById('scheduleTimeline');const res=await fetch('/api/schedule',{headers:authHeaders()});const data=await res.json().catch(()=>[]);if(!res.ok){scheduleCache=[];tl.innerHTML='';empty.classList.remove('hidden');if(showErrors)toast(data.detail||'Login required');return}scheduleCache=data;empty.classList.add('hidden');buildScheduleFilters();renderSchedule()}function buildScheduleFilters(){const mode=document.getElementById('scheduleMode').value,sel=document.getElementById('scheduleNameFilter'),cur=sel.value;let names=[];if(mode==='fi')names=[...new Set(scheduleCache.map(r=>r.instructor))];if(mode==='student')names=[...new Set(scheduleCache.map(r=>r.student))];sel.innerHTML='<option value="all">All</option>'+names.map(n=>`<option value="${n}">${n}</option>`).join('');if([...sel.options].some(o=>o.value===cur))sel.value=cur}function renderSchedule(){const tl=document.getElementById('scheduleTimeline');if(!scheduleCache.length){tl.innerHTML='<div class="empty-state">No flights scheduled yet.</div>';return}const mode=document.getElementById('scheduleMode').value,date=document.getElementById('scheduleDateFilter').value,name=document.getElementById('scheduleNameFilter').value;let data=[...scheduleCache];if(date)data=data.filter(r=>r.date===date);if(name!=='all')data=data.filter(r=>mode==='fi'?r.instructor===name:mode==='student'?r.student===name:true);data.sort((a,b)=>(a.date+a.start_time).localeCompare(b.date+b.start_time));if(!data.length){tl.innerHTML='<div class="empty-state">No flights match this filter.</div>';return}let group='';tl.innerHTML=data.map(r=>{const key=mode==='daily'?r.date:mode==='fi'?r.instructor:r.student;const header=key!==group?`<h3 class="timeline-group">${key}</h3>`:'';group=key;return `${header}<article class="timeline-card"><div><div class="time-block">${r.start_time}</div><div class="duration">until ${formatEndTime(r.start_time,r.length_hours)} · ${r.length_hours}h</div></div><div><div class="flight-title">${r.student}</div><div class="flight-meta"><span class="badge">${r.date}</span><span class="badge">${r.instructor}</span><span class="badge aircraft-badge">${r.aircraft_type} #${r.aircraft_number}</span></div>${r.notes?`<p>${r.notes}</p>`:''}</div><button class="ghost-button">Details</button></article>`}).join('')}function selectAirport(code){document.querySelectorAll('.airport-card').forEach(b=>b.classList.remove('active'));[...document.querySelectorAll('.airport-card')].find(b=>b.innerText.includes(code))?.classList.add('active');const item=airportCharts[code];document.getElementById('selectedAirportChip').textContent=code;document.getElementById('selectedAirportName').textContent=item.name;document.getElementById('chartOpenLink').href=item.chart;document.getElementById('chartFrame').src=item.chart}document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');selectedBriefingCategory=t.dataset.category;renderBriefings()}));async function loadBriefings(showErrors=true){const empty=document.getElementById('briefingsEmpty'),grid=document.getElementById('briefingGrid');const res=await fetch('/api/briefings',{headers:authHeaders()});const data=await res.json().catch(()=>[]);if(!res.ok){briefingCache=[];grid.innerHTML='';empty.classList.remove('hidden');if(showErrors)toast(data.detail||'Login required');return}briefingCache=data;empty.classList.toggle('hidden',data.length>0);renderBriefings()}function renderBriefings(){
   renderPreloadedExercisePresentations();const grid=document.getElementById('briefingGrid');const data=selectedBriefingCategory==='all'?briefingCache:briefingCache.filter(b=>b.category===selectedBriefingCategory);if(!data.length){grid.innerHTML='<div class="empty-state">No files in this category yet.</div>';return}grid.innerHTML=data.map(b=>`<article class="file-card"><div class="file-icon">📄</div><a target="_blank" href="/uploads/${b.filename}">${b.title}</a><p>${b.category}</p><span class="badge">${b.original_name}</span></article>`).join('')}async function loadWeather(){const ids=document.getElementById('weatherStations').value.trim();const out=document.getElementById('weatherOutput');out.textContent='Loading public METAR...';try{const res=await fetch(`https://aviationweather.gov/api/data/metar?ids=${encodeURIComponent(ids)}&format=raw`);const txt=await res.text();out.textContent=txt||'No public report returned.'}catch(e){out.textContent='Browser fetch failed or was blocked. Use the official links, or add server-side weather integration later.'}}async function loadUsers(){const res=await fetch('/api/users',{headers:authHeaders()});const data=await res.json().catch(()=>[]);if(!res.ok){toast(data.detail||'Admin login required');return}document.getElementById('usersList').innerHTML=data.map(u=>`<p><strong>${u.email}</strong><br>Role: ${u.role} · Approved: ${u.approved?'Yes':'No'}${u.approved?'':`<br><button class="ghost-button" onclick="approveUser('${u.id}')">Approve user</button>`}</p>`).join('')}async function approveUser(id){const res=await fetch('/api/users/'+id+'/approve',{method:'POST',headers:authHeaders()});if(res.ok){toast('User approved');loadUsers()}else toast('Approval failed')}setAuthUi();showPage('dashboard');
 
 function scrollToBriefingSection(id){
@@ -349,14 +359,11 @@ function selectWeatherAirport(icao){
   document.getElementById("weatherAirportChip").textContent = icao;
   document.getElementById("weatherAirportName").textContent = data.name;
   document.getElementById("metarTafLink").href = data.metarTaf;
-  const maps = document.getElementById("weatherMapsLink");
-  if(maps) maps.href = data.maps;
   loadSelectedAirportWeather();
 }
 
 async function loadSelectedAirportWeather(){
   const icao = selectedWeatherAirport;
-  const data = weatherAirportData[icao];
   const metarBox = document.getElementById("airportMetarBox");
   const tafBox = document.getElementById("airportTafBox");
   const summary = document.getElementById("airportWeatherSummary");
@@ -367,46 +374,27 @@ async function loadSelectedAirportWeather(){
   summary.innerHTML = "<p>Loading general weather information...</p>";
 
   try{
-    const rawMetarUrl = `https://aviationweather.gov/api/data/metar?ids=${encodeURIComponent(data.ids)}&format=raw&taf=false`;
-    const rawTafUrl = `https://aviationweather.gov/api/data/taf?ids=${encodeURIComponent(data.ids)}&format=raw`;
+    const res = await fetch(`/api/weather/airport/${encodeURIComponent(icao)}`);
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.detail || "Weather fetch failed");
 
-    const [metarRawRes, tafRawRes] = await Promise.all([fetch(rawMetarUrl), fetch(rawTafUrl)]);
-    const [metarRaw, tafRaw] = await Promise.all([metarRawRes.text(), tafRawRes.text()]);
+    metarBox.textContent = data.metar || `No public METAR returned for ${icao}. Open the METAR-TAF page.`;
+    tafBox.textContent = data.taf || `No public TAF returned for ${icao}. Open the METAR-TAF page.`;
 
-    metarBox.textContent = metarRaw.trim() || `No public METAR returned for ${icao}. Open METAR-TAF page.`;
-    tafBox.textContent = tafRaw.trim() || `No public TAF returned for ${icao}. Open METAR-TAF page.`;
-
-    // Secondary JSON fetch for decoded summary. If it fails, raw reports still remain visible.
-    try{
-      const jsonUrl = `https://aviationweather.gov/api/data/metar?ids=${encodeURIComponent(data.ids)}&format=json`;
-      const jsonRes = await fetch(jsonUrl);
-      const metars = await jsonRes.json();
-      const primaryMetar = Array.isArray(metars) ? (metars.find(m => m.icaoId === icao) || metars[0]) : null;
-
-      const windDir = primaryMetar?.wdir !== undefined ? primaryMetar.wdir + "°" : "N/A";
-      const windSpd = primaryMetar?.wspd !== undefined ? primaryMetar.wspd + " kt" : "N/A";
-      const temp = primaryMetar?.temp !== undefined ? primaryMetar.temp + "°C" : "N/A";
-      const dew = primaryMetar?.dewp !== undefined ? primaryMetar.dewp + "°C" : "N/A";
-      const altim = primaryMetar?.altim !== undefined ? Math.round(primaryMetar.altim) + " hPa" : "N/A";
-      const vis = primaryMetar?.visib !== undefined ? primaryMetar.visib : "N/A";
-      const clouds = primaryMetar?.clouds ? primaryMetar.clouds.map(c => `${c.cover || ""} ${c.base || ""}ft`).join(", ") : "N/A";
-
-      summary.innerHTML = `
-        <div class="weather-summary-item"><span>Source airport used</span><strong>${primaryMetar?.icaoId || "N/A"}</strong></div>
-        <div class="weather-summary-item"><span>Temperature</span><strong>${temp}</strong></div>
-        <div class="weather-summary-item"><span>Dew point</span><strong>${dew}</strong></div>
-        <div class="weather-summary-item"><span>Pressure</span><strong>${altim}</strong></div>
-        <div class="weather-summary-item"><span>Wind</span><strong>${windDir} / ${windSpd}</strong></div>
-        <div class="weather-summary-item"><span>Visibility</span><strong>${vis}</strong></div>
-        <div class="weather-summary-item"><span>Clouds</span><strong>${clouds}</strong></div>
-      `;
-    }catch(summaryErr){
-      summary.innerHTML = `<p>Raw METAR/TAF loaded. Decoded summary unavailable in this browser/API response.</p>`;
-    }
+    const s = data.summary || {};
+    summary.innerHTML = `
+      <div class="weather-summary-item"><span>Source airport used</span><strong>${data.source_airport || "N/A"}</strong></div>
+      <div class="weather-summary-item"><span>Temperature</span><strong>${s.temperature ?? "N/A"}</strong></div>
+      <div class="weather-summary-item"><span>Pressure</span><strong>${s.pressure ?? "N/A"}</strong></div>
+      <div class="weather-summary-item"><span>Wind</span><strong>${s.wind ?? "N/A"}</strong></div>
+      <div class="weather-summary-item"><span>Visibility</span><strong>${s.visibility ?? "N/A"}</strong></div>
+      <div class="weather-summary-item"><span>Clouds</span><strong>${s.clouds ?? "N/A"}</strong></div>
+      <div class="weather-summary-item"><span>Nearby fallback</span><strong>${data.used_fallback ? "Yes" : "No"}</strong></div>
+    `;
   }catch(err){
-    metarBox.textContent = `Could not load public weather for ${icao}.`;
-    tafBox.textContent = `Use the METAR-TAF link for ${icao}.`;
-    summary.innerHTML = `<p>Weather API request failed. Open the METAR-TAF page directly.</p>`;
+    metarBox.textContent = `Could not load METAR for ${icao}.`;
+    tafBox.textContent = `Could not load TAF for ${icao}.`;
+    summary.innerHTML = `<p>${err.message}. Use the METAR-TAF button as fallback.</p>`;
   }
 }
 
@@ -432,10 +420,7 @@ function showAircraftTopic(id){
 }
 
 
-let atplAiSettings = {
-  url: "https://avioren-aviation-mvp.onrender.com/",
-  active: false
-};
+let atplAiSettings = { url: "https://avioren-aviation-mvp.onrender.com/", active: false };
 
 async function loadAtplAiSettings(){
   try{
@@ -478,16 +463,13 @@ async function saveAtplAiSettings(e){
 }
 
 async function handleAtplAiClick(event){
-  if(event){
-    event.preventDefault();
-    event.stopPropagation();
-  }
+  if(event){ event.preventDefault(); event.stopPropagation(); }
   await loadAtplAiSettings();
-  if(atplAiSettings.active && atplAiSettings.url){
-    window.open(atplAiSettings.url, "_blank", "noopener");
-    return;
+  if(atplAiSettings.active){
+    window.open(atplAiSettings.url || "https://avioren-aviation-mvp.onrender.com/", "_blank", "noopener");
+  }else{
+    showPage("atplai");
   }
-  showPage("atplai");
 }
 
 document.addEventListener("DOMContentLoaded", () => {

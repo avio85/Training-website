@@ -102,7 +102,7 @@
             <span class="chip" id="weatherAirportChip">LHKA</span>
             <h3 id="weatherAirportName">Kalocsa Airfield</h3>
           </div>
-          <div class="weather-header-actions"><a id="metarTafLink" class="primary-link" target="_blank" href="https://metar-taf.com/metar/LHKA">Open METAR-TAF page</a><a id="weatherMapsLink" class="ghost-button" target="_blank" href="https://www.google.com/maps/search/?api=1&query=LHKA%20Kalocsa%20Airfield">Google Maps</a></div>
+          <div class="weather-header-actions"><a id="metarTafLink" class="primary-link" target="_blank" href="https://metar-taf.com/metar/LHKA">Open METAR-TAF page</a></div>
         </div>
 
         <div class="weather-cards-grid">
@@ -368,6 +368,18 @@
       </section>
 
 
+
+    <section id="atplai" class="page">
+      <div class="atpl-soon-page">
+        <div class="atpl-soon-card">
+          <span class="chip green-chip">ATPL AI</span>
+          <h2>Arriving soon</h2>
+          <p>The ATPL AI pilot theory assistant is currently not active from this portal.</p>
+          <img src="assets/images/atpl_ai_arriving_soon.png" alt="ATPL AI arriving soon preview" />
+        </div>
+      </div>
+    </section>
+
     <section id="admin" class="page">
       <div class="section-header"><div><h2>Admin Workspace</h2><p>Only Avi admin account. Manage schedule, students, users and briefing files.</p></div></div>
       <div class="admin-grid">
@@ -377,10 +389,10 @@
           <p>Control the ATPL AI menu item. If inactive, users will see the “Arriving soon” page instead of opening the link.</p>
           <form id="atplAiSettingsForm">
             <label>ATPL AI URL
-              <input name="url" id="atplAiUrlInput" placeholder="https://avioren-aviation-mvp.onrender.com/" required>
+              <input name="url" id="atplAiUrlInput" value="https://avioren-aviation-mvp.onrender.com/" placeholder="https://avioren-aviation-mvp.onrender.com/" required>
             </label>
-            <label class="toggle-row">
-              <input name="active" id="atplAiActiveInput" type="checkbox">
+            <label class="toggle-row switch-row">
+              <input name="active" id="atplAiActiveInput" type="checkbox"><span class="switch-slider"></span>
               <span>Active</span>
             </label>
             <button class="primary-button" type="submit">Save ATPL AI settings</button>
@@ -406,7 +418,7 @@
   </div>
 
   <div id="toast" class="toast hidden"></div><footer class="version">
-    <span>Version 0.1.14</span>
+    <span>Version 0.1.15</span>
     <span>© Avi Oren Aviation · avi8or.easa@gmail.com</span>
   </footer><script src="script.js"></script>
 </body></html>
