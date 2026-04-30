@@ -1163,7 +1163,7 @@ function renderWaveSlot(date, time, aircraft, admin){
 function renderFlightCard(f, admin){
   const exam = String(f.note || "").toUpperCase().includes("EXAM");
   return `
-    <div class="flight-card ${f.aircraft === "C172" ? "flight-c172" : "flight-c152"} ${exam ? "exam-flight" : ""}" draggable="${admin ? "true" : "false"}" data-id="${f.id}">
+    <div class="flight-card ${f.aircraft === "C172" ? "flight-c172" : "flight-c152"} ${exam ? "exam-flight" : ""}" draggable="${admin ? "true" : "false"}" data-id="${f.id}" oncontextmenu="openSlotEditMenu(event, '${f.id}')">
       <strong>${f.student}</strong>
       <div class="flight-tags">
         <span class="instructor-tag ${f.instructor === "Amir" ? "tag-amir" : "tag-avi"}">${f.instructor}</span>
@@ -1214,7 +1214,7 @@ async function saveWaveSchedule(){
     });
     const data = await res.json().catch(()=>({}));
     if(!res.ok) throw new Error(data.detail || "Could not save schedule");
-    toast("Wave schedule saved");
+    toast("Training wave schedule saved");
   }catch(err){
     toast(err.message);
   }
@@ -1226,3 +1226,66 @@ async function resetWaveSchedule(){
   renderWaveCalendar();
   await saveWaveSchedule();
 }
+
+
+const waveStudents = ["Nir K", "Nir D", "Ofek", "Harel", "Lior", "Aviad", "Ahmad"];
+const waveInstructors = ["Avi", "Amir"];
+let slotEditFlightId = null;
+
+function openSlotEditMenu(event, flightId){
+  if(!canEditSchedule()) return;
+  event.preventDefault();
+  event.stopPropagation();
+
+  const flight = waveSchedule.find(f => f.id === flightId);
+  if(!flight) return;
+
+  slotEditFlightId = flightId;
+  const menu = document.getElementById("slotEditMenu");
+  const studentSelect = document.getElementById("slotEditStudent");
+  const instructorSelect = document.getElementById("slotEditInstructor");
+  if(!menu || !studentSelect || !instructorSelect) return;
+
+  studentSelect.innerHTML = waveStudents.map(s => `<option value="${s}">${s}</option>`).join("");
+  studentSelect.value = flight.student;
+  instructorSelect.value = flight.instructor;
+
+  const x = Math.min(event.clientX, window.innerWidth - 300);
+  const y = Math.min(event.clientY, window.innerHeight - 260);
+  menu.style.left = x + "px";
+  menu.style.top = y + "px";
+  menu.classList.remove("hidden");
+}
+
+function closeSlotEditMenu(){
+  const menu = document.getElementById("slotEditMenu");
+  if(menu) menu.classList.add("hidden");
+  slotEditFlightId = null;
+}
+
+function applySlotEdit(){
+  if(!canEditSchedule()) return toast("Admin only");
+  const flight = waveSchedule.find(f => f.id === slotEditFlightId);
+  if(!flight) return closeSlotEditMenu();
+
+  const studentSelect = document.getElementById("slotEditStudent");
+  const instructorSelect = document.getElementById("slotEditInstructor");
+
+  flight.student = studentSelect.value;
+  flight.instructor = instructorSelect.value;
+
+  closeSlotEditMenu();
+  renderWaveCalendar();
+  toast("Flight updated. Press Save changes.");
+}
+
+document.addEventListener("click", (event) => {
+  const menu = document.getElementById("slotEditMenu");
+  if(menu && !menu.classList.contains("hidden") && !menu.contains(event.target)){
+    closeSlotEditMenu();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if(event.key === "Escape") closeSlotEditMenu();
+});

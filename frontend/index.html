@@ -42,12 +42,12 @@
     <section id="schedule" class="page">
       <div class="section-header">
         <div>
-          <h2>Training Wave Schedule</h2>
+          <h2>Training wave schedule</h2>
           <p>May 3–10 training wave only. Students can view; admin can drag & drop flights to edit the wave.</p>
         </div>
         <div class="schedule-actions">
           <button class="primary-button admin-only hidden" onclick="saveWaveSchedule()">Save changes</button>
-          <button class="ghost-button admin-only hidden" onclick="resetWaveSchedule()">Reset wave</button>
+          <button class="ghost-button admin-only hidden" onclick="resetWaveSchedule()">Reset training wave</button>
         </div>
       </div>
 
@@ -64,8 +64,8 @@
       <div id="waveScheduleApp" class="wave-schedule hidden">
         <div class="wave-toolbar">
           <div>
-            <strong>Wave:</strong> 3–10 May
-            <span id="waveAdminHint" class="admin-only hidden"> · Drag flights between slots, then save.</span>
+            <strong>Training wave:</strong> 3–10 May
+            <span id="waveAdminHint" class="admin-only hidden"> · Drag flights between slots, or right-click a flight card to change student/FI, then save.</span>
           </div>
           <div class="view-note">Last landing by 18:30</div>
         </div>
@@ -474,8 +474,26 @@
     </div>
   </div>
 
+  
+  <div id="slotEditMenu" class="slot-edit-menu hidden">
+    <div class="slot-edit-title">Edit flight</div>
+    <label>Student
+      <select id="slotEditStudent"></select>
+    </label>
+    <label>Instructor
+      <select id="slotEditInstructor">
+        <option>Avi</option>
+        <option>Amir</option>
+      </select>
+    </label>
+    <div class="slot-edit-actions">
+      <button class="primary-button" onclick="applySlotEdit()">Apply</button>
+      <button class="ghost-button" onclick="closeSlotEditMenu()">Cancel</button>
+    </div>
+  </div>
+
   <div id="toast" class="toast hidden"></div><footer class="version">
-    <span>Version 0.1.19</span>
+    <span>Version 0.1.20</span>
     <span>© Avi Oren Aviation · avi8or.easa@gmail.com</span>
   </footer><script src="script.js"></script>
 </body></html>
