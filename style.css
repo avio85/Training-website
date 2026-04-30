@@ -1,0 +1,19 @@
+body {
+font-family: Arial;
+background:#0b1e3c;
+color:white;
+margin:20px;
+}
+nav a {
+margin-right:15px;
+color:#4fc3f7;
+text-decoration:none;
+}
+table {
+border-collapse:collapse;
+margin-top:20px;
+}
+td, th {
+border:1px solid white;
+padding:8px;
+}
