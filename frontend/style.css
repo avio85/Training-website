@@ -376,3 +376,52 @@
     grid-template-columns:1fr;
   }
 }
+
+
+/* v0.1.17 briefing/login/notam updates */
+.oauth-note{display:none!important}
+.chart-extra-links{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:12px 0;
+}
+.briefing-link-stack{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.notam-control-panel{
+  display:flex;
+  gap:12px;
+  align-items:end;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:22px;
+  box-shadow:var(--shadow);
+  padding:16px;
+  margin:12px 0 16px;
+}
+.notam-control-panel label{
+  flex:1;
+}
+.notam-output-card{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:24px;
+  box-shadow:var(--shadow);
+  padding:18px;
+}
+.notam-output-card pre{
+  background:#0b1f33;
+  color:#dff7ff;
+  border-radius:16px;
+  padding:16px;
+  min-height:260px;
+  white-space:pre-wrap;
+  overflow:auto;
+  font-family:ui-monospace,Consolas,monospace;
+}
+@media(max-width:980px){
+  .notam-control-panel{flex-direction:column;align-items:stretch}
+}

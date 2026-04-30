@@ -248,7 +248,12 @@ function renderPreloadedExercisePresentations(){
   }).join("");
 }
 
-let token=localStorage.getItem('token')||'';let userRole=localStorage.getItem('role')||'';let briefingCache=[];let selectedBriefingCategory='all';let scheduleCache=[];const pageTitles={dashboard:'Dashboard',schedule:'Training Schedule',briefingroom:'Briefing Room',weather:'Weather',aircraft:'Aircraft',modular:'Modular CPL',admin:'Admin Workspace'};const airportCharts={LHKA:{name:'Kalocsa Airfield',chart:'https://storage.hungarocontrol.hu/media/958/VFR_LHKA_print_5n.pdf?_gl=1*1rt6n80*_gcl_au*MjQ1MTUxNTQzLjE3Nzc1NTU3MjQ.'},LHJK:{name:'LHJK Airfield',chart:'https://ais-en.hungarocontrol.hu/vfrmanual/LHJK'},LHPP:{name:'LHPP Airfield',chart:'https://ais-en.hungarocontrol.hu/vfrmanual/LHPP'},LHSM:{name:'LHSM Airfield',chart:'https://ais-en.hungarocontrol.hu/vfrmanual/LHSM'}};function toast(m){const e=document.getElementById('toast');e.textContent=m;e.classList.remove('hidden');setTimeout(()=>e.classList.add('hidden'),2800)}function setAuthUi(){
+let token=localStorage.getItem('token')||'';let userRole=localStorage.getItem('role')||'';let briefingCache=[];let selectedBriefingCategory='all';let scheduleCache=[];const pageTitles={dashboard:'Dashboard',schedule:'Training Schedule',briefingroom:'Briefing Room',weather:'Weather',aircraft:'Aircraft',modular:'Modular CPL',admin:'Admin Workspace'};const airportCharts={
+LHKA:{name:'Kalocsa Airfield',chart:'https://storage.hungarocontrol.hu/media/958/VFR_LHKA_print_5n.pdf?_gl=1*1rt6n80*_gcl_au*MjQ1MTUxNTQzLjE3Nzc1NTU3MjQ.',maps:'https://www.google.com/maps/search/?api=1&query=Kalocsa%20Airfield%20LHKA',links:[{label:'LHKA VFR chart',url:'https://storage.hungarocontrol.hu/media/958/VFR_LHKA_print_5n.pdf?_gl=1*1rt6n80*_gcl_au*MjQ1MTUxNTQzLjE3Nzc1NTU3MjQ.'}]},
+LHJK:{name:'Jakab-Csík Airport',chart:'https://ais-en.hungarocontrol.hu/vfrmanual/LHJK',maps:'https://www.google.com/maps/search/?api=1&query=LHJK%20Jakab-Csik%20Airport',links:[{label:'LHJK VFR Manual page',url:'https://ais-en.hungarocontrol.hu/vfrmanual/LHJK'}]},
+LHPP:{name:'Pécs-Pogány',chart:'https://ais-en.hungarocontrol.hu/aip/2026-04-16/2026-04-16-AIRAC/graphics/eAIP/LH_AD_2_LHPP_VAC_en.pdf',maps:'https://www.google.com/maps/search/?api=1&query=LHPP%20Pecs%20Pogany%20Airport',links:[{label:'LHPP VAC',url:'https://ais-en.hungarocontrol.hu/aip/2026-04-16/2026-04-16-AIRAC/graphics/eAIP/LH_AD_2_LHPP_VAC_en.pdf'},{label:'LHPP ADC',url:'https://ais-en.hungarocontrol.hu/aip/2026-04-16/2026-04-16-AIRAC/graphics/eAIP/LH_AD_2_LHPP_ADC_en.pdf'}]},
+LHSM:{name:'Hévíz-Balaton',chart:'https://ais-en.hungarocontrol.hu/aip/2026-04-16/2026-04-16-AIRAC/graphics/eAIP/LH_AD_2_LHSM_VAC_en.pdf',maps:'https://www.google.com/maps/search/?api=1&query=LHSM%20Heviz%20Balaton%20Airport',links:[{label:'LHSM VAC',url:'https://ais-en.hungarocontrol.hu/aip/2026-04-16/2026-04-16-AIRAC/graphics/eAIP/LH_AD_2_LHSM_VAC_en.pdf'},{label:'LHSM ADC',url:'https://ais-en.hungarocontrol.hu/aip/2026-04-16/2026-04-16-AIRAC/graphics/eAIP/LH_AD_2_LHSM_ADC_en.pdf'}]}
+};function toast(m){const e=document.getElementById('toast');e.textContent=m;e.classList.remove('hidden');setTimeout(()=>e.classList.add('hidden'),2800)}function setAuthUi(){
   const logged = !!token;
   document.getElementById('loginStatus').textContent = logged ? (userRole === 'admin' ? 'Admin online' : 'Member online') : 'Guest mode';
   document.getElementById('logoutBtn').classList.toggle('hidden', !logged);
@@ -271,6 +276,11 @@ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));docu
   document.getElementById("chartFrame").src = item.chart;
   const maps = document.getElementById("googleMapsLink");
   if(maps) maps.href = item.maps || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(code + " " + item.name)}`;
+
+  const extra = document.getElementById("chartExtraLinks");
+  if(extra){
+    extra.innerHTML = (item.links || []).map(link => `<a class="ghost-button" target="_blank" href="${link.url}">${link.label}</a>`).join("");
+  }
 }
 
 async function loadAviationMet(){
@@ -488,5 +498,29 @@ function showBriefingTab(tab){
   if(panel) panel.classList.add("active");
 
   if(tab === "weather") loadSelectedAirportWeather();
+  if(tab === "notam") loadNotam();
   if(tab === "exercises") renderPreloadedExercisePresentations();
+}
+
+
+async function loadNotam(){
+  const select = document.getElementById("notamAirportSelect");
+  const output = document.getElementById("notamOutput");
+  const title = document.getElementById("notamTitle");
+  const official = document.getElementById("notamOfficialLink");
+  if(!select || !output || !title) return;
+
+  const icao = select.value || "LHKE";
+  title.textContent = `${icao} NOTAM`;
+  output.textContent = "Loading NOTAM...";
+  if(official) official.href = `https://www.notams.faa.gov/dinsQueryWeb/queryRetrievalMapAction.do?reportType=Raw&retrieveLocId=${encodeURIComponent(icao)}`;
+
+  try{
+    const res = await fetch(`/api/notam/${encodeURIComponent(icao)}`);
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.detail || "NOTAM fetch failed");
+    output.textContent = data.notams || `No NOTAM returned for ${icao}. Use the official NOTAM search link.`;
+  }catch(err){
+    output.textContent = `${err.message}\n\nUse the official NOTAM search link.`;
+  }
 }

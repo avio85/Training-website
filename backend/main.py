@@ -445,5 +445,38 @@ def get_airport_weather(icao: str):
     }
 
 
+
+@app.get("/api/notam/{icao}")
+def get_notam(icao: str):
+    icao = icao.upper().strip()
+    if not re.match(r"^[A-Z]{4}$", icao):
+        raise HTTPException(400, "Invalid ICAO code")
+
+    # Public NOTAM access changes frequently. This endpoint tries FAA DINS raw retrieval
+    # and returns a useful fallback message if blocked/unavailable.
+    urls = [
+        f"https://www.notams.faa.gov/dinsQueryWeb/queryRetrievalMapAction.do?reportType=Raw&retrieveLocId={icao}",
+        f"https://www.notams.faa.gov/dinsQueryWeb/queryRetrievalMapAction.do?reportType=Raw&retrieveLocId={icao}&actionType=notamRetrievalByICAOs",
+    ]
+    for url in urls:
+        try:
+            r = requests.get(url, timeout=20, headers={"User-Agent": "AviOrenAviationTrainingPortal/1.0"})
+            if r.status_code == 200 and r.text:
+                text = re.sub(r"<script.*?</script>", "", r.text, flags=re.S | re.I)
+                text = re.sub(r"<style.*?</style>", "", text, flags=re.S | re.I)
+                text = re.sub(r"<[^>]+>", " ", text)
+                text = re.sub(r"\\s+", " ", text).strip()
+                if icao in text and len(text) > 80:
+                    return {"icao": icao, "source": url, "notams": text[:12000]}
+        except Exception:
+            pass
+
+    return {
+        "icao": icao,
+        "source": "manual",
+        "notams": f"Automatic NOTAM retrieval was unavailable for {icao}. Open the official NOTAM search link and search manually. Always use an official briefing source before flight."
+    }
+
+
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")

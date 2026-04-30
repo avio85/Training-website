@@ -56,6 +56,7 @@
       <div class="briefing-room-tabs">
         <button class="briefing-tab active" data-briefing-tab="airports" onclick="showBriefingTab('airports')">Airports</button>
         <button class="briefing-tab" data-briefing-tab="weather" onclick="showBriefingTab('weather')">Weather</button>
+        <button class="briefing-tab" data-briefing-tab="notam" onclick="showBriefingTab('notam')">NOTAM</button>
         <button class="briefing-tab" data-briefing-tab="aircraft" onclick="showBriefingTab('aircraft')">Aircraft</button>
         <button class="briefing-tab" data-briefing-tab="exercises" onclick="showBriefingTab('exercises')">Exercises</button>
         <button class="briefing-tab" data-briefing-tab="certificates" onclick="showBriefingTab('certificates')">Certificates</button>
@@ -77,6 +78,16 @@
               <p>ICAO 1:500 000 Hungary VFR chart.</p>
               <a class="primary-link" target="_blank" href="https://storage.hungarocontrol.hu/media/1132/ICAO_500k_2025.pdf?_gl=1*fnep6k*_gcl_au*MjQ1MTUxNTQzLjE3Nzc1NTU3MjQ.">Open HU VFR chart PDF</a>
             </div>
+          
+            <div class="vfr-chart-card">
+              <h3>Official AIS Links</h3>
+              <p>Use these for full AIP / VFR manual review.</p>
+              <div class="briefing-link-stack">
+                <a class="primary-link" target="_blank" href="https://ais-en.hungarocontrol.hu/aip/2026-04-16/">Hungary AIP / IFR charts</a>
+                <a class="ghost-button" target="_blank" href="https://ais-en.hungarocontrol.hu/vfrmanual/">Hungary VFR Manual</a>
+              </div>
+            </div>
+
           </div>
 
           <div class="chart-viewer">
@@ -88,6 +99,7 @@
               <a id="googleMapsLink" class="ghost-button" target="_blank" href="https://www.google.com/maps/search/?api=1&query=LHKA%20Kalocsa%20Airfield">Google Maps</a>
               <a id="chartOpenLink" class="primary-link" target="_blank" href="https://storage.hungarocontrol.hu/media/958/VFR_LHKA_print_5n.pdf?_gl=1*1rt6n80*_gcl_au*MjQ1MTUxNTQzLjE3Nzc1NTU3MjQ.">Open chart / AD page</a>
             </div>
+            <div id="chartExtraLinks" class="chart-extra-links"></div>
             <iframe id="chartFrame" src="https://storage.hungarocontrol.hu/media/958/VFR_LHKA_print_5n.pdf?_gl=1*1rt6n80*_gcl_au*MjQ1MTUxNTQzLjE3Nzc1NTU3MjQ."></iframe>
             <p class="fineprint">Always verify current charts with HungaroControl AIS before flight.</p>
           </div>
@@ -133,6 +145,37 @@
             <h3>General weather information</h3>
             <div id="airportWeatherSummary" class="weather-summary-list">Select an airport and press refresh.</div>
           </article>
+        </div>
+      </div>
+
+
+      <div id="briefingTab-notam" class="briefing-tab-panel">
+        <div class="section-header">
+          <div>
+            <h2>NOTAM</h2>
+            <p>Check NOTAMs by airport. Default is LHKE.</p>
+          </div>
+          <button class="primary-button" onclick="loadNotam()">Load NOTAM</button>
+        </div>
+
+        <div class="notam-control-panel">
+          <label>Airport
+            <select id="notamAirportSelect" onchange="loadNotam()">
+              <option value="LHKE" selected>LHKE - Kecskemét</option>
+              <option value="LHKA">LHKA - Kalocsa</option>
+              <option value="LHBP">LHBP - Budapest</option>
+              <option value="LHPP">LHPP - Pécs-Pogány</option>
+              <option value="LHSM">LHSM - Hévíz-Balaton</option>
+              <option value="LHJK">LHJK - Jakab-Csík</option>
+            </select>
+          </label>
+          <a id="notamOfficialLink" class="primary-link" target="_blank" href="https://www.notams.faa.gov/dinsQueryWeb/">Open official NOTAM search</a>
+        </div>
+
+        <div class="notam-output-card">
+          <h3 id="notamTitle">LHKE NOTAM</h3>
+          <pre id="notamOutput">Select an airport and press Load NOTAM.</pre>
+          <p class="fineprint">Always verify NOTAMs with an official briefing source before flight.</p>
         </div>
       </div>
 
@@ -388,7 +431,7 @@
 </div>
 <div class="bottom-nav"><button class="mobile-nav active" data-page="dashboard">Home</button><button class="mobile-nav member-only hidden" data-page="schedule">Schedule</button><button class="mobile-nav" data-page="briefingroom">Brief</button>
     <button class="mobile-nav atpl-ai-mobile" data-page="atplai" onclick="handleAtplAiClick(event)">ATPL AI</button></div>
-<div id="loginModal" class="modal hidden"><div class="modal-card"><button class="close" onclick="closeLoginModal()">×</button><h2>Member Access</h2><p>Login to view schedule and briefing files. New users require admin approval.</p><div class="auth-grid"><form id="loginForm"><h3>Login</h3><input name="email" type="email" placeholder="Email" required><input name="password" type="password" placeholder="Password" required><button class="primary-button" type="submit">Login</button></form><form id="signupForm"><h3>Sign up</h3><input name="email" type="email" placeholder="Email" required><input name="password" type="password" placeholder="Password" required><button class="ghost-button" type="submit">Request access</button></form></div><div class="oauth-note">Google login placeholder for future backend integration.</div></div></div>
+<div id="loginModal" class="modal hidden"><div class="modal-card"><button class="close" onclick="closeLoginModal()">×</button><h2>Member Access</h2><p>Login to view schedule and briefing files. New users require admin approval.</p><div class="auth-grid"><form id="loginForm" autocomplete="on"><h3>Login</h3><input name="email" type="email" placeholder="Email" autocomplete="username" required><input name="password" type="password" placeholder="Password" autocomplete="current-password" required><button class="primary-button" type="submit">Login</button></form><form id="signupForm" autocomplete="on"><h3>Sign up</h3><input name="email" type="email" placeholder="Email" required><input name="password" type="password" placeholder="Password" autocomplete="new-password" required><button class="ghost-button" type="submit">Request access</button></form></div></div></div>
 
   <div id="filePreviewModal" class="modal hidden">
     <div class="file-preview-card">
@@ -402,7 +445,7 @@
   </div>
 
   <div id="toast" class="toast hidden"></div><footer class="version">
-    <span>Version 0.1.16</span>
+    <span>Version 0.1.17</span>
     <span>© Avi Oren Aviation · avi8or.easa@gmail.com</span>
   </footer><script src="script.js"></script>
 </body></html>
