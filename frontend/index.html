@@ -1,89 +1,108 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Avi Oren Aviation</title><link rel="stylesheet" href="style.css"></head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Avi Oren Aviation</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
 <body>
-<div class="app">
-<aside class="side">
- <div class="brand"><div class="logo">AO</div><div><b>Avi Oren</b><span>Aviation Training</span></div></div>
- <button class="nav active" data-page="dashboard">Dashboard</button>
- <button class="nav" data-page="schedule">Schedule</button>
- <button class="nav" data-page="briefingroom">Briefing Room</button>
- <button class="nav" data-page="weather">Weather</button>
- <button class="nav" data-page="aircraft">Aircraft / G1000</button>
- <button class="nav" data-page="modular">Modular CPL</button>
- <button class="nav admin-only hidden" data-page="admin">Admin</button>
- <div class="spacer"></div><div id="loginStatus" class="pill">Guest mode</div><button id="logoutBtn" class="ghost hidden">Logout</button>
-</aside>
-<main>
-<header><div><small>EASA ATO · Hungary · Kalocsa LHKA</small><h1 id="pageTitle">Dashboard</h1></div><button class="primary" onclick="openLoginModal()">Login / Sign up</button></header>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand-block"><div class="brand-mark">AO</div><div><div class="brand-title">Avi Oren Aviation</div><div class="brand-subtitle">EASA Training Students</div></div></div>
+    <nav class="side-nav">
+      <button class="nav-item active" data-page="dashboard">Dashboard</button>
+      <button class="nav-item" data-page="schedule">Schedule</button>
+      <button class="nav-item" data-page="briefingroom">Briefing Room</button>
+      <button class="nav-item" data-page="weather">Weather</button>
+      <button class="nav-item" data-page="aircraft">Aircraft</button>
+      <button class="nav-item" data-page="modular">Modular CPL</button>
+      <button class="nav-item admin-only hidden" data-page="admin">Admin</button>
+    </nav>
+    <div class="sidebar-footer"><div id="loginStatus" class="status-pill">Guest mode</div><button id="logoutBtn" class="ghost-button hidden">Logout</button></div>
+  </aside>
 
-<section id="dashboard" class="page active">
- <div class="hero"><div><span class="pill">Pilot Training Portal</span><h2>Brief. Fly. Review. Progress.</h2><p>Bright, mobile-first training portal for schedule, briefing room, weather, aircraft preparation and modular CPL roadmap.</p><button class="primary" onclick="showPage('schedule')">View Schedule</button><button class="ghost" onclick="showPage('briefingroom')">Briefing Room</button></div><div class="scene"><div class="plane">✈</div></div></div>
- <div class="metrics"><div><b>LHKA</b><span>Kalocsa base</span></div><div><b>C152 / C172</b><span>Fleet types</span></div><div><b>METAR / TAF</b><span>Weather module</span></div><div><b>Members</b><span>Schedule & files</span></div></div>
-</section>
+  <main class="main">
+    <header class="topbar"><div><div class="eyebrow">AoA · EASA ATO training support · Hungary</div><h1 id="pageTitle">Dashboard</h1></div><button class="primary-button" onclick="openLoginModal()">Login / Sign up</button></header>
 
-<section id="schedule" class="page">
- <div class="section-head"><div><h2>Training Schedule</h2><p>Members only. View daily schedule, by FI, or by student.</p></div><button class="primary" onclick="loadSchedule()">Refresh</button></div>
- <div class="filters"><label>View<select id="scheduleMode" onchange="buildScheduleFilters();renderSchedule()"><option value="daily">Daily schedule</option><option value="fi">By FI</option><option value="student">By student</option></select></label><label>Date<input id="scheduleDateFilter" type="date" onchange="renderSchedule()"></label><label>Name<select id="scheduleNameFilter" onchange="renderSchedule()"><option value="all">All</option></select></label></div>
- <div id="scheduleEmpty" class="empty">Login as an approved member to load the schedule.</div><div id="scheduleTimeline" class="timeline"></div>
-</section>
+    <section id="dashboard" class="page active">
+      <div class="hero-card">
+        <div class="hero-copy">
+          <span class="chip">Useful website for AoA EASA training students</span>
+          <h2>Training support built around each student’s real life.</h2>
+          <p>This portal supports the Avi Oren Aviation training project: Israeli trainees completing EASA training in Hungary, with preparation material, schedule awareness, airfield charts, aircraft study and modular CPL guidance.</p>
+          <p class="strong-note">The concept: training is tailor-made for each trainee, considering personal schedule, work, family, travel constraints, training pace and life realities — while keeping professional EASA standards.</p>
+          <div class="hero-actions"><button class="primary-button" onclick="showPage('schedule')">My Schedule</button><button class="ghost-button" onclick="showPage('briefingroom')">Open Briefing Room</button></div>
+        </div>
+        <div class="hero-visual"><div class="sun"></div><div class="cloud c1"></div><div class="cloud c2"></div><div class="runway"></div><div class="plane">✈</div></div>
+      </div>
+      <div class="metric-grid"><article class="metric-card"><span>Project</span><strong>AoA</strong><p>EASA training support</p></article><article class="metric-card"><span>Base</span><strong>LHKA</strong><p>Kalocsa airfield</p></article><article class="metric-card"><span>Training</span><strong>Flexible</strong><p>Tailor-made progression</p></article><article class="metric-card"><span>Fleet</span><strong>C152 / C172</strong><p>Including G1000 study</p></article></div>
+    </section>
 
-<section id="briefingroom" class="page">
- <div class="section-head"><div><h2>Briefing Room</h2><p>דפיות, airfield charts, exercise briefings, ATO certificate and useful files.</p></div><button class="primary" onclick="loadBriefings()">Refresh files</button></div>
- <div class="briefing-layout"><div><h3>Airfield Charts / דפיות</h3><div class="airport-list">
-  <button class="airport active" onclick="selectAirport('LHKA')"><b>LHKA</b><span>Kalocsa</span></button>
-  <button class="airport" onclick="selectAirport('LHJK')"><b>LHJK</b><span>VFR Manual</span></button>
-  <button class="airport" onclick="selectAirport('LHPP')"><b>LHPP</b><span>VFR Manual</span></button>
-  <button class="airport" onclick="selectAirport('LHSM')"><b>LHSM</b><span>VFR Manual</span></button>
- </div></div><div class="chart"><div class="chart-head"><div><span id="selectedAirportChip" class="pill">LHKA</span><h3 id="selectedAirportName">Kalocsa Airfield</h3></div><a id="chartOpenLink" class="linkbtn" target="_blank" href="https://storage.hungarocontrol.hu/media/958/VFR_LHKA_print_5n.pdf?_gl=1*1rt6n80*_gcl_au*MjQ1MTUxNTQzLjE3Nzc1NTU3MjQ.">Open chart PDF</a></div><iframe id="chartFrame" src="https://storage.hungarocontrol.hu/media/958/VFR_LHKA_print_5n.pdf?_gl=1*1rt6n80*_gcl_au*MjQ1MTUxNTQzLjE3Nzc1NTU3MjQ."></iframe><p class="fine">Always verify charts against official HungaroControl/VFR Manual before flight.</p></div></div>
- <div class="tabs"><button class="tab active" data-category="all">All Files</button><button class="tab" data-category="Preparation">Preparation</button><button class="tab" data-category="Exercises">Exercises</button><button class="tab" data-category="Airfields">Airfields</button><button class="tab" data-category="Aircraft/G1000">Aircraft</button><button class="tab" data-category="Modular CPL">CPL</button><button class="tab" data-category="ATO Certificate">ATO Certificate</button></div>
- <div id="briefingsEmpty" class="empty">Login as an approved member to view uploaded briefing files.</div><div id="briefingGrid" class="file-grid"></div>
-</section>
+    <section id="schedule" class="page">
+      <div class="section-header"><div><h2>Training Schedule</h2><p>Members only. View daily schedule, by FI, or by student.</p></div><button class="primary-button" onclick="loadSchedule()">Refresh</button></div>
+      <div class="filters-panel"><label>View<select id="scheduleMode" onchange="buildScheduleFilters();renderSchedule()"><option value="daily">Daily schedule</option><option value="fi">By FI</option><option value="student">By student</option></select></label><label>Date<input id="scheduleDateFilter" type="date" onchange="renderSchedule()"></label><label>Instructor / Student<select id="scheduleNameFilter" onchange="renderSchedule()"><option value="all">All</option></select></label></div>
+      <div id="scheduleEmpty" class="empty-state">Login as an approved member to load the schedule.</div><div id="scheduleTimeline" class="timeline"></div>
+    </section>
 
-<section id="weather" class="page">
- <div class="section-head"><div><h2>Weather</h2><p>Quick public METAR/TAF panel + HungaroMet link.</p></div><button class="primary" onclick="loadWeather()">Load METAR / TAF</button></div>
- <div class="cards2"><div class="card"><h3>Nearby Stations</h3><p>Suggested: LHBP, LHPP, LHSM, LHPA, LHKE.</p><input id="weatherStations" value="LHBP,LHPP,LHSM,LHPA,LHKE"><button class="ghost" onclick="setWeatherStations('LHBP,LHPP,LHSM,LHPA,LHKE')">Training area</button></div><div class="card"><h3>HungaroMet Aviation</h3><p>Requires login. This prototype links to it; later we can add backend integration if the provider allows it.</p><a class="linkbtn" target="_blank" href="https://aviation.met.hu/en/">Open aviation.met.hu</a></div></div>
- <pre id="weatherOutput" class="empty weatherout">Click Load METAR / TAF.</pre>
-</section>
+    <section id="briefingroom" class="page">
+      <div class="section-header"><div><h2>Briefing Room</h2><p>Airfield charts / דפיות, exercise briefings, ATO certificate and useful files.</p></div><button class="primary-button" onclick="loadBriefings()">Refresh files</button></div>
+      
+        <div class="briefing-top-tabs">
+          <button onclick="scrollToBriefingSection('airfieldCharts')">Airfield Charts / דפיות</button>
+          <button onclick="scrollToBriefingSection('briefingFiles')">Training Files</button>
+          <button onclick="scrollToBriefingSection('uploadHelp')">Where to upload?</button>
+        </div>
 
-<section id="aircraft" class="page">
- <div class="section-head"><div><h2>Aircraft & G1000 Study</h2><p>Guest-accessible teaching pages for student preparation.</p></div></div>
- <div class="study-grid">
-  <article><div class="pic plane-img"></div><h3>Page 1 — C172 Diesel Overview</h3><p>Engine concept, fuel system, limitations, normal checks and engine management mindset.</p><ul><li>Monitor power, temperature and annunciations.</li><li>Before start: fuel, electrical system and checklist discipline.</li><li>In flight: trends, abnormal indications and decisions.</li></ul></article>
-  <article><div class="pic g1000-img"></div><h3>Page 2 — Garmin G1000 Basics</h3><p>PFD/MFD roles, HSI, CDI source, engine strip, flight plan and map awareness.</p><ul><li>PFD: attitude, airspeed, altitude, HSI.</li><li>MFD: map, engine data, nearest airports.</li><li>Verbalize CDI source and active leg.</li></ul></article>
-  <article><div class="pic scan-img"></div><h3>Page 3 — Instrument Scan & Flight Data</h3><p>Read flight data, identify trends and use post-flight review.</p><ul><li>Route vs actual track.</li><li>Altitude discipline and airborne time.</li><li>Use data to brief the next exercise.</li></ul></article>
-  <article><div class="pic checklist-img"></div><h3>Page 4 — C152 / Basic Trainer</h3><p>Simple VFR trainer preparation: controls, fuel, performance, handling and energy.</p><ul><li>Weight and balance mindset.</li><li>Energy management in circuit.</li><li>Checklist flow and callouts.</li></ul></article>
- </div>
-</section>
+        <div id="uploadHelp" class="upload-help-panel">
+          <h3>Where do I upload exercise presentations?</h3>
+          <p>Login as admin → go to <b>Admin Workspace</b> → <b>Upload Briefing / ATO Certificate</b> → choose category <b>Exercises</b> and upload your PDF/PPT file.</p>
+          <button class="primary-button admin-only hidden" onclick="showPage('admin')">Go to Admin Upload</button>
+        </div>
 
-<section id="modular" class="page">
- <div class="section-head"><div><h2>Modular CPL(A) Roadmap</h2><p>Full roadmap and requirement overview for modular professional training.</p></div></div>
- <div class="road-hero"><div><span class="pill">From PPL to CPL Skill Test</span><h2>Build the licence step by step — with gates before moving forward.</h2><p>Training-planning overview. Exact requirements must be checked against the ATO training manual and current EASA Part-FCL.</p></div><div class="steps-visual"><b>PPL</b><b>Hours</b><b>Theory</b><b>CPL</b></div></div>
- <div class="roadmap">
-  <article><span>01</span><h3>Entry & Document Check</h3><p>Identity, logbook, medical, English level, previous training records and ATO enrolment.</p></article>
-  <article><span>02</span><h3>PPL(A)</h3><p>Foundation flying, solo, navigation and PPL skill test. Some students may already hold this.</p></article>
-  <article><span>03</span><h3>Hour Building</h3><p>Structured PIC experience, cross-country planning, radio confidence and weather decisions.</p></article>
-  <article><span>04</span><h3>Night / Add-ons</h3><p>Complete required ratings or qualifications according to the pathway and ATO plan.</p></article>
-  <article><span>05</span><h3>Theory</h3><p>Theoretical knowledge to CPL/ATPL level depending on the student target path.</p></article>
-  <article><span>06</span><h3>CPL Modular Training</h3><p>Visual and instrument flying training in one continuous ATO course.</p></article>
-  <article><span>07</span><h3>Skill Test Prep</h3><p>Mock profiles, emergencies, navigation, diversion, performance and oral prep.</p></article>
-  <article><span>08</span><h3>CPL(A) Skill Test</h3><p>Final examiner assessment after ATO readiness confirmation.</p></article>
- </div>
- <div class="reqs"><div><h3>Typical Entry Requirements</h3><ul><li>Age planning toward CPL privileges</li><li>Valid EASA Class 1 Medical before CPL issue</li><li>PPL(A) or equivalent stage</li><li>English and theory preparation</li></ul></div><div><h3>Experience Gates</h3><ul><li>PIC hour-building progression</li><li>Cross-country experience</li><li>Night / instrument elements as applicable</li><li>ATO readiness check</li></ul></div><div><h3>Commercial Standard</h3><ul><li>Accuracy and professional discipline</li><li>Threat and error management</li><li>Checklist discipline</li><li>Decision making under workload</li></ul></div></div>
-</section>
+        <div id="airfieldCharts" class="briefing-layout"><div><h3>Airfield Charts</h3><div class="airport-list"><button class="airport-card active" onclick="selectAirport('LHKA')"><strong>LHKA</strong><span>Kalocsa</span></button><button class="airport-card" onclick="selectAirport('LHJK')"><strong>LHJK</strong><span>Chart link</span></button><button class="airport-card" onclick="selectAirport('LHPP')"><strong>LHPP</strong><span>Chart link</span></button><button class="airport-card" onclick="selectAirport('LHSM')"><strong>LHSM</strong><span>Chart link</span></button></div></div>
+      <div class="chart-viewer"><div class="chart-header"><div><span class="chip" id="selectedAirportChip">LHKA</span><h3 id="selectedAirportName">Kalocsa Airfield</h3></div><a id="chartOpenLink" class="primary-link" target="_blank" href="https://storage.hungarocontrol.hu/media/958/VFR_LHKA_print_5n.pdf?_gl=1*1rt6n80*_gcl_au*MjQ1MTUxNTQzLjE3Nzc1NTU3MjQ.">Open chart PDF</a></div><iframe id="chartFrame" src="https://storage.hungarocontrol.hu/media/958/VFR_LHKA_print_5n.pdf?_gl=1*1rt6n80*_gcl_au*MjQ1MTUxNTQzLjE3Nzc1NTU3MjQ."></iframe><p class="fineprint">Always verify charts with the official VFR Manual before flight.</p></div></div>
+      <div id="briefingFiles" class="tabs"><button class="tab active" data-category="all">All Files</button><button class="tab" data-category="Preparation">Preparation</button><button class="tab" data-category="Exercises">Exercises</button><button class="tab" data-category="Airfields">Airfields</button><button class="tab" data-category="Aircraft/G1000">Aircraft</button><button class="tab" data-category="Modular CPL">CPL</button><button class="tab" data-category="ATO Certificate">ATO Certificate</button></div>
+      <div id="briefingsEmpty" class="empty-state">Login as an approved member to view uploaded briefing files.</div><div id="briefingGrid" class="file-grid"></div>
+    </section>
 
-<section id="admin" class="page">
- <div class="section-head"><div><h2>Admin Workspace</h2><p>Manage schedule, students, users and briefing files.</p></div></div>
- <div class="admin-grid">
-  <form id="scheduleForm" class="card"><h3>Add Flight</h3><input name="date" type="date" required><input name="start_time" type="time" required><input name="length_hours" type="number" min="0.5" max="4" step="0.5" placeholder="Length 0.5–4 hrs" required><input name="student" placeholder="Student name" required><input name="instructor" value="Avi Oren" required><select name="aircraft_type"><option>C152</option><option>C172</option></select><input name="aircraft_number" placeholder="Aircraft # / registration" required><input name="notes" placeholder="Notes"><button class="primary" type="submit">Add to schedule</button></form>
-  <form id="studentForm" class="card"><h3>Add Student</h3><input name="name" placeholder="Full name" required><input name="email" placeholder="Email"><select name="program"><option>PPL(A)</option><option>Hour Building</option><option>Modular CPL(A)</option></select><input name="notes" placeholder="Notes"><button class="primary" type="submit">Add student</button></form>
-  <form id="briefingForm" class="card"><h3>Upload Briefing / ATO Certificate</h3><input name="title" placeholder="Briefing title" required><select name="category"><option>Preparation</option><option>Exercises</option><option>Airfields</option><option>Aircraft/G1000</option><option>Modular CPL</option><option>ATO Certificate</option></select><input name="file" type="file" required><button class="primary" type="submit">Upload file</button></form>
-  <div class="card"><h3>User Approvals</h3><button class="primary" onclick="loadUsers()">Load users</button><div id="usersList"></div></div>
- </div>
-</section>
-</main></div>
+    <section id="weather" class="page">
+      <div class="section-header"><div><h2>Weather</h2><p>Aviation weather hub for training preparation.</p></div><button class="primary-button" onclick="loadWeather()">Load public METAR</button></div>
+      <div class="weather-grid"><article class="weather-card"><h3>Quick METAR check</h3><p>Public browser fetch from aviationweather.gov may be blocked by CORS on some browsers. If blocked, use the official links below or backend integration later.</p><input id="weatherStations" value="LHBP,LHPP,LHSM,LHPA,LHKE"><button class="primary-button" onclick="loadWeather()">Load</button></article><article class="weather-card"><h3>HungaroMet Aviation Weather</h3><p>Login details will help only if we build a secure backend weather connector. Do not store credentials in frontend JavaScript. The backend can log in server-side and show METAR/TAF/SIGMET if the site terms allow automated access.</p><a class="primary-link" target="_blank" href="https://aviation.met.hu/en/taviratok/index.php?friss=18:11:10">Open aviation.met.hu telegrams</a></article></div>
+      <div class="weather-info-grid"><article><h3>Student briefing flow</h3><ol><li>Check METAR/TAF for departure, destination and alternates.</li><li>Check wind vs runway and student crosswind limits.</li><li>Review visibility, ceiling, temperature/dew point spread.</li><li>Check significant weather, radar and frontal activity.</li><li>Make a clear GO / NO-GO / DELAY decision.</li></ol></article><article><h3>Nearby weather stations</h3><p>For Kalocsa area training, suggested stations may include LHBP, LHPP, LHSM, LHPA and LHKE. Adjust based on route.</p></article></div>
+      <div id="weatherOutput" class="weather-output empty-state">Weather output will appear here.</div>
+    </section>
 
-<div class="bottom"><button class="mobile-nav active" data-page="dashboard">Home</button><button class="mobile-nav" data-page="schedule">Schedule</button><button class="mobile-nav" data-page="briefingroom">Brief</button><button class="mobile-nav" data-page="weather">Weather</button></div>
-<div id="loginModal" class="modal hidden"><div class="modal-card"><button class="close" onclick="closeLoginModal()">×</button><h2>Member Access</h2><p>Login to view schedule and briefing files. New users require admin approval.</p><div class="auth-grid"><form id="loginForm"><h3>Login</h3><input name="email" type="email" placeholder="Email" required><input name="password" type="password" placeholder="Password" required><button class="primary" type="submit">Login</button></form><form id="signupForm"><h3>Sign up</h3><input name="email" type="email" placeholder="Email" required><input name="password" type="password" placeholder="Password" required><button class="ghost" type="submit">Request access</button></form></div><p class="fine">Google login placeholder for future backend integration.</p></div></div>
-<div id="toast" class="toast hidden"></div><footer>Version 0.3.0 Bright UI · Avi Oren Aviation</footer><script src="script.js"></script>
+    <section id="aircraft" class="page">
+      <div class="section-header"><div><h2>Aircraft</h2><p>C152 / C172 Diesel / Garmin G1000 student preparation module.</p></div></div>
+      <div class="aircraft-hero"><div><span class="chip">Study before first flight</span><h2>Know what you are looking at before the engine starts.</h2><p>This module teaches the aircraft, cockpit, G1000 scan, flight data and preparation habits. Videos are external references; actual procedures must follow your aircraft POH, checklist and ATO procedures.</p></div><div class="cockpit-panel"><div class="pfd">PFD</div><div class="mfd">MFD</div><div class="engine">ENG</div></div></div>
+      <div class="study-grid"><article class="study-card"><div class="study-image c172"></div><h3>C172 Diesel aircraft</h3><p>Focus areas: diesel engine management, electrical system, fuel checks, engine indications, limitations, abnormal indications and normal checklist discipline.</p><ul><li>Understand what the engine instruments are telling you.</li><li>Know the difference between checklist reading and flow discipline.</li><li>Build habit patterns for fuel, electrical and annunciator checks.</li></ul></article><article class="study-card"><div class="study-image g1000"></div><h3>Garmin G1000 cockpit</h3><p>The G1000 is not just a screen; it is the main aircraft information system. Students must understand PFD/MFD roles, CDI source, active leg, map range and engine page.</p><ul><li>PFD: attitude, IAS, ALT, VSI, HSI, CDI, bugs.</li><li>MFD: map, flight plan, engine data, nearest airports.</li><li>Always verify selected NAV source before navigation tasks.</li></ul></article><article class="study-card"><div class="study-image scan"></div><h3>Instrument scan</h3><p>Good scan prevents fixation. Primary flight data comes first, navigation second, automation last.</p><ul><li>Look outside in VFR; use instruments to confirm.</li><li>Keep airspeed, attitude and altitude stable before programming.</li><li>Do not let the G1000 become the flight instructor.</li></ul></article><article class="study-card"><div class="study-image data"></div><h3>Flight data review</h3><p>Post-flight data helps debrief accurately: route tracking, altitude keeping, speed control, circuit spacing and lesson objectives.</p><ul><li>Use data to improve next lesson planning.</li><li>Identify trends, not isolated small mistakes.</li><li>Connect data review to student self-assessment.</li></ul></article></div>
+      <h3 class="subheading">Suggested video references</h3><div class="video-grid"><a target="_blank" href="https://www.youtube.com/watch?v=edcojCQpQyI"><strong>G1000 overview / basic functions</strong><span>Good for screen familiarization.</span></a><a target="_blank" href="https://www.youtube.com/watch?v=4cwKZ0Q_Xug"><strong>C172 preflight tutorial</strong><span>Useful for pre-flight walkaround mindset.</span></a><a target="_blank" href="https://www.youtube.com/watch?v=npI0Pt9B5nY"><strong>C172 G1000 run-up</strong><span>Useful for checklist and engine indications.</span></a></div>
+    </section>
+
+    <section id="modular" class="page">
+      <div class="section-header"><div><h2>Modular CPL(A) Roadmap</h2><p>A scrolling roadmap style: flexible, stage-by-stage training with pauses between modules when needed.</p></div></div>
+      <div class="scroll-roadmap">
+        <div class="road-line"></div>
+        <article class="road-item"><div class="road-dot">1</div><div class="road-content"><span>Start gate</span><h3>Entry & personal plan</h3><p>Review licence history, medical, logbook, budget, availability, work/family constraints and target timeline. The training plan is built around the student’s real schedule.</p></div></article>
+        <article class="road-item"><div class="road-dot">2</div><div class="road-content"><span>Foundation</span><h3>PPL(A)</h3><p>For PPL students: complete core handling, circuits, solo, navigation and skill-test preparation. For students who already hold PPL, verify standards before moving forward.</p></div></article>
+        <article class="road-item"><div class="road-dot">3</div><div class="road-content"><span>Experience</span><h3>Hour building</h3><p>Structured PIC flights, cross-country planning, weather judgement, radio confidence and real operational discipline. Not just “collecting hours”.</p></div></article>
+        <article class="road-item"><div class="road-dot">4</div><div class="road-content"><span>Theory</span><h3>ATPL / CPL theoretical knowledge</h3><p>Complete the required theoretical knowledge path according to the student’s target authority and licence plan. Progress should support, not block, the flight schedule.</p></div></article>
+        <article class="road-item"><div class="road-dot">5</div><div class="road-content"><span>Prerequisites</span><h3>Medical, language, night / additional elements</h3><p>Confirm Class 1 medical planning, language requirements, night qualification and any required experience gates before CPL training starts.</p></div></article>
+        <article class="road-item"><div class="road-dot">6</div><div class="road-content"><span>Commercial standard</span><h3>CPL modular flight training</h3><p>Commercial handling accuracy, navigation discipline, diversion, emergency handling, performance, TEM and professional cockpit behaviour.</p></div></article>
+        <article class="road-item"><div class="road-dot">7</div><div class="road-content"><span>Readiness</span><h3>Mock test & weak-area recovery</h3><p>Mock profile, oral preparation, emergency decision making and focused correction of weak areas before examiner recommendation.</p></div></article>
+        <article class="road-item"><div class="road-dot">8</div><div class="road-content"><span>Final</span><h3>CPL(A) skill test</h3><p>Final examiner assessment when ATO confirms all prerequisites, training records and standardization requirements are complete.</p></div></article>
+      </div>
+      <div class="roadmap-note"><h3>Important</h3><p>This is a planning roadmap, not a legal checklist. Exact hour requirements and prerequisites must be verified against current EASA Part-FCL, the ATO training manual and the student’s previous experience.</p></div>
+    </section>
+
+    <section id="admin" class="page">
+      <div class="section-header"><div><h2>Admin Workspace</h2><p>Only Avi admin account. Manage schedule, students, users and briefing files.</p></div></div>
+      <div class="admin-grid"><form id="scheduleForm" class="admin-card"><h3>Add Flight</h3><input name="date" type="date" required><input name="start_time" type="time" required><input name="length_hours" type="number" min="0.5" max="4" step="0.5" placeholder="Length 0.5–4 hrs" required><input name="student" placeholder="Student name" required><input name="instructor" value="Avi Oren" required><select name="aircraft_type"><option>C152</option><option>C172</option></select><input name="aircraft_number" placeholder="Aircraft number / registration" required><input name="notes" placeholder="Notes"><button class="primary-button" type="submit">Add to schedule</button></form><form id="studentForm" class="admin-card"><h3>Add Student</h3><input name="name" placeholder="Full name" required><input name="email" placeholder="Email"><select name="program"><option>PPL(A)</option><option>Hour Building</option><option>Modular CPL(A)</option></select><input name="notes" placeholder="Notes"><button class="primary-button" type="submit">Add student</button></form><form id="briefingForm" class="admin-card"><h3>Upload Briefing / ATO Certificate</h3><input name="title" placeholder="Briefing title" required><select name="category"><option>Preparation</option><option>Exercises</option><option>Airfields</option><option>Aircraft/G1000</option><option>Modular CPL</option><option>ATO Certificate</option></select><input name="file" type="file" required><button class="primary-button" type="submit">Upload file</button></form><div class="admin-card"><h3>User Approvals</h3><button class="primary-button" onclick="loadUsers()">Load users</button><div id="usersList" class="user-list"></div></div></div>
+    </section>
+  </main>
+</div>
+<div class="bottom-nav"><button class="mobile-nav active" data-page="dashboard">Home</button><button class="mobile-nav" data-page="schedule">Schedule</button><button class="mobile-nav" data-page="briefingroom">Brief</button><button class="mobile-nav" data-page="weather">Weather</button></div>
+<div id="loginModal" class="modal hidden"><div class="modal-card"><button class="close" onclick="closeLoginModal()">×</button><h2>Member Access</h2><p>Login to view schedule and briefing files. New users require admin approval.</p><div class="auth-grid"><form id="loginForm"><h3>Login</h3><input name="email" type="email" placeholder="Email" required><input name="password" type="password" placeholder="Password" required><button class="primary-button" type="submit">Login</button></form><form id="signupForm"><h3>Sign up</h3><input name="email" type="email" placeholder="Email" required><input name="password" type="password" placeholder="Password" required><button class="ghost-button" type="submit">Request access</button></form></div><div class="oauth-note">Google login placeholder for future backend integration.</div></div></div>
+<div id="toast" class="toast hidden"></div><footer class="version">Version 0.4.0 · Avi Oren Aviation</footer><script src="script.js"></script>
 </body></html>

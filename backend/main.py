@@ -1,11 +1,12 @@
 
-import os, sqlite3, shutil, uuid, datetime
+import os, sqlite3, shutil, uuid, datetime, re
 from typing import Optional
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from passlib.context import CryptContext
 import jwt
+import requests
 
 APP_NAME = "Avi Oren Aviation"
 JWT_SECRET = os.getenv("JWT_SECRET", "change-this-secret-before-production")
@@ -250,6 +251,73 @@ def list_briefings(user=Depends(require_member)):
     rows = [dict(r) for r in conn.execute("SELECT * FROM briefings ORDER BY uploaded_at DESC").fetchall()]
     conn.close()
     return rows
+
+
+@app.get("/api/weather/aviation-met")
+def aviation_met_connector(user=Depends(require_member)):
+    """
+    Secure server-side aviation.met.hu connector.
+
+    Required Render environment variables:
+    - AVIATION_MET_USERNAME
+    - AVIATION_MET_PASSWORD
+
+    Optional if the website login form needs adjustment:
+    - AVIATION_MET_LOGIN_URL
+    - AVIATION_MET_DATA_URL
+    - AVIATION_MET_USER_FIELD
+    - AVIATION_MET_PASS_FIELD
+    """
+    username = os.getenv("AVIATION_MET_USERNAME")
+    password = os.getenv("AVIATION_MET_PASSWORD")
+    login_url = os.getenv("AVIATION_MET_LOGIN_URL", "https://aviation.met.hu/en/login.php")
+    data_url = os.getenv("AVIATION_MET_DATA_URL", "https://aviation.met.hu/en/taviratok/index.php")
+
+    if not username or not password:
+        raise HTTPException(400, "Missing AVIATION_MET_USERNAME or AVIATION_MET_PASSWORD in Render environment variables.")
+
+    try:
+        session = requests.Session()
+        session.headers.update({
+            "User-Agent": "AviOrenAviationTrainingPortal/1.0",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        })
+
+        login_page = session.get(login_url, timeout=20)
+        login_page.raise_for_status()
+
+        payload = {}
+        for name, value in re.findall(r'<input[^>]+type=["\\\']hidden["\\\'][^>]*name=["\\\']([^"\\\']+)["\\\'][^>]*value=["\\\']([^"\\\']*)["\\\']', login_page.text, re.I):
+            payload[name] = value
+
+        user_field = os.getenv("AVIATION_MET_USER_FIELD", "username")
+        pass_field = os.getenv("AVIATION_MET_PASS_FIELD", "password")
+        payload[user_field] = username
+        payload[pass_field] = password
+
+        auth = session.post(login_url, data=payload, timeout=20, allow_redirects=True)
+        auth.raise_for_status()
+
+        data = session.get(data_url, timeout=20)
+        data.raise_for_status()
+
+        text = re.sub(r"<script.*?</script>", "", data.text, flags=re.S | re.I)
+        text = re.sub(r"<style.*?</style>", "", text, flags=re.S | re.I)
+        text = re.sub(r"<[^>]+>", " ", text)
+        text = re.sub(r"\\s+", " ", text).strip()
+
+        if len(text) < 40:
+            raise HTTPException(502, "Logged in but no readable aviation weather text was extracted.")
+
+        return {"source": "aviation.met.hu", "data_url": data_url, "text": text[:12000]}
+
+    except requests.HTTPError as e:
+        raise HTTPException(502, f"Aviation.met.hu HTTP error: {str(e)}")
+    except requests.RequestException as e:
+        raise HTTPException(502, f"Aviation.met.hu connection error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(500, f"Aviation.met.hu connector error: {str(e)}")
+
 
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
