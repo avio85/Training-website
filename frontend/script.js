@@ -1078,6 +1078,11 @@ const defaultWaveSchedule = [
   }
 ];
 let waveSchedule = [];
+const SCHEDULE_WAVE_VERSION = "0.1.19";
+if(localStorage.getItem("scheduleWaveVersion") !== SCHEDULE_WAVE_VERSION){
+  localStorage.removeItem("waveScheduleDraft");
+  localStorage.setItem("scheduleWaveVersion", SCHEDULE_WAVE_VERSION);
+}
 
 const waveDays = [
   {date:"2026-05-03", label:"May 3"},
@@ -1110,7 +1115,7 @@ async function loadSchedule(showErrors=true){
   try{
     const res = await fetch("/api/wave-schedule", {headers: authHeaders()});
     const data = await res.json();
-    if(res.ok && Array.isArray(data.flights)){
+    if(res.ok && Array.isArray(data.flights) && data.flights.length > 0){
       waveSchedule = data.flights;
     }else{
       waveSchedule = JSON.parse(JSON.stringify(defaultWaveSchedule));
