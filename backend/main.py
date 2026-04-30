@@ -253,6 +253,18 @@ def list_briefings(user=Depends(require_member)):
     return rows
 
 
+
+@app.get("/api/weather/connector-status")
+def aviation_met_connector_status(user=Depends(require_member)):
+    return {
+        "has_username": bool(os.getenv("AVIATION_MET_USERNAME")),
+        "has_password": bool(os.getenv("AVIATION_MET_PASSWORD")),
+        "login_url": os.getenv("AVIATION_MET_LOGIN_URL", "https://aviation.met.hu/en/login.php"),
+        "data_url": os.getenv("AVIATION_MET_DATA_URL", "https://aviation.met.hu/en/taviratok/index.php?friss=18:11:10"),
+        "user_field": os.getenv("AVIATION_MET_USER_FIELD", "username"),
+        "pass_field": os.getenv("AVIATION_MET_PASS_FIELD", "password")
+    }
+
 @app.get("/api/weather/aviation-met")
 def aviation_met_connector(user=Depends(require_member)):
     """
@@ -271,7 +283,7 @@ def aviation_met_connector(user=Depends(require_member)):
     username = os.getenv("AVIATION_MET_USERNAME")
     password = os.getenv("AVIATION_MET_PASSWORD")
     login_url = os.getenv("AVIATION_MET_LOGIN_URL", "https://aviation.met.hu/en/login.php")
-    data_url = os.getenv("AVIATION_MET_DATA_URL", "https://aviation.met.hu/en/taviratok/index.php")
+    data_url = os.getenv("AVIATION_MET_DATA_URL", "https://aviation.met.hu/en/taviratok/index.php?friss=18:11:10")
 
     if not username or not password:
         raise HTTPException(400, "Missing AVIATION_MET_USERNAME or AVIATION_MET_PASSWORD in Render environment variables.")
