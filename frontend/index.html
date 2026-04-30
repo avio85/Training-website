@@ -2,155 +2,263 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Avi Oren Aviation</title>
-  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">Avi Oren Aviation</div>
-    <nav>
-      <button onclick="showPage('home')">Home</button>
-      <button onclick="showPage('airfields')">Airfields</button>
-      <button onclick="showPage('aircraft')">Aircraft</button>
-      <button onclick="showPage('modular')">Modular Training</button>
-      <button onclick="showPage('members')">Members</button>
-      <button onclick="showPage('admin')">Admin</button>
-      <button onclick="logout()">Logout</button>
-    </nav>
-  </header>
-
-  <main>
-    <section id="home" class="page active hero">
-      <h1>Pilot Training Management Portal</h1>
-      <p>For Israeli trainees flying under an EASA ATO in Hungary.</p>
-      <div class="cards">
-        <div class="card"><h3>Home base</h3><p>LHKA training operations</p></div>
-        <div class="card"><h3>Aircraft</h3><p>C152 / C172 Diesel with G1000</p></div>
-        <div class="card"><h3>Access</h3><p>Airfield, aircraft and modular course info are open to guests. Briefings and schedule are members-only.</p></div>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand-block">
+        <div class="brand-mark">AO</div>
+        <div>
+          <div class="brand-title">Avi Oren</div>
+          <div class="brand-subtitle">Aviation Training</div>
+        </div>
       </div>
-    </section>
 
-    <section id="airfields" class="page">
-      <h2>Airfield Briefings</h2>
-      <p class="notice">Guest-accessible. Always verify current data with official sources before flight.</p>
-      <div class="cards">
-        <div class="card"><h3>LHKA</h3><p>Home airfield briefing, circuit procedures, local area, arrival/departure awareness.</p></div>
-        <div class="card"><h3>LHJK</h3><p>Alternate / training destination briefing.</p></div>
-        <div class="card"><h3>LHPP</h3><p>Cross-country training destination briefing.</p></div>
-        <div class="card"><h3>LHSM</h3><p>Cross-country training destination briefing.</p></div>
+      <nav class="side-nav">
+        <button class="nav-item active" data-page="dashboard">Dashboard</button>
+        <button class="nav-item" data-page="schedule">Schedule</button>
+        <button class="nav-item" data-page="briefings">Briefings</button>
+        <button class="nav-item" data-page="airfields">Airfields</button>
+        <button class="nav-item" data-page="aircraft">Aircraft</button>
+        <button class="nav-item" data-page="modular">Modular CPL</button>
+        <button class="nav-item admin-only hidden" data-page="admin">Admin</button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div id="loginStatus" class="status-pill">Guest mode</div>
+        <button id="logoutBtn" class="ghost-button hidden">Logout</button>
       </div>
-      <h3>Useful links</h3>
-      <ul>
-        <li><a href="https://ais-en.hungarocontrol.hu/" target="_blank">HungaroControl AIS / AIP</a></li>
-        <li><a href="https://netbriefing.hu/" target="_blank">NetBriefing Hungary</a></li>
-        <li><a href="https://www.met.hu/en/idojaras/repulesmeteorologia/" target="_blank">Hungarian aviation weather</a></li>
-      </ul>
-    </section>
+    </aside>
 
-    <section id="aircraft" class="page">
-      <h2>Aircraft & Instruments</h2>
-      <p class="notice">Guest-accessible overview.</p>
-      <div class="cards">
-        <div class="card"><h3>C172 Diesel</h3><p>Normal procedures, diesel engine considerations, fuel, limitations and performance briefing placeholders.</p></div>
-        <div class="card"><h3>Garmin G1000</h3><p>PFD, MFD, engine indications, flight data, navigation sources and basic scan briefing placeholders.</p></div>
-        <div class="card"><h3>Flight Data</h3><p>How to read flight time, airborne time, engine data and post-flight review information.</p></div>
-      </div>
-    </section>
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow">EASA ATO · Hungary · LHKA</div>
+          <h1 id="pageTitle">Dashboard</h1>
+        </div>
+        <button class="primary-button" onclick="openLoginModal()">Login / Sign up</button>
+      </header>
 
-    <section id="modular" class="page">
-      <h2>Modular Training Course</h2>
-      <p class="notice">Guest-accessible overview.</p>
-      <div class="card">
-        <h3>PPL(A), Hour Building, Modular CPL(A)</h3>
-        <p>This page will explain the path, hour requirements, expected documents, progress tracking and preparation standards for each student track.</p>
-      </div>
-    </section>
+      <section id="dashboard" class="page active">
+        <div class="hero-card">
+          <div>
+            <span class="chip">Pilot Training Portal</span>
+            <h2>One place for schedule, briefings, aircraft and airfield preparation.</h2>
+            <p>Public information is open to guests. Flight schedule and briefing files are available for approved members only.</p>
+          </div>
+          <div class="hero-panel">
+            <div class="instrument-value">LHKA</div>
+            <div class="instrument-label">Home base</div>
+            <div class="mini-grid">
+              <span>C172</span><span>G1000</span><span>C152</span><span>VFR</span>
+            </div>
+          </div>
+        </div>
 
-    <section id="members" class="page">
-      <h2>Members Area</h2>
-      <div class="split">
-        <div class="card">
+        <div class="metric-grid">
+          <article class="metric-card">
+            <span>Today</span>
+            <strong id="todayFlights">—</strong>
+            <p>Scheduled flights</p>
+          </article>
+          <article class="metric-card">
+            <span>Aircraft</span>
+            <strong>2</strong>
+            <p>C152 / C172</p>
+          </article>
+          <article class="metric-card">
+            <span>Students</span>
+            <strong>6</strong>
+            <p>Demo trainees loaded</p>
+          </article>
+          <article class="metric-card">
+            <span>Access</span>
+            <strong>Members</strong>
+            <p>Schedule & files protected</p>
+          </article>
+        </div>
+
+        <div class="section-header">
+          <h3>Quick access</h3>
+        </div>
+        <div class="quick-grid">
+          <button onclick="showPage('schedule')">View Schedule</button>
+          <button onclick="showPage('briefings')">Open Briefings</button>
+          <button onclick="showPage('airfields')">Airfield Briefing</button>
+          <button onclick="showPage('aircraft')">Aircraft / G1000</button>
+        </div>
+      </section>
+
+      <section id="schedule" class="page">
+        <div class="section-header">
+          <div>
+            <h2>Training Schedule</h2>
+            <p>Members only. Timeline view for fast mobile use.</p>
+          </div>
+          <button class="primary-button" onclick="loadSchedule()">Refresh</button>
+        </div>
+        <div id="scheduleEmpty" class="empty-state">Login as an approved member to load the schedule.</div>
+        <div id="scheduleTimeline" class="timeline"></div>
+      </section>
+
+      <section id="briefings" class="page">
+        <div class="section-header">
+          <div>
+            <h2>Briefing Library</h2>
+            <p>Members only. Uploaded files grouped by category.</p>
+          </div>
+          <button class="primary-button" onclick="loadBriefings()">Refresh</button>
+        </div>
+        <div class="tabs">
+          <button class="tab active" data-category="all">All</button>
+          <button class="tab" data-category="Preparation">Preparation</button>
+          <button class="tab" data-category="Exercises">Exercises</button>
+          <button class="tab" data-category="Airfields">Airfields</button>
+          <button class="tab" data-category="Aircraft/G1000">Aircraft</button>
+          <button class="tab" data-category="Modular CPL">CPL</button>
+        </div>
+        <div id="briefingsEmpty" class="empty-state">Login as an approved member to view uploaded briefing files.</div>
+        <div id="briefingGrid" class="file-grid"></div>
+      </section>
+
+      <section id="airfields" class="page">
+        <div class="section-header">
+          <div>
+            <h2>Airfield Information</h2>
+            <p>Guest-accessible overview. Always verify current charts and procedures before flight.</p>
+          </div>
+        </div>
+        <div class="airfield-grid">
+          <article class="info-card home">
+            <span class="chip">Home base</span>
+            <h3>LHKA</h3>
+            <p>Kiskunlacháza training base. Add local circuit, reporting points, noise-sensitive areas and ground procedures here.</p>
+          </article>
+          <article class="info-card"><h3>LHJK</h3><p>Destination briefing placeholder for navigation and cross-country training.</p></article>
+          <article class="info-card"><h3>LHPP</h3><p>Destination briefing placeholder with arrival, runway, radio and local notes.</p></article>
+          <article class="info-card"><h3>LHSM</h3><p>Destination briefing placeholder with weather, alternates and route planning notes.</p></article>
+        </div>
+        <div class="link-panel">
+          <h3>Useful official links</h3>
+          <a target="_blank" href="https://ais-en.hungarocontrol.hu/">HungaroControl AIS / AIP</a>
+          <a target="_blank" href="https://netbriefing.hu/">NetBriefing Hungary</a>
+          <a target="_blank" href="https://www.met.hu/en/idojaras/repulesmeteorologia/">Hungarian Aviation Weather</a>
+        </div>
+      </section>
+
+      <section id="aircraft" class="page">
+        <div class="section-header">
+          <div>
+            <h2>Aircraft & Instruments</h2>
+            <p>Guest-accessible study overview for C152, C172 Diesel and Garmin G1000.</p>
+          </div>
+        </div>
+        <div class="systems-grid">
+          <article class="system-card"><span>01</span><h3>C172 Diesel</h3><p>Engine management, fuel, limitations, normal procedures and performance preparation.</p></article>
+          <article class="system-card"><span>02</span><h3>Garmin G1000</h3><p>PFD/MFD layout, nav sources, engine indications, FPL usage and scan management.</p></article>
+          <article class="system-card"><span>03</span><h3>Flight Data</h3><p>How to review flight time, engine data, airborne time and post-flight notes.</p></article>
+          <article class="system-card"><span>04</span><h3>C152</h3><p>Simple VFR trainer overview and aircraft-specific briefing placeholder.</p></article>
+        </div>
+      </section>
+
+      <section id="modular" class="page">
+        <div class="section-header">
+          <div>
+            <h2>Modular Training</h2>
+            <p>Guest-accessible overview for PPL(A), hour building and modular CPL(A).</p>
+          </div>
+        </div>
+        <div class="pathway">
+          <div class="step"><span>1</span><h3>PPL(A)</h3><p>Foundation training, solo, navigation, skill test preparation.</p></div>
+          <div class="step"><span>2</span><h3>Hour Building</h3><p>Structured route planning, PIC experience and professional habits.</p></div>
+          <div class="step"><span>3</span><h3>Modular CPL(A)</h3><p>Advanced handling, navigation accuracy, operational decision making and CPL skill test readiness.</p></div>
+        </div>
+      </section>
+
+      <section id="admin" class="page">
+        <div class="section-header">
+          <div>
+            <h2>Admin Workspace</h2>
+            <p>Only Avi admin account. Manage schedule, students, users and briefing files.</p>
+          </div>
+        </div>
+
+        <div class="admin-grid">
+          <form id="scheduleForm" class="admin-card">
+            <h3>Add Flight</h3>
+            <input name="date" type="date" required>
+            <input name="start_time" type="time" required>
+            <input name="length_hours" type="number" min="0.5" max="4" step="0.5" placeholder="Length 0.5–4 hrs" required>
+            <input name="student" placeholder="Student name" required>
+            <input name="instructor" value="Avi Oren" required>
+            <select name="aircraft_type"><option>C152</option><option>C172</option></select>
+            <input name="aircraft_number" placeholder="Aircraft number / registration" required>
+            <input name="notes" placeholder="Notes">
+            <button class="primary-button" type="submit">Add to schedule</button>
+          </form>
+
+          <form id="studentForm" class="admin-card">
+            <h3>Add Student</h3>
+            <input name="name" placeholder="Full name" required>
+            <input name="email" placeholder="Email">
+            <select name="program"><option>PPL(A)</option><option>Hour Building</option><option>Modular CPL(A)</option></select>
+            <input name="notes" placeholder="Notes">
+            <button class="primary-button" type="submit">Add student</button>
+          </form>
+
+          <form id="briefingForm" class="admin-card">
+            <h3>Upload Briefing</h3>
+            <input name="title" placeholder="Briefing title" required>
+            <select name="category"><option>Preparation</option><option>Exercises</option><option>Airfields</option><option>Aircraft/G1000</option><option>Modular CPL</option></select>
+            <input name="file" type="file" required>
+            <button class="primary-button" type="submit">Upload file</button>
+          </form>
+
+          <div class="admin-card">
+            <h3>User Approvals</h3>
+            <button class="primary-button" onclick="loadUsers()">Load users</button>
+            <div id="usersList" class="user-list"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="mobile-nav active" data-page="dashboard">Home</button>
+    <button class="mobile-nav" data-page="schedule">Schedule</button>
+    <button class="mobile-nav" data-page="briefings">Files</button>
+    <button class="mobile-nav" data-page="airfields">Info</button>
+  </div>
+
+  <div id="loginModal" class="modal hidden">
+    <div class="modal-card">
+      <button class="close" onclick="closeLoginModal()">×</button>
+      <h2>Member Access</h2>
+      <p>Login to view schedule and briefing files. New users require admin approval.</p>
+      <div class="auth-grid">
+        <form id="loginForm">
           <h3>Login</h3>
-          <form id="loginForm">
-            <input name="email" placeholder="Email" required>
-            <input name="password" type="password" placeholder="Password" required>
-            <button type="submit">Login</button>
-          </form>
-          <p class="small">Demo admin default: admin@avioren.local / ChangeMe123! — change this using Render env vars.</p>
-        </div>
-        <div class="card">
+          <input name="email" type="email" placeholder="Email" required>
+          <input name="password" type="password" placeholder="Password" required>
+          <button class="primary-button" type="submit">Login</button>
+        </form>
+        <form id="signupForm">
           <h3>Sign up</h3>
-          <form id="signupForm">
-            <input name="email" placeholder="Email" required>
-            <input name="password" type="password" placeholder="Password" required>
-            <button type="submit">Request member access</button>
-          </form>
-        </div>
-      </div>
-
-      <div class="card">
-        <h3>Training Schedule</h3>
-        <button onclick="loadSchedule()">Load schedule</button>
-        <table id="scheduleTable"></table>
-      </div>
-
-      <div class="card">
-        <h3>Briefing Files</h3>
-        <button onclick="loadBriefings()">Load briefing files</button>
-        <div id="briefingsList"></div>
-      </div>
-    </section>
-
-    <section id="admin" class="page">
-      <h2>Admin Panel</h2>
-      <p>Only Avi Oren admin account should access this area.</p>
-
-      <div class="card">
-        <h3>Add Schedule Entry</h3>
-        <form id="scheduleForm">
-          <input name="date" type="date" required>
-          <input name="start_time" type="time" required>
-          <input name="length_hours" type="number" min="0.5" max="4" step="0.5" placeholder="Length 0.5-4 hrs" required>
-          <input name="student" placeholder="Student" required>
-          <input name="instructor" value="Avi Oren" required>
-          <select name="aircraft_type"><option>C152</option><option>C172</option></select>
-          <input name="aircraft_number" placeholder="Aircraft # / registration" required>
-          <input name="notes" placeholder="Notes">
-          <button type="submit">Add schedule</button>
+          <input name="email" type="email" placeholder="Email" required>
+          <input name="password" type="password" placeholder="Password" required>
+          <button class="ghost-button" type="submit">Request access</button>
         </form>
       </div>
+      <div class="oauth-note">Google login placeholder: ready for future backend integration.</div>
+    </div>
+  </div>
 
-      <div class="card">
-        <h3>Add Student</h3>
-        <form id="studentForm">
-          <input name="name" placeholder="Name" required>
-          <input name="email" placeholder="Email">
-          <select name="program"><option>PPL(A)</option><option>Hour Building</option><option>Modular CPL(A)</option></select>
-          <input name="notes" placeholder="Notes">
-          <button type="submit">Add student</button>
-        </form>
-      </div>
-
-      <div class="card">
-        <h3>Upload Briefing File</h3>
-        <form id="briefingForm">
-          <input name="title" placeholder="Title" required>
-          <select name="category"><option>Preparation</option><option>Exercises</option><option>Airfields</option><option>Aircraft/G1000</option><option>Modular CPL</option></select>
-          <input name="file" type="file" required>
-          <button type="submit">Upload</button>
-        </form>
-      </div>
-
-      <div class="card">
-        <h3>User Approval</h3>
-        <button onclick="loadUsers()">Load users</button>
-        <div id="usersList"></div>
-      </div>
-    </section>
-  </main>
-
-  <footer>Version 0.1.0 Phase 2 Prototype · Avi Oren Aviation</footer>
+  <div id="toast" class="toast hidden"></div>
+  <footer class="version">Version 0.2.0 UI Refresh · Avi Oren Aviation</footer>
   <script src="script.js"></script>
 </body>
 </html>
