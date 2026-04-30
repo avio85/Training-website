@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Avi Oren Aviation</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Avi Oren Aviation</div>
+    <nav>
+      <button onclick="showPage('home')">Home</button>
+      <button onclick="showPage('airfields')">Airfields</button>
+      <button onclick="showPage('aircraft')">Aircraft</button>
+      <button onclick="showPage('modular')">Modular Training</button>
+      <button onclick="showPage('members')">Members</button>
+      <button onclick="showPage('admin')">Admin</button>
+      <button onclick="logout()">Logout</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="home" class="page active hero">
+      <h1>Pilot Training Management Portal</h1>
+      <p>For Israeli trainees flying under an EASA ATO in Hungary.</p>
+      <div class="cards">
+        <div class="card"><h3>Home base</h3><p>LHKA training operations</p></div>
+        <div class="card"><h3>Aircraft</h3><p>C152 / C172 Diesel with G1000</p></div>
+        <div class="card"><h3>Access</h3><p>Airfield, aircraft and modular course info are open to guests. Briefings and schedule are members-only.</p></div>
+      </div>
+    </section>
+
+    <section id="airfields" class="page">
+      <h2>Airfield Briefings</h2>
+      <p class="notice">Guest-accessible. Always verify current data with official sources before flight.</p>
+      <div class="cards">
+        <div class="card"><h3>LHKA</h3><p>Home airfield briefing, circuit procedures, local area, arrival/departure awareness.</p></div>
+        <div class="card"><h3>LHJK</h3><p>Alternate / training destination briefing.</p></div>
+        <div class="card"><h3>LHPP</h3><p>Cross-country training destination briefing.</p></div>
+        <div class="card"><h3>LHSM</h3><p>Cross-country training destination briefing.</p></div>
+      </div>
+      <h3>Useful links</h3>
+      <ul>
+        <li><a href="https://ais-en.hungarocontrol.hu/" target="_blank">HungaroControl AIS / AIP</a></li>
+        <li><a href="https://netbriefing.hu/" target="_blank">NetBriefing Hungary</a></li>
+        <li><a href="https://www.met.hu/en/idojaras/repulesmeteorologia/" target="_blank">Hungarian aviation weather</a></li>
+      </ul>
+    </section>
+
+    <section id="aircraft" class="page">
+      <h2>Aircraft & Instruments</h2>
+      <p class="notice">Guest-accessible overview.</p>
+      <div class="cards">
+        <div class="card"><h3>C172 Diesel</h3><p>Normal procedures, diesel engine considerations, fuel, limitations and performance briefing placeholders.</p></div>
+        <div class="card"><h3>Garmin G1000</h3><p>PFD, MFD, engine indications, flight data, navigation sources and basic scan briefing placeholders.</p></div>
+        <div class="card"><h3>Flight Data</h3><p>How to read flight time, airborne time, engine data and post-flight review information.</p></div>
+      </div>
+    </section>
+
+    <section id="modular" class="page">
+      <h2>Modular Training Course</h2>
+      <p class="notice">Guest-accessible overview.</p>
+      <div class="card">
+        <h3>PPL(A), Hour Building, Modular CPL(A)</h3>
+        <p>This page will explain the path, hour requirements, expected documents, progress tracking and preparation standards for each student track.</p>
+      </div>
+    </section>
+
+    <section id="members" class="page">
+      <h2>Members Area</h2>
+      <div class="split">
+        <div class="card">
+          <h3>Login</h3>
+          <form id="loginForm">
+            <input name="email" placeholder="Email" required>
+            <input name="password" type="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+          </form>
+          <p class="small">Demo admin default: admin@avioren.local / ChangeMe123! — change this using Render env vars.</p>
+        </div>
+        <div class="card">
+          <h3>Sign up</h3>
+          <form id="signupForm">
+            <input name="email" placeholder="Email" required>
+            <input name="password" type="password" placeholder="Password" required>
+            <button type="submit">Request member access</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Training Schedule</h3>
+        <button onclick="loadSchedule()">Load schedule</button>
+        <table id="scheduleTable"></table>
+      </div>
+
+      <div class="card">
+        <h3>Briefing Files</h3>
+        <button onclick="loadBriefings()">Load briefing files</button>
+        <div id="briefingsList"></div>
+      </div>
+    </section>
+
+    <section id="admin" class="page">
+      <h2>Admin Panel</h2>
+      <p>Only Avi Oren admin account should access this area.</p>
+
+      <div class="card">
+        <h3>Add Schedule Entry</h3>
+        <form id="scheduleForm">
+          <input name="date" type="date" required>
+          <input name="start_time" type="time" required>
+          <input name="length_hours" type="number" min="0.5" max="4" step="0.5" placeholder="Length 0.5-4 hrs" required>
+          <input name="student" placeholder="Student" required>
+          <input name="instructor" value="Avi Oren" required>
+          <select name="aircraft_type"><option>C152</option><option>C172</option></select>
+          <input name="aircraft_number" placeholder="Aircraft # / registration" required>
+          <input name="notes" placeholder="Notes">
+          <button type="submit">Add schedule</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Add Student</h3>
+        <form id="studentForm">
+          <input name="name" placeholder="Name" required>
+          <input name="email" placeholder="Email">
+          <select name="program"><option>PPL(A)</option><option>Hour Building</option><option>Modular CPL(A)</option></select>
+          <input name="notes" placeholder="Notes">
+          <button type="submit">Add student</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Upload Briefing File</h3>
+        <form id="briefingForm">
+          <input name="title" placeholder="Title" required>
+          <select name="category"><option>Preparation</option><option>Exercises</option><option>Airfields</option><option>Aircraft/G1000</option><option>Modular CPL</option></select>
+          <input name="file" type="file" required>
+          <button type="submit">Upload</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>User Approval</h3>
+        <button onclick="loadUsers()">Load users</button>
+        <div id="usersList"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>Version 0.1.0 Phase 2 Prototype · Avi Oren Aviation</footer>
+  <script src="script.js"></script>
+</body>
+</html>
