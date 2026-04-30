@@ -254,39 +254,28 @@ function scrollToBriefingSection(id){
 
 async function loadAviationMet(){
   const out = document.getElementById("aviationMetOutput");
+  if(!out) return;
   out.textContent = "Requesting /api/weather/aviation-met ...";
   try{
     const res = await fetch("/api/weather/aviation-met", {headers: authHeaders()});
     const data = await res.json().catch(()=>({raw:"Non-JSON response"}));
     if(!res.ok){
-      out.textContent = "Connector failed (" + res.status + ").
-
-" + (data.detail || JSON.stringify(data, null, 2)) + "
-
-Check Render logs and verify AVIATION_MET_USERNAME / AVIATION_MET_PASSWORD / login field names.";
+      out.textContent =
+        "Connector failed (" + res.status + ").\n\n" +
+        (data.detail || JSON.stringify(data, null, 2)) +
+        "\n\nCheck Render logs and verify AVIATION_MET_USERNAME / AVIATION_MET_PASSWORD / login field names.";
       return;
     }
-    out.textContent = (data.text || JSON.stringify(data, null, 2));
+    out.textContent = data.text || JSON.stringify(data, null, 2);
   }catch(err){
-    out.textContent = "Could not reach backend connector.
-
-" + err.message + "
-
-Make sure the updated backend/main.py is deployed.";
+    out.textContent =
+      "Could not reach backend connector.\n\n" +
+      err.message +
+      "\n\nMake sure the updated backend/main.py is deployed.";
   }
 }
 
-renderPreloadedExercisePresentations();
 
-
-function showAircraftTopic(id){
-  document.querySelectorAll(".aircraft-topic").forEach(el=>el.classList.remove("active"));
-  const topic = document.getElementById("topic-" + id);
-  if(topic) topic.classList.add("active");
-  document.querySelectorAll(".study-menu button").forEach(btn=>btn.classList.remove("active"));
-  const btn = [...document.querySelectorAll(".study-menu button")].find(b=>b.getAttribute("onclick")?.includes("'" + id + "'"));
-  if(btn) btn.classList.add("active");
-}
 
 
 async function loadHomeWeather(){
@@ -296,16 +285,14 @@ async function loadHomeWeather(){
   if(!tempEl || !pressureEl || !windEl) return;
 
   try{
-    // LHKA / Kalocsa area approximate coordinates.
     const url = "https://api.open-meteo.com/v1/forecast?latitude=46.55&longitude=18.94&current=temperature_2m,surface_pressure,wind_speed_10m,wind_direction_10m&wind_speed_unit=kn&timezone=Europe%2FBudapest";
     const res = await fetch(url);
     const data = await res.json();
     if(!res.ok || !data.current) throw new Error("No weather data");
-
     const c = data.current;
     tempEl.textContent = Math.round(c.temperature_2m) + "°C";
     pressureEl.textContent = Math.round(c.surface_pressure) + " mb";
-    windEl.textContent = `${Math.round(c.wind_direction_10m)}° / ${Math.round(c.wind_speed_10m)} kt`;
+    windEl.textContent = Math.round(c.wind_direction_10m) + "° / " + Math.round(c.wind_speed_10m) + " kt";
   }catch(err){
     tempEl.textContent = "N/A";
     pressureEl.textContent = "N/A";

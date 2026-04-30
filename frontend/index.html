@@ -36,7 +36,7 @@
         </div>
         <div class="hero-visual"><div class="sun"></div><div class="cloud c1"></div><div class="cloud c2"></div><div class="runway"></div><div class="plane">✈</div></div>
       </div>
-      <div class="metric-grid"><article class="metric-card"><span>Project</span><strong>AoA</strong><p>EASA training support</p></article><article class="metric-card"><span>Base</span><strong>LHKA</strong><p>Kalocsa airfield</p></article><article class="metric-card"><span>Training</span><strong>Flexible</strong><p>Tailor-made progression</p></article><article class="metric-card"><span>Fleet</span><strong>C152 / C172</strong><p>Including G1000 study</p></article></div>
+      <div class="metric-grid homepage-weather-grid"><article class="metric-card"><span>Base</span><strong>LHKA</strong><p>Kalocsa airfield</p></article><article class="metric-card"><span>Current Temperature</span><strong id="homeTemp">—</strong><p>LHKA / Kalocsa area</p></article><article class="metric-card"><span>Current Pressure</span><strong id="homePressure">—</strong><p>mb / hPa</p></article><article class="metric-card"><span>Current Wind</span><strong id="homeWind">—</strong><p>direction / speed</p></article></div><div id="homeWeatherSource" class="weather-source-line">Weather source: Open-Meteo for Kalocsa/LHKA area. Always verify official aviation weather before flight.</div>
     </section>
 
     <section id="schedule" class="page">
@@ -392,7 +392,7 @@
 <div class="bottom-nav"><button class="mobile-nav active" data-page="dashboard">Home</button><button class="mobile-nav" data-page="schedule">Schedule</button><button class="mobile-nav" data-page="briefingroom">Brief</button><button class="mobile-nav" data-page="weather">Weather</button></div>
 <div id="loginModal" class="modal hidden"><div class="modal-card"><button class="close" onclick="closeLoginModal()">×</button><h2>Member Access</h2><p>Login to view schedule and briefing files. New users require admin approval.</p><div class="auth-grid"><form id="loginForm"><h3>Login</h3><input name="email" type="email" placeholder="Email" required><input name="password" type="password" placeholder="Password" required><button class="primary-button" type="submit">Login</button></form><form id="signupForm"><h3>Sign up</h3><input name="email" type="email" placeholder="Email" required><input name="password" type="password" placeholder="Password" required><button class="ghost-button" type="submit">Request access</button></form></div><div class="oauth-note">Google login placeholder for future backend integration.</div></div></div>
 <div id="toast" class="toast hidden"></div><footer class="version">
-    <span>Version 0.1.9</span>
+    <span>Version 0.1.10</span>
     <span>© Avi Oren Aviation · avi8or.easa@gmail.com</span>
   </footer><script src="script.js"></script>
 </body></html>
