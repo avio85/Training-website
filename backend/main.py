@@ -134,9 +134,21 @@ def get_current_user(request: Request):
         raise HTTPException(401, "Invalid token")
     conn = db()
     user = conn.execute("SELECT * FROM users WHERE id=?", (payload["sub"],)).fetchone()
-    conn.close()
     if not user:
-        raise HTTPException(401, "User not found")
+        email = payload.get("email", "").lower()
+        admin_email = os.getenv("ADMIN_EMAIL", "admin@avioren.local").lower()
+        if email == admin_email:
+            conn.execute("INSERT OR IGNORE INTO users VALUES (?,?,?,?,?,?,?)", (
+                payload["sub"], admin_email,
+                pwd_context.hash(os.getenv("ADMIN_PASSWORD", "ChangeMe123!")),
+                "admin", 1, "email", datetime.datetime.utcnow().isoformat()
+            ))
+            conn.commit()
+            user = conn.execute("SELECT * FROM users WHERE id=?", (payload["sub"],)).fetchone()
+        if not user:
+            conn.close()
+            raise HTTPException(401, "User not found. Please log out and log in again.")
+    conn.close()
     return user
 
 def require_admin(user=Depends(get_current_user)):

@@ -14,8 +14,6 @@
       <button class="nav-item active" data-page="dashboard">Dashboard</button>
       <button class="nav-item member-only hidden" data-page="schedule">Schedule</button>
       <button class="nav-item" data-page="briefingroom">Briefing Room</button>
-      <button class="nav-item" data-page="weather">Weather</button>
-      <button class="nav-item" data-page="aircraft">Aircraft</button>
       <button class="nav-item" data-page="modular">Modular CPL</button>
       <button class="nav-item admin-only hidden" data-page="admin">Admin</button>
       <button class="nav-item atpl-ai-link" data-page="atplai" onclick="handleAtplAiClick(event)">ATPL AI</button>
@@ -46,55 +44,70 @@
       <div id="scheduleEmpty" class="empty-state">Login as an approved member to load the schedule.</div><div id="scheduleTimeline" class="timeline"></div>
     </section>
 
+    
     <section id="briefingroom" class="page">
-      <div class="section-header"><div><h2>Briefing Room</h2><p>Airfield charts / דפיות, exercise briefings, ATO certificate and useful files.</p></div><button class="primary-button" onclick="loadBriefings()">Refresh files</button></div>
+      <div class="section-header">
+        <div>
+          <h2>Briefing Room</h2>
+          <p>Airports, weather, aircraft study, exercise presentations and certificates in one place.</p>
+        </div>
+      </div>
 
-        <div id="briefingFiles" class="tabs"><button class="tab active" data-category="all">All Files</button><button class="tab" data-category="Preparation">Preparation</button><button class="tab" data-category="Exercises">Exercises</button><button class="tab" data-category="Airfields">Airfields</button><button class="tab" data-category="Aircraft/G1000">Aircraft</button><button class="tab" data-category="Modular CPL">CPL</button><button class="tab" data-category="ATO Certificate">ATO Certificate</button></div>
+      <div class="briefing-room-tabs">
+        <button class="briefing-tab active" data-briefing-tab="airports" onclick="showBriefingTab('airports')">Airports</button>
+        <button class="briefing-tab" data-briefing-tab="weather" onclick="showBriefingTab('weather')">Weather</button>
+        <button class="briefing-tab" data-briefing-tab="aircraft" onclick="showBriefingTab('aircraft')">Aircraft</button>
+        <button class="briefing-tab" data-briefing-tab="exercises" onclick="showBriefingTab('exercises')">Exercises</button>
+        <button class="briefing-tab" data-briefing-tab="certificates" onclick="showBriefingTab('certificates')">Certificates</button>
+      </div>
 
-        <div class="briefing-layout"><div><h3>Airfield Charts</h3><div class="airport-list"><button class="airport-card active" onclick="selectAirport('LHKA')"><strong>LHKA</strong><span>Kalocsa</span></button><button class="airport-card" onclick="selectAirport('LHJK')"><strong>LHJK</strong><span>Chart link</span></button><button class="airport-card" onclick="selectAirport('LHPP')"><strong>LHPP</strong><span>Chart link</span></button><button class="airport-card" onclick="selectAirport('LHSM')"><strong>LHSM</strong><span>Chart link</span></button></div></div>
-      <div class="chart-viewer"><div class="chart-header"><div><span class="chip" id="selectedAirportChip">LHKA</span><h3 id="selectedAirportName">Kalocsa Airfield</h3></div><a id="googleMapsLink" class="ghost-button" target="_blank" href="https://www.google.com/maps/search/?api=1&query=LHKA%20Kalocsa%20Airfield">Google Maps</a>
-              <a id="chartOpenLink" class="primary-link" target="_blank" href="https://storage.hungarocontrol.hu/media/958/VFR_LHKA_print_5n.pdf?_gl=1*1rt6n80*_gcl_au*MjQ1MTUxNTQzLjE3Nzc1NTU3MjQ.">Open chart PDF</a></div><iframe id="chartFrame" src="https://storage.hungarocontrol.hu/media/958/VFR_LHKA_print_5n.pdf?_gl=1*1rt6n80*_gcl_au*MjQ1MTUxNTQzLjE3Nzc1NTU3MjQ."></iframe><p class="fineprint">Always verify charts with the official VFR Manual before flight.</p></div></div>
-      
-      
-        
-        
-        <div id="atoCertificatePanel" class="ato-certificate-panel">
-          <div class="cert-thumb">ATO</div>
+      <div id="briefingTab-airports" class="briefing-tab-panel active">
+        <div class="briefing-layout">
           <div>
-            <h3>ATO Certificate</h3>
-            <p>Best Fly Kft. · Reference HU.ATO.0082 · includes approval for CPL(A) modular and IR(A) modular/refresher courses.</p>
-            <a class="primary-link" target="_blank" href="assets/documents/Part_ORA_ATO_Certificate_HU_ATO_0082.pdf">Open certificate PDF</a>
+            <h3>Airport Charts / דפיות</h3>
+            <div class="airport-list">
+              <button class="airport-card active" onclick="selectAirport('LHKA')"><strong>LHKA</strong><span>Kalocsa</span></button>
+              <button class="airport-card" onclick="selectAirport('LHJK')"><strong>LHJK</strong><span>Chart page</span></button>
+              <button class="airport-card" onclick="selectAirport('LHPP')"><strong>LHPP</strong><span>AD 2.24 charts</span></button>
+              <button class="airport-card" onclick="selectAirport('LHSM')"><strong>LHSM</strong><span>Chart page</span></button>
+            </div>
+
+            <div class="vfr-chart-card">
+              <h3>Hungary VFR Chart</h3>
+              <p>ICAO 1:500 000 Hungary VFR chart.</p>
+              <a class="primary-link" target="_blank" href="https://storage.hungarocontrol.hu/media/1132/ICAO_500k_2025.pdf?_gl=1*fnep6k*_gcl_au*MjQ1MTUxNTQzLjE3Nzc1NTU3MjQ.">Open HU VFR chart PDF</a>
+            </div>
+          </div>
+
+          <div class="chart-viewer">
+            <div class="chart-header">
+              <div>
+                <span class="chip" id="selectedAirportChip">LHKA</span>
+                <h3 id="selectedAirportName">Kalocsa Airfield</h3>
+              </div>
+              <a id="googleMapsLink" class="ghost-button" target="_blank" href="https://www.google.com/maps/search/?api=1&query=LHKA%20Kalocsa%20Airfield">Google Maps</a>
+              <a id="chartOpenLink" class="primary-link" target="_blank" href="https://storage.hungarocontrol.hu/media/958/VFR_LHKA_print_5n.pdf?_gl=1*1rt6n80*_gcl_au*MjQ1MTUxNTQzLjE3Nzc1NTU3MjQ.">Open chart / AD page</a>
+            </div>
+            <iframe id="chartFrame" src="https://storage.hungarocontrol.hu/media/958/VFR_LHKA_print_5n.pdf?_gl=1*1rt6n80*_gcl_au*MjQ1MTUxNTQzLjE3Nzc1NTU3MjQ."></iframe>
+            <p class="fineprint">Always verify current charts with HungaroControl AIS before flight.</p>
           </div>
         </div>
+      </div>
 
-
-        <div id="briefingsEmpty" class="empty-state">Login as an approved member to view uploaded briefing files.</div><div id="briefingGrid" class="file-grid"></div>
-    </section>
-
-    
-      
-      <section id="weather" class="page">
+      <div id="briefingTab-weather" class="briefing-tab-panel">
         <div class="section-header">
           <div>
             <h2>Weather</h2>
-            <p>Airport weather briefing view. Choose an airport to view METAR, TAF and a plain-language weather summary.</p>
+            <p>Choose an airport to view METAR, TAF and general weather information.</p>
           </div>
           <button class="primary-button" onclick="loadSelectedAirportWeather()">Refresh</button>
         </div>
 
         <div class="airport-weather-tabs">
-          <button class="weather-airport-tab active" data-icao="LHKA" onclick="selectWeatherAirport('LHKA')">
-            <strong>LHKA</strong><span>Kalocsa</span>
-          </button>
-          <button class="weather-airport-tab" data-icao="LHBP" onclick="selectWeatherAirport('LHBP')">
-            <strong>LHBP</strong><span>Budapest</span>
-          </button>
-          <button class="weather-airport-tab" data-icao="LHPP" onclick="selectWeatherAirport('LHPP')">
-            <strong>LHPP</strong><span>Pécs-Pogány</span>
-          </button>
-          <button class="weather-airport-tab" data-icao="LHKE" onclick="selectWeatherAirport('LHKE')">
-            <strong>LHKE</strong><span>Kecskemét</span>
-          </button>
+          <button class="weather-airport-tab active" data-icao="LHKA" onclick="selectWeatherAirport('LHKA')"><strong>LHKA</strong><span>Kalocsa</span></button>
+          <button class="weather-airport-tab" data-icao="LHBP" onclick="selectWeatherAirport('LHBP')"><strong>LHBP</strong><span>Budapest</span></button>
+          <button class="weather-airport-tab" data-icao="LHPP" onclick="selectWeatherAirport('LHPP')"><strong>LHPP</strong><span>Pécs-Pogány</span></button>
+          <button class="weather-airport-tab" data-icao="LHKE" onclick="selectWeatherAirport('LHKE')"><strong>LHKE</strong><span>Kecskemét</span></button>
         </div>
 
         <div class="weather-airport-header">
@@ -102,52 +115,32 @@
             <span class="chip" id="weatherAirportChip">LHKA</span>
             <h3 id="weatherAirportName">Kalocsa Airfield</h3>
           </div>
-          <div class="weather-header-actions"><a id="metarTafLink" class="primary-link" target="_blank" href="https://metar-taf.com/metar/LHKA">Open METAR-TAF page</a></div>
+          <div class="weather-header-actions">
+            <a id="metarTafLink" class="primary-link" target="_blank" href="https://metar-taf.com/metar/LHKA">Open METAR-TAF page</a>
+          </div>
         </div>
 
         <div class="weather-cards-grid">
           <article class="weather-info-card">
             <h3>METAR</h3>
-            <pre id="airportMetarBox">Loading...</pre>
+            <pre id="airportMetarBox">Select an airport and press refresh.</pre>
           </article>
           <article class="weather-info-card">
             <h3>TAF</h3>
-            <pre id="airportTafBox">Loading...</pre>
+            <pre id="airportTafBox">Select an airport and press refresh.</pre>
           </article>
           <article class="weather-info-card wide">
             <h3>General weather information</h3>
-            <div id="airportWeatherSummary" class="weather-summary-list">Loading...</div>
+            <div id="airportWeatherSummary" class="weather-summary-list">Select an airport and press refresh.</div>
           </article>
         </div>
+      </div>
 
-        <div class="weather-disclaimer">
-          <h3>Important</h3>
-          <p>This page is for training preparation and situational awareness only. Always verify current official aviation weather and NOTAMs before flight.</p>
-        </div>
-      </section>
-
-
-
-    
-      <section id="aircraft" class="page">
+      <div id="briefingTab-aircraft" class="briefing-tab-panel">
         <div class="section-header">
           <div>
             <h2>Aircraft</h2>
-            <p>Study hub for the training aircraft, G1000 avionics, procedures, limitations and pre-flight preparation.</p>
-          </div>
-          <a class="primary-link" target="_blank" href="https://www.tmg-service.de/doc-download/manuals/POH%20C-172_2.0S_RS_2-6.pdf">Open C172 Diesel POH</a>
-        </div>
-
-        <div class="aircraft-hero">
-          <div>
-            <span class="chip">C172 Diesel / G1000</span>
-            <h2>Know the aircraft before you touch the starter.</h2>
-            <p>This page is not a replacement for the POH, checklist or instructor briefing. It is a study guide to help students understand what they are looking at in the aircraft.</p>
-          </div>
-          <div class="aircraft-panel-visual">
-            <div class="pfd-box">PFD</div>
-            <div class="mfd-box">MFD</div>
-            <div class="engine-strip">ENGINE</div>
+            <p>Study hub for the training aircraft, G1000 avionics, procedures and pre-flight preparation.</p>
           </div>
         </div>
 
@@ -162,90 +155,81 @@
 
           <div class="study-content">
             <article id="topic-c172" class="aircraft-topic active">
-              <h3>C172 Diesel — what the student must understand</h3>
-              <div class="two-column-study">
-                <div>
-                  <h4>Aircraft mindset</h4>
-                  <p>The C172 diesel aircraft is still a simple training aircraft, but the engine-management logic and engine indications require disciplined monitoring. Students should understand the limitations, normal operating ranges, checklist philosophy and abnormal indications.</p>
-                  <ul>
-                    <li>Use the POH for limitations, performance and emergency procedures.</li>
-                    <li>Understand fuel type and fuel quantity verification before every flight.</li>
-                    <li>Monitor engine indications continuously, not only during run-up.</li>
-                    <li>Know what is checklist memory, what is flow, and what must be read.</li>
-                  </ul>
-                </div>
-                <div class="study-illustration c172-diagram"><span>Fuel → Engine → Propeller → Performance</span></div>
-              </div>
+              <h3>C172 Diesel</h3>
+              <div class="topic-actions"><a class="primary-link" target="_blank" href="https://www.tmg-service.de/doc-download/manuals/POH%20C-172_2.0S_RS_2-6.pdf">Open C172 Diesel POH</a></div>
+              <p>The POH is the reference document. Use this section as a teaching guide before aircraft handling and cockpit preparation.</p>
+              <ul>
+                <li>Know aircraft limitations, normal procedures and emergency procedures from the POH.</li>
+                <li>Verify fuel type, fuel quantity, technical status and required documents before flight.</li>
+                <li>Monitor engine indications throughout the flight, not only during run-up.</li>
+                <li>Use checklist discipline: flow first, then checklist verification where appropriate.</li>
+              </ul>
             </article>
 
             <article id="topic-g1000" class="aircraft-topic">
-              <h3>Garmin G1000 — basic cockpit orientation</h3>
-              <div class="two-column-study">
-                <div>
-                  <h4>PFD / MFD split</h4>
-                  <p>The G1000 is powerful, but students must not become “screen managers” instead of pilots. First priority remains attitude, power, trim and lookout.</p>
-                  <ul>
-                    <li><b>PFD:</b> attitude, IAS, altitude, VSI, HSI/CDI, selected bugs and alerts.</li>
-                    <li><b>MFD:</b> moving map, engine indications, flight plan, nearest airports and system pages.</li>
-                    <li>Always confirm the CDI source: GPS / VOR / LOC.</li>
-                    <li>Verbalize active leg and navigation source before departure and before approach.</li>
-                  </ul>
-                </div>
-                <div class="study-illustration g1000-diagram"><span>PFD scan → outside → MFD cross-check</span></div>
-              </div>
+              <h3>Garmin G1000</h3>
+              <p>Understand the PFD/MFD split and never allow the avionics to replace basic flying priorities: attitude, power, trim, lookout.</p>
+              <ul>
+                <li><b>PFD:</b> attitude, IAS, altitude, VSI, HSI/CDI, bugs and alerts.</li>
+                <li><b>MFD:</b> moving map, engine indications, flight plan, nearest airports and system pages.</li>
+                <li>Always confirm CDI source: GPS / VOR / LOC.</li>
+                <li>Verbalize active leg and nav source before departure and before approach.</li>
+              </ul>
             </article>
 
             <article id="topic-preflight" class="aircraft-topic">
               <h3>Pre-flight preparation</h3>
-              <div class="two-column-study">
-                <div>
-                  <h4>Before coming to the aircraft</h4>
-                  <p>The aircraft briefing starts before the student arrives at the apron. The student should know the lesson objective, expected weather, mass and balance, fuel plan and aircraft documents.</p>
-                  <ul>
-                    <li>Weather and NOTAM check.</li>
-                    <li>Mass and balance and performance.</li>
-                    <li>Route, alternates and threat plan.</li>
-                    <li>Aircraft documents and technical status.</li>
-                  </ul>
-                </div>
-                <div class="study-illustration preflight-diagram"><span>Weather · NOTAM · Fuel · Mass & Balance · Performance</span></div>
-              </div>
+              <ul>
+                <li>Weather, NOTAMs and route threats.</li>
+                <li>Mass and balance, performance and fuel planning.</li>
+                <li>Aircraft documents, technical log and equipment status.</li>
+                <li>Lesson objective and expected student actions.</li>
+              </ul>
             </article>
 
             <article id="topic-data" class="aircraft-topic">
               <h3>Flight data review</h3>
-              <div class="two-column-study">
-                <div>
-                  <h4>How to learn after the flight</h4>
-                  <p>Flight data should be used to improve training. It helps compare planned vs actual route, altitude discipline, circuit shape, airborne time and engine trend awareness.</p>
-                  <ul>
-                    <li>Review route accuracy and airspace margins.</li>
-                    <li>Compare planned time vs actual time.</li>
-                    <li>Identify repeated deviations and brief the next exercise accordingly.</li>
-                    <li>Keep the tone educational, not punitive.</li>
-                  </ul>
-                </div>
-                <div class="study-illustration data-diagram"><span>Plan → Fly → Review → Improve</span></div>
-              </div>
+              <p>Use data for training improvement: route accuracy, altitude discipline, circuit shape, airborne time and engine trend awareness.</p>
             </article>
 
             <article id="topic-videos" class="aircraft-topic">
               <h3>Suggested study videos</h3>
-              <p>Use these as supporting material only. Instructor briefing and POH remain the reference.</p>
               <div class="video-list">
                 <a target="_blank" href="https://www.youtube.com/results?search_query=Garmin+G1000+basic+tutorial+PFD+MFD">Garmin G1000 basic tutorial — PFD/MFD orientation</a>
                 <a target="_blank" href="https://www.youtube.com/results?search_query=Cessna+172+diesel+engine+operation">Cessna 172 diesel engine operation overview</a>
                 <a target="_blank" href="https://www.youtube.com/results?search_query=Cessna+172+preflight+inspection+student+pilot">Cessna 172 pre-flight inspection</a>
-                <a target="_blank" href="https://www.youtube.com/results?search_query=Garmin+G1000+flight+plan+tutorial">Garmin G1000 flight plan basics</a>
               </div>
             </article>
           </div>
         </div>
-      </section>
+      </div>
+
+      <div id="briefingTab-exercises" class="briefing-tab-panel">
+        <div id="exercisePresentationsPanel" class="exercise-presentations-panel">
+          <div class="panel-heading">
+            <div>
+              <h3>Exercise Presentations</h3>
+              <p>PPL exercise presentations sorted by exercise number.</p>
+            </div>
+          </div>
+          <div id="exercisePresentationsGrid" class="exercise-strip-grid"></div>
+        </div>
+      </div>
+
+      <div id="briefingTab-certificates" class="briefing-tab-panel">
+        <div id="atoCertificatePanel" class="ato-certificate-panel">
+          <div class="cert-thumb">ATO</div>
+          <div>
+            <h3>ATO Certificate</h3>
+            <p>Best Fly Kft. · Reference HU.ATO.0082 · includes approval for CPL(A) modular and IR(A) modular/refresher courses.</p>
+            <a class="primary-link" target="_blank" href="assets/documents/Part_ORA_ATO_Certificate_HU_ATO_0082.pdf">Open certificate PDF</a>
+          </div>
+        </div>
+      </div>
+    </section>
 
 
-    
-      <section id="modular" class="page">
+<section id="modular" class="page">
         <div class="cpl-hero">
           <div>
             <span class="chip">CPL Modular</span>
@@ -402,7 +386,7 @@
     </section>
   </main>
 </div>
-<div class="bottom-nav"><button class="mobile-nav active" data-page="dashboard">Home</button><button class="mobile-nav member-only hidden" data-page="schedule">Schedule</button><button class="mobile-nav" data-page="briefingroom">Brief</button><button class="mobile-nav" data-page="weather">Weather</button>
+<div class="bottom-nav"><button class="mobile-nav active" data-page="dashboard">Home</button><button class="mobile-nav member-only hidden" data-page="schedule">Schedule</button><button class="mobile-nav" data-page="briefingroom">Brief</button>
     <button class="mobile-nav atpl-ai-mobile" data-page="atplai" onclick="handleAtplAiClick(event)">ATPL AI</button></div>
 <div id="loginModal" class="modal hidden"><div class="modal-card"><button class="close" onclick="closeLoginModal()">×</button><h2>Member Access</h2><p>Login to view schedule and briefing files. New users require admin approval.</p><div class="auth-grid"><form id="loginForm"><h3>Login</h3><input name="email" type="email" placeholder="Email" required><input name="password" type="password" placeholder="Password" required><button class="primary-button" type="submit">Login</button></form><form id="signupForm"><h3>Sign up</h3><input name="email" type="email" placeholder="Email" required><input name="password" type="password" placeholder="Password" required><button class="ghost-button" type="submit">Request access</button></form></div><div class="oauth-note">Google login placeholder for future backend integration.</div></div></div>
 
@@ -418,7 +402,7 @@
   </div>
 
   <div id="toast" class="toast hidden"></div><footer class="version">
-    <span>Version 0.1.15</span>
+    <span>Version 0.1.16</span>
     <span>© Avi Oren Aviation · avi8or.easa@gmail.com</span>
   </footer><script src="script.js"></script>
 </body></html>
