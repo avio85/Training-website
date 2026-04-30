@@ -1,7 +1,7 @@
 
-import os, sqlite3, shutil, uuid, datetime, re
+import os, sqlite3, shutil, uuid, datetime, re, json
 from typing import Optional
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, Request
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, Request, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from passlib.context import CryptContext
@@ -476,6 +476,41 @@ def get_notam(icao: str):
         "source": "manual",
         "notams": f"Automatic NOTAM retrieval was unavailable for {icao}. Open the official NOTAM search link and search manually. Always use an official briefing source before flight."
     }
+
+
+
+@app.get("/api/wave-schedule")
+def get_wave_schedule(user=Depends(require_member)):
+    conn = db()
+    row = conn.execute("SELECT value FROM app_settings WHERE key=?", ("wave_schedule",)).fetchone()
+    conn.close()
+    if row:
+        try:
+            return {"flights": json.loads(row["value"])}
+        except Exception:
+            pass
+    return {"flights": []}
+
+@app.post("/api/wave-schedule")
+def update_wave_schedule(payload: dict = Body(...), admin=Depends(require_admin)):
+    flights = payload.get("flights")
+    if not isinstance(flights, list):
+        raise HTTPException(400, "Invalid schedule payload")
+    allowed_dates = {f"2026-05-{day:02d}" for day in range(3, 11)}
+    allowed_times = {"0800", "1000", "1200", "1400", "1600"}
+    allowed_aircraft = {"C172", "C152"}
+    for flight in flights:
+        if flight.get("date") not in allowed_dates:
+            raise HTTPException(400, "Schedule is limited to May 3-10")
+        if flight.get("time") not in allowed_times:
+            raise HTTPException(400, "Invalid time slot")
+        if flight.get("aircraft") not in allowed_aircraft:
+            raise HTTPException(400, "Invalid aircraft")
+    conn = db()
+    conn.execute("INSERT OR REPLACE INTO app_settings VALUES (?,?)", ("wave_schedule", json.dumps(flights)))
+    conn.commit()
+    conn.close()
+    return {"ok": True, "flights": flights}
 
 
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")

@@ -425,3 +425,44 @@
 @media(max-width:980px){
   .notam-control-panel{flex-direction:column;align-items:stretch}
 }
+
+
+/* v0.1.18 wave schedule */
+.schedule-actions{display:flex;gap:10px;flex-wrap:wrap}
+.wave-legend{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 16px}
+.legend-pill{border-radius:999px;padding:7px 11px;font-weight:900;font-size:13px;border:1px solid var(--line)}
+.aircraft-c172{background:#e7f1ff;color:#075da8}
+.aircraft-c152{background:#fff3dc;color:#9a5b00}
+.instructor-avi{background:#edf7ff;color:#075da8}
+.instructor-amir{background:#effff3;color:#11823b}
+.exam-pill{background:#fff0f0;color:#b42318}
+.wave-schedule{display:grid;gap:14px}
+.wave-toolbar{display:flex;justify-content:space-between;gap:10px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:14px;box-shadow:var(--shadow);margin-bottom:10px}
+.view-note{color:var(--muted);font-weight:800}
+.wave-calendar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.wave-day-card{background:#fff;border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);overflow:hidden}
+.wave-day-header{background:linear-gradient(135deg,#0877d9,#34a8eb);color:#fff;padding:13px 16px;font-size:20px;font-weight:900}
+.wave-day-grid{padding:12px;display:grid;gap:10px}
+.wave-time-row{display:grid;grid-template-columns:58px 1fr;gap:10px;align-items:stretch}
+.wave-time-label{font-weight:900;color:#075da8;padding-top:11px}
+.wave-slot-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.wave-slot{min-height:94px;border:1px dashed #b8dff8;border-radius:18px;padding:8px;background:#f8fcff;transition:.15s}
+.wave-slot.slot-c172{background:#f1f7ff}
+.wave-slot.slot-c152{background:#fffaf0}
+.wave-slot.drop-target{outline:3px solid #149447;background:#f0fff4}
+.slot-aircraft{font-size:11px;font-weight:900;color:var(--muted);margin-bottom:5px}
+.empty-slot{color:#9aa9b8;text-align:center;padding:20px 0}
+.flight-card{background:#fff;border:1px solid var(--line);border-radius:15px;padding:9px;box-shadow:0 8px 18px rgba(20,70,120,.08);cursor:default}
+.flight-card[draggable="true"]{cursor:grab}
+.flight-card.dragging{opacity:.5}
+.flight-card.flight-c172{border-left:5px solid #0877d9}
+.flight-card.flight-c152{border-left:5px solid #d48a00}
+.flight-card.exam-flight{box-shadow:0 0 0 3px rgba(180,35,24,.12)}
+.flight-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.instructor-tag,.aircraft-tag,.note-tag{font-size:11px;font-weight:900;border-radius:999px;padding:4px 7px}
+.tag-avi{background:#e7f1ff;color:#075da8}
+.tag-amir{background:#e9fff0;color:#0f7a37}
+.aircraft-tag{background:#f4f7fb;color:#344256}
+.note-tag{background:#fff0f0;color:#b42318}
+@media(max-width:1100px){.wave-calendar{grid-template-columns:1fr}}
+@media(max-width:720px){.wave-time-row{grid-template-columns:1fr}.wave-slot-pair{grid-template-columns:1fr}.wave-toolbar{flex-direction:column}}

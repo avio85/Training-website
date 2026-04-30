@@ -38,11 +38,41 @@
       <div class="metric-grid homepage-weather-grid"><article class="metric-card"><span>Base</span><strong>LHKA</strong><p>Kalocsa airfield</p></article><article class="metric-card"><span>Current Temperature</span><strong id="homeTemp">—</strong><p>LHKA / Kalocsa area</p></article><article class="metric-card"><span>Current Pressure</span><strong id="homePressure">—</strong><p>mb / hPa</p></article><article class="metric-card"><span>Current Wind</span><strong id="homeWind">—</strong><p>direction / speed</p></article></div><div id="homeWeatherSource" class="weather-source-line">Weather source: Open-Meteo for Kalocsa/LHKA area. Always verify official aviation weather before flight.</div>
     </section>
 
+    
     <section id="schedule" class="page">
-      <div class="section-header"><div><h2>Training Schedule</h2><p>Members only. View daily schedule, by FI, or by student.</p></div><button class="primary-button" onclick="loadSchedule()">Refresh</button></div>
-      <div class="filters-panel"><label>View<select id="scheduleMode" onchange="buildScheduleFilters();renderSchedule()"><option value="daily">Daily schedule</option><option value="fi">By FI</option><option value="student">By student</option></select></label><label>Date<input id="scheduleDateFilter" type="date" onchange="renderSchedule()"></label><label>Instructor / Student<select id="scheduleNameFilter" onchange="renderSchedule()"><option value="all">All</option></select></label></div>
-      <div id="scheduleEmpty" class="empty-state">Login as an approved member to load the schedule.</div><div id="scheduleTimeline" class="timeline"></div>
+      <div class="section-header">
+        <div>
+          <h2>Training Wave Schedule</h2>
+          <p>May 3–10 training wave only. Students can view; admin can drag & drop flights to edit the wave.</p>
+        </div>
+        <div class="schedule-actions">
+          <button class="primary-button admin-only hidden" onclick="saveWaveSchedule()">Save changes</button>
+          <button class="ghost-button admin-only hidden" onclick="resetWaveSchedule()">Reset wave</button>
+        </div>
+      </div>
+
+      <div class="wave-legend">
+        <span class="legend-pill aircraft-c172">C172</span>
+        <span class="legend-pill aircraft-c152">C152</span>
+        <span class="legend-pill instructor-avi">Avi</span>
+        <span class="legend-pill instructor-amir">Amir</span>
+        <span class="legend-pill exam-pill">EXAM</span>
+      </div>
+
+      <div id="scheduleGuestMessage" class="empty-state">Login as an approved member to view the schedule.</div>
+
+      <div id="waveScheduleApp" class="wave-schedule hidden">
+        <div class="wave-toolbar">
+          <div>
+            <strong>Wave:</strong> 3–10 May
+            <span id="waveAdminHint" class="admin-only hidden"> · Drag flights between slots, then save.</span>
+          </div>
+          <div class="view-note">Last landing by 18:30</div>
+        </div>
+        <div id="waveCalendar" class="wave-calendar"></div>
+      </div>
     </section>
+
 
     
     <section id="briefingroom" class="page">
@@ -445,7 +475,7 @@
   </div>
 
   <div id="toast" class="toast hidden"></div><footer class="version">
-    <span>Version 0.1.17</span>
+    <span>Version 0.1.18</span>
     <span>© Avi Oren Aviation · avi8or.easa@gmail.com</span>
   </footer><script src="script.js"></script>
 </body></html>

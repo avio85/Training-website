@@ -524,3 +524,700 @@ async function loadNotam(){
     output.textContent = `${err.message}\n\nUse the official NOTAM search link.`;
   }
 }
+
+
+const defaultWaveSchedule = [
+  {
+    "id": "f1",
+    "date": "2026-05-03",
+    "time": "0800",
+    "aircraft": "C172",
+    "student": "Nir K",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f2",
+    "date": "2026-05-03",
+    "time": "0800",
+    "aircraft": "C152",
+    "student": "Lior",
+    "instructor": "Amir",
+    "note": "1h"
+  },
+  {
+    "id": "f3",
+    "date": "2026-05-03",
+    "time": "1000",
+    "aircraft": "C172",
+    "student": "Ahmad",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "f4",
+    "date": "2026-05-03",
+    "time": "1000",
+    "aircraft": "C152",
+    "student": "Aviad",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f5",
+    "date": "2026-05-03",
+    "time": "1200",
+    "aircraft": "C172",
+    "student": "Nir D",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f6",
+    "date": "2026-05-03",
+    "time": "1200",
+    "aircraft": "C152",
+    "student": "Ofek",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "f7",
+    "date": "2026-05-03",
+    "time": "1400",
+    "aircraft": "C172",
+    "student": "Nir K",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f8",
+    "date": "2026-05-03",
+    "time": "1400",
+    "aircraft": "C152",
+    "student": "Lior",
+    "instructor": "Amir",
+    "note": "1h"
+  },
+  {
+    "id": "f9",
+    "date": "2026-05-03",
+    "time": "1600",
+    "aircraft": "C172",
+    "student": "Harel",
+    "instructor": "Avi",
+    "note": "1h"
+  },
+  {
+    "id": "f10",
+    "date": "2026-05-03",
+    "time": "1600",
+    "aircraft": "C152",
+    "student": "Aviad",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "f11",
+    "date": "2026-05-04",
+    "time": "0800",
+    "aircraft": "C172",
+    "student": "Nir K",
+    "instructor": "Avi",
+    "note": "3h"
+  },
+  {
+    "id": "f12",
+    "date": "2026-05-04",
+    "time": "0800",
+    "aircraft": "C152",
+    "student": "Lior",
+    "instructor": "Amir",
+    "note": "1h"
+  },
+  {
+    "id": "f13",
+    "date": "2026-05-04",
+    "time": "1000",
+    "aircraft": "C152",
+    "student": "Aviad",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "f14",
+    "date": "2026-05-04",
+    "time": "1200",
+    "aircraft": "C172",
+    "student": "Ahmad",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "f15",
+    "date": "2026-05-04",
+    "time": "1200",
+    "aircraft": "C152",
+    "student": "Ofek",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f16",
+    "date": "2026-05-04",
+    "time": "1400",
+    "aircraft": "C172",
+    "student": "Harel",
+    "instructor": "Avi",
+    "note": "1h"
+  },
+  {
+    "id": "f17",
+    "date": "2026-05-04",
+    "time": "1400",
+    "aircraft": "C152",
+    "student": "Lior",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "f18",
+    "date": "2026-05-04",
+    "time": "1600",
+    "aircraft": "C172",
+    "student": "Nir D",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f19",
+    "date": "2026-05-04",
+    "time": "1600",
+    "aircraft": "C152",
+    "student": "Aviad",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "f20",
+    "date": "2026-05-05",
+    "time": "0800",
+    "aircraft": "C172",
+    "student": "Ahmad",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "f21",
+    "date": "2026-05-05",
+    "time": "0800",
+    "aircraft": "C152",
+    "student": "Aviad",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f22",
+    "date": "2026-05-05",
+    "time": "1000",
+    "aircraft": "C172",
+    "student": "Harel",
+    "instructor": "Avi",
+    "note": "1h"
+  },
+  {
+    "id": "f23",
+    "date": "2026-05-05",
+    "time": "1000",
+    "aircraft": "C152",
+    "student": "Lior",
+    "instructor": "Amir",
+    "note": "1h"
+  },
+  {
+    "id": "f24",
+    "date": "2026-05-05",
+    "time": "1200",
+    "aircraft": "C172",
+    "student": "Nir K",
+    "instructor": "Avi",
+    "note": "3h"
+  },
+  {
+    "id": "f25",
+    "date": "2026-05-05",
+    "time": "1200",
+    "aircraft": "C152",
+    "student": "Ofek",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "f26",
+    "date": "2026-05-05",
+    "time": "1400",
+    "aircraft": "C152",
+    "student": "Aviad",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "f27",
+    "date": "2026-05-05",
+    "time": "1600",
+    "aircraft": "C172",
+    "student": "Nir D",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f28",
+    "date": "2026-05-05",
+    "time": "1600",
+    "aircraft": "C152",
+    "student": "Lior",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "f29",
+    "date": "2026-05-06",
+    "time": "0800",
+    "aircraft": "C172",
+    "student": "Harel",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f30",
+    "date": "2026-05-06",
+    "time": "0800",
+    "aircraft": "C152",
+    "student": "Lior",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "f31",
+    "date": "2026-05-06",
+    "time": "1000",
+    "aircraft": "C172",
+    "student": "Ahmad",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "f32",
+    "date": "2026-05-06",
+    "time": "1000",
+    "aircraft": "C152",
+    "student": "Aviad",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f33",
+    "date": "2026-05-06",
+    "time": "1200",
+    "aircraft": "C172",
+    "student": "Nir K",
+    "instructor": "Avi",
+    "note": "EXAM"
+  },
+  {
+    "id": "f34",
+    "date": "2026-05-06",
+    "time": "1200",
+    "aircraft": "C152",
+    "student": "Ofek",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "f35",
+    "date": "2026-05-06",
+    "time": "1400",
+    "aircraft": "C172",
+    "student": "Nir D",
+    "instructor": "Avi",
+    "note": "EXAM"
+  },
+  {
+    "id": "f36",
+    "date": "2026-05-06",
+    "time": "1400",
+    "aircraft": "C152",
+    "student": "Lior",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "f37",
+    "date": "2026-05-06",
+    "time": "1600",
+    "aircraft": "C172",
+    "student": "Ahmad",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "f38",
+    "date": "2026-05-06",
+    "time": "1600",
+    "aircraft": "C152",
+    "student": "Aviad",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f39",
+    "date": "2026-05-07",
+    "time": "0800",
+    "aircraft": "C172",
+    "student": "Aviad",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "f40",
+    "date": "2026-05-07",
+    "time": "0800",
+    "aircraft": "C152",
+    "student": "Lior",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f41",
+    "date": "2026-05-07",
+    "time": "1000",
+    "aircraft": "C172",
+    "student": "Ahmad",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "f42",
+    "date": "2026-05-07",
+    "time": "1000",
+    "aircraft": "C152",
+    "student": "Ofek",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f43",
+    "date": "2026-05-07",
+    "time": "1200",
+    "aircraft": "C172",
+    "student": "Harel",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f44",
+    "date": "2026-05-07",
+    "time": "1200",
+    "aircraft": "C152",
+    "student": "Lior",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "f45",
+    "date": "2026-05-07",
+    "time": "1400",
+    "aircraft": "C172",
+    "student": "Nir D",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f46",
+    "date": "2026-05-07",
+    "time": "1600",
+    "aircraft": "C172",
+    "student": "Harel",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f47",
+    "date": "2026-05-08",
+    "time": "0800",
+    "aircraft": "C152",
+    "student": "Ofek",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f48",
+    "date": "2026-05-08",
+    "time": "1000",
+    "aircraft": "C172",
+    "student": "Harel",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f49",
+    "date": "2026-05-08",
+    "time": "1200",
+    "aircraft": "C172",
+    "student": "Aviad",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f50",
+    "date": "2026-05-08",
+    "time": "1400",
+    "aircraft": "C172",
+    "student": "Ahmad",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f51",
+    "date": "2026-05-08",
+    "time": "1600",
+    "aircraft": "C172",
+    "student": "Ofek",
+    "instructor": "Avi",
+    "note": "C172/C152"
+  },
+  {
+    "id": "f52",
+    "date": "2026-05-09",
+    "time": "0800",
+    "aircraft": "C172",
+    "student": "Harel",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f53",
+    "date": "2026-05-09",
+    "time": "1000",
+    "aircraft": "C172",
+    "student": "Aviad",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f54",
+    "date": "2026-05-09",
+    "time": "1200",
+    "aircraft": "C172",
+    "student": "Ahmad",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f55",
+    "date": "2026-05-09",
+    "time": "1400",
+    "aircraft": "C172",
+    "student": "Harel",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f56",
+    "date": "2026-05-09",
+    "time": "1600",
+    "aircraft": "C172",
+    "student": "Aviad",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f57",
+    "date": "2026-05-10",
+    "time": "0800",
+    "aircraft": "C172",
+    "student": "Ahmad",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f58",
+    "date": "2026-05-10",
+    "time": "1000",
+    "aircraft": "C172",
+    "student": "Harel",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f59",
+    "date": "2026-05-10",
+    "time": "1200",
+    "aircraft": "C172",
+    "student": "Aviad",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f60",
+    "date": "2026-05-10",
+    "time": "1400",
+    "aircraft": "C172",
+    "student": "Ahmad",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "f61",
+    "date": "2026-05-10",
+    "time": "1600",
+    "aircraft": "C172",
+    "student": "Harel",
+    "instructor": "Avi",
+    "note": ""
+  }
+];
+let waveSchedule = [];
+
+const waveDays = [
+  {date:"2026-05-03", label:"May 3"},
+  {date:"2026-05-04", label:"May 4"},
+  {date:"2026-05-05", label:"May 5"},
+  {date:"2026-05-06", label:"May 6"},
+  {date:"2026-05-07", label:"May 7"},
+  {date:"2026-05-08", label:"May 8"},
+  {date:"2026-05-09", label:"May 9"},
+  {date:"2026-05-10", label:"May 10"}
+];
+const waveTimes = ["0800","1000","1200","1400","1600"];
+const waveAircraft = ["C172","C152"];
+
+function canEditSchedule(){
+  return userRole === "admin";
+}
+
+async function loadSchedule(showErrors=true){
+  const guest = document.getElementById("scheduleGuestMessage");
+  const app = document.getElementById("waveScheduleApp");
+  if(!token){
+    if(guest) guest.classList.remove("hidden");
+    if(app) app.classList.add("hidden");
+    return;
+  }
+  if(guest) guest.classList.add("hidden");
+  if(app) app.classList.remove("hidden");
+
+  try{
+    const res = await fetch("/api/wave-schedule", {headers: authHeaders()});
+    const data = await res.json();
+    if(res.ok && Array.isArray(data.flights)){
+      waveSchedule = data.flights;
+    }else{
+      waveSchedule = JSON.parse(JSON.stringify(defaultWaveSchedule));
+    }
+  }catch(err){
+    waveSchedule = JSON.parse(JSON.stringify(defaultWaveSchedule));
+  }
+  renderWaveCalendar();
+}
+
+function renderWaveCalendar(){
+  const cal = document.getElementById("waveCalendar");
+  if(!cal) return;
+  const admin = canEditSchedule();
+
+  cal.innerHTML = waveDays.map(day => `
+    <section class="wave-day-card">
+      <div class="wave-day-header">${day.label}</div>
+      <div class="wave-day-grid">
+        ${waveTimes.map(time => `
+          <div class="wave-time-row">
+            <div class="wave-time-label">${time}</div>
+            <div class="wave-slot-pair">
+              ${waveAircraft.map(ac => renderWaveSlot(day.date, time, ac, admin)).join("")}
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    </section>
+  `).join("");
+
+  if(admin) attachScheduleDragHandlers();
+}
+
+function renderWaveSlot(date, time, aircraft, admin){
+  const flights = waveSchedule.filter(f => f.date === date && f.time === time && f.aircraft === aircraft);
+  return `
+    <div class="wave-slot ${aircraft === "C172" ? "slot-c172" : "slot-c152"}" data-date="${date}" data-time="${time}" data-aircraft="${aircraft}">
+      <div class="slot-aircraft">${aircraft}</div>
+      ${flights.map(f => renderFlightCard(f, admin)).join("") || '<div class="empty-slot">—</div>'}
+    </div>
+  `;
+}
+
+function renderFlightCard(f, admin){
+  const exam = String(f.note || "").toUpperCase().includes("EXAM");
+  return `
+    <div class="flight-card ${f.aircraft === "C172" ? "flight-c172" : "flight-c152"} ${exam ? "exam-flight" : ""}" draggable="${admin ? "true" : "false"}" data-id="${f.id}">
+      <strong>${f.student}</strong>
+      <div class="flight-tags">
+        <span class="instructor-tag ${f.instructor === "Amir" ? "tag-amir" : "tag-avi"}">${f.instructor}</span>
+        <span class="aircraft-tag">${f.aircraft}</span>
+        ${f.note ? `<span class="note-tag">${f.note}</span>` : ""}
+      </div>
+    </div>
+  `;
+}
+
+function attachScheduleDragHandlers(){
+  document.querySelectorAll(".flight-card").forEach(card => {
+    card.addEventListener("dragstart", e => {
+      e.dataTransfer.setData("text/plain", card.dataset.id);
+      card.classList.add("dragging");
+    });
+    card.addEventListener("dragend", () => card.classList.remove("dragging"));
+  });
+
+  document.querySelectorAll(".wave-slot").forEach(slot => {
+    slot.addEventListener("dragover", e => {
+      e.preventDefault();
+      slot.classList.add("drop-target");
+    });
+    slot.addEventListener("dragleave", () => slot.classList.remove("drop-target"));
+    slot.addEventListener("drop", e => {
+      e.preventDefault();
+      slot.classList.remove("drop-target");
+      const id = e.dataTransfer.getData("text/plain");
+      const flight = waveSchedule.find(f => f.id === id);
+      if(!flight) return;
+      flight.date = slot.dataset.date;
+      flight.time = slot.dataset.time;
+      flight.aircraft = slot.dataset.aircraft;
+      renderWaveCalendar();
+      toast("Schedule changed. Press Save changes.");
+    });
+  });
+}
+
+async function saveWaveSchedule(){
+  if(!canEditSchedule()) return toast("Admin only");
+  try{
+    const res = await fetch("/api/wave-schedule", {
+      method:"POST",
+      headers:{...authHeaders(), "Content-Type":"application/json"},
+      body:JSON.stringify({flights: waveSchedule})
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.detail || "Could not save schedule");
+    toast("Wave schedule saved");
+  }catch(err){
+    toast(err.message);
+  }
+}
+
+async function resetWaveSchedule(){
+  if(!canEditSchedule()) return toast("Admin only");
+  waveSchedule = JSON.parse(JSON.stringify(defaultWaveSchedule));
+  renderWaveCalendar();
+  await saveWaveSchedule();
+}
