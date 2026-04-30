@@ -47,24 +47,21 @@
 
     <section id="briefingroom" class="page">
       <div class="section-header"><div><h2>Briefing Room</h2><p>Airfield charts / דפיות, exercise briefings, ATO certificate and useful files.</p></div><button class="primary-button" onclick="loadBriefings()">Refresh files</button></div>
-      
-        <div class="briefing-top-tabs">
-          <button onclick="scrollToBriefingSection('airfieldCharts')">Airfield Charts / דפיות</button>
-          <button onclick="scrollToBriefingSection('briefingFiles')">Training Files</button>
-          <button onclick="scrollToBriefingSection('uploadHelp')">Where to upload?</button>
-        </div>
 
-        <div id="uploadHelp" class="upload-help-panel">
-          <h3>Where do I upload exercise presentations?</h3>
-          <p>Login as admin → go to <b>Admin Workspace</b> → <b>Upload Briefing / ATO Certificate</b> → choose category <b>Exercises</b> and upload your PDF/PPT file.</p>
-          <button class="primary-button admin-only hidden" onclick="showPage('admin')">Go to Admin Upload</button>
-        </div>
-
-        <div id="airfieldCharts" class="briefing-layout"><div><h3>Airfield Charts</h3><div class="airport-list"><button class="airport-card active" onclick="selectAirport('LHKA')"><strong>LHKA</strong><span>Kalocsa</span></button><button class="airport-card" onclick="selectAirport('LHJK')"><strong>LHJK</strong><span>Chart link</span></button><button class="airport-card" onclick="selectAirport('LHPP')"><strong>LHPP</strong><span>Chart link</span></button><button class="airport-card" onclick="selectAirport('LHSM')"><strong>LHSM</strong><span>Chart link</span></button></div></div>
+        <div class="briefing-layout"><div><h3>Airfield Charts</h3><div class="airport-list"><button class="airport-card active" onclick="selectAirport('LHKA')"><strong>LHKA</strong><span>Kalocsa</span></button><button class="airport-card" onclick="selectAirport('LHJK')"><strong>LHJK</strong><span>Chart link</span></button><button class="airport-card" onclick="selectAirport('LHPP')"><strong>LHPP</strong><span>Chart link</span></button><button class="airport-card" onclick="selectAirport('LHSM')"><strong>LHSM</strong><span>Chart link</span></button></div></div>
       <div class="chart-viewer"><div class="chart-header"><div><span class="chip" id="selectedAirportChip">LHKA</span><h3 id="selectedAirportName">Kalocsa Airfield</h3></div><a id="googleMapsLink" class="ghost-button" target="_blank" href="https://www.google.com/maps/search/?api=1&query=LHKA%20Kalocsa%20Airfield">Google Maps</a>
               <a id="chartOpenLink" class="primary-link" target="_blank" href="https://storage.hungarocontrol.hu/media/958/VFR_LHKA_print_5n.pdf?_gl=1*1rt6n80*_gcl_au*MjQ1MTUxNTQzLjE3Nzc1NTU3MjQ.">Open chart PDF</a></div><iframe id="chartFrame" src="https://storage.hungarocontrol.hu/media/958/VFR_LHKA_print_5n.pdf?_gl=1*1rt6n80*_gcl_au*MjQ1MTUxNTQzLjE3Nzc1NTU3MjQ."></iframe><p class="fineprint">Always verify charts with the official VFR Manual before flight.</p></div></div>
       <div id="briefingFiles" class="tabs"><button class="tab active" data-category="all">All Files</button><button class="tab" data-category="Preparation">Preparation</button><button class="tab" data-category="Exercises">Exercises</button><button class="tab" data-category="Airfields">Airfields</button><button class="tab" data-category="Aircraft/G1000">Aircraft</button><button class="tab" data-category="Modular CPL">CPL</button><button class="tab" data-category="ATO Certificate">ATO Certificate</button></div>
       
+        
+        <div id="atoCertificatePanel" class="ato-certificate-panel">
+          <div>
+            <h3>ATO Certificate</h3>
+            <p>Upload the certificate in Admin → Upload Briefing / ATO Certificate → category “ATO Certificate”. It will also appear in the files area.</p>
+          </div>
+          <button class="ghost-button admin-only hidden" onclick="showPage('admin')">Upload certificate</button>
+        </div>
+
         <div id="exercisePresentationsPanel" class="exercise-presentations-panel">
           <div class="panel-heading">
             <div>
@@ -73,74 +70,68 @@
             </div>
             <span class="chip">Exercises</span>
           </div>
-          <div id="exercisePresentationsGrid" class="file-grid"></div>
+          <div id="exercisePresentationsGrid" class="exercise-strip-grid"></div>
         </div>
 
         <div id="briefingsEmpty" class="empty-state">Login as an approved member to view uploaded briefing files.</div><div id="briefingGrid" class="file-grid"></div>
     </section>
 
     
+      
       <section id="weather" class="page">
         <div class="section-header">
           <div>
             <h2>Weather</h2>
-            <p>Aviation weather briefing panel. Public METAR/TAF works without login; HungaroMet aviation requires the secure backend connector.</p>
+            <p>Airport weather briefing view. Choose an airport to view METAR, TAF and a plain-language weather summary.</p>
           </div>
+          <button class="primary-button" onclick="loadSelectedAirportWeather()">Refresh</button>
         </div>
 
-        <div class="weather-dashboard">
-          <article class="weather-main-card">
-            <div class="panel-heading">
-              <div>
-                <span class="chip">Public quick check</span>
-                <h3>METAR / TAF</h3>
-                <p>Useful for a quick view, but not a replacement for official briefing.</p>
-              </div>
-              <button class="primary-button" onclick="loadWeather()">Load</button>
-            </div>
-            <input id="weatherStations" value="LHBP,LHPP,LHSM,LHPA,LHKE">
-            <div class="station-buttons">
-              <button onclick="setWeatherStations('LHBP,LHPP,LHSM,LHPA,LHKE')">Training area</button>
-              <button onclick="setWeatherStations('LHPP,LHSM')">LHPP / LHSM</button>
-              <button onclick="setWeatherStations('LHBP')">LHBP</button>
-            </div>
-            <pre id="weatherOutput" class="metar-box">Click Load to fetch public METAR/TAF.</pre>
+        <div class="airport-weather-tabs">
+          <button class="weather-airport-tab active" data-icao="LHKA" onclick="selectWeatherAirport('LHKA')">
+            <strong>LHKA</strong><span>Kalocsa</span>
+          </button>
+          <button class="weather-airport-tab" data-icao="LHBP" onclick="selectWeatherAirport('LHBP')">
+            <strong>LHBP</strong><span>Budapest</span>
+          </button>
+          <button class="weather-airport-tab" data-icao="LHPP" onclick="selectWeatherAirport('LHPP')">
+            <strong>LHPP</strong><span>Pécs-Pogány</span>
+          </button>
+          <button class="weather-airport-tab" data-icao="LHKE" onclick="selectWeatherAirport('LHKE')">
+            <strong>LHKE</strong><span>Kecskemét</span>
+          </button>
+        </div>
+
+        <div class="weather-airport-header">
+          <div>
+            <span class="chip" id="weatherAirportChip">LHKA</span>
+            <h3 id="weatherAirportName">Kalocsa Airfield</h3>
+            <p id="weatherAirportNote">Training base area. If no METAR exists for LHKA, nearby reports are used for general awareness.</p>
+          </div>
+          <a id="metarTafLink" class="primary-link" target="_blank" href="https://metar-taf.com/metar/LHKA">Open METAR-TAF page</a>
+        </div>
+
+        <div class="weather-cards-grid">
+          <article class="weather-info-card">
+            <h3>METAR</h3>
+            <pre id="airportMetarBox">Loading...</pre>
           </article>
-
-          <article class="weather-main-card">
-            <div class="panel-heading">
-              <div>
-                <span class="chip">HungaroMet secure connector</span>
-                <h3>aviation.met.hu</h3>
-                <p>Requires Render environment variables. I cannot verify this login path without valid credentials and access to the protected site.</p>
-              </div>
-              <button class="primary-button" onclick="loadAviationMet()">Load connector</button>
-            </div>
-
-            <div class="connector-status-grid">
-              <div><strong>1</strong><span>Set Render env vars</span></div>
-              <div><strong>2</strong><span>Clear cache deploy</span></div>
-              <div><strong>3</strong><span>Login as member</span></div>
-              <div><strong>4</strong><span>Load connector</span></div>
-            </div>
-
-            <div class="env-list">
-              <code>AVIATION_MET_USERNAME</code>
-              <code>AVIATION_MET_PASSWORD</code>
-              <code>AVIATION_MET_LOGIN_URL</code>
-              <code>AVIATION_MET_DATA_URL</code>
-            </div>
-
-            <pre id="aviationMetOutput" class="metar-box">Connector output and diagnostics will appear here.</pre>
+          <article class="weather-info-card">
+            <h3>TAF</h3>
+            <pre id="airportTafBox">Loading...</pre>
+          </article>
+          <article class="weather-info-card wide">
+            <h3>General weather information</h3>
+            <div id="airportWeatherSummary" class="weather-summary-list">Loading...</div>
           </article>
         </div>
 
         <div class="weather-disclaimer">
           <h3>Important</h3>
-          <p>The connector is server-side on purpose, so your weather login details are not exposed to students or browser code. If aviation.met.hu uses a hidden token or non-standard login fields, the connector will show a diagnostic message and we will adjust the field names.</p>
-          <a class="primary-link" target="_blank" href="https://aviation.met.hu/en/taviratok/index.php?friss=18:11:10">Open aviation.met.hu manually</a>
+          <p>This page is for training preparation and situational awareness only. Always verify current official aviation weather and NOTAMs before flight.</p>
         </div>
       </section>
+
 
 
     
@@ -391,8 +382,20 @@
 </div>
 <div class="bottom-nav"><button class="mobile-nav active" data-page="dashboard">Home</button><button class="mobile-nav" data-page="schedule">Schedule</button><button class="mobile-nav" data-page="briefingroom">Brief</button><button class="mobile-nav" data-page="weather">Weather</button></div>
 <div id="loginModal" class="modal hidden"><div class="modal-card"><button class="close" onclick="closeLoginModal()">×</button><h2>Member Access</h2><p>Login to view schedule and briefing files. New users require admin approval.</p><div class="auth-grid"><form id="loginForm"><h3>Login</h3><input name="email" type="email" placeholder="Email" required><input name="password" type="password" placeholder="Password" required><button class="primary-button" type="submit">Login</button></form><form id="signupForm"><h3>Sign up</h3><input name="email" type="email" placeholder="Email" required><input name="password" type="password" placeholder="Password" required><button class="ghost-button" type="submit">Request access</button></form></div><div class="oauth-note">Google login placeholder for future backend integration.</div></div></div>
-<div id="toast" class="toast hidden"></div><footer class="version">
-    <span>Version 0.1.10</span>
+
+  <div id="filePreviewModal" class="modal hidden">
+    <div class="file-preview-card">
+      <button class="close" onclick="closeFilePreview()">×</button>
+      <div class="file-preview-header">
+        <h2 id="filePreviewTitle">Preview</h2>
+        <a id="filePreviewOpen" class="primary-link" target="_blank" href="#">Open in new tab</a>
+      </div>
+      <iframe id="filePreviewFrame" src=""></iframe>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div><footer class="version">
+    <span>Version 0.1.11</span>
     <span>© Avi Oren Aviation · avi8or.easa@gmail.com</span>
   </footer><script src="script.js"></script>
 </body></html>
