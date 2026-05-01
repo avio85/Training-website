@@ -926,3 +926,125 @@ document.addEventListener("DOMContentLoaded",()=>{
   const version=document.querySelector(".version");
   if(version) version.style.display="flex";
 });
+
+/* v0.1.26 emergency stabilization patch */
+const AOA_MAY_WAVE_SETTINGS={name:"May 3–10 training wave",start:"2026-05-03",end:"2026-05-10"};
+function setWaveChoiceActive(key){
+  document.querySelectorAll('.wave-choice').forEach(b=>b.classList.toggle('active', b.getAttribute('onclick')?.includes(`'${key}'`)));
+}
+function selectTrainingWave(key){
+  if(key==='may3'){
+    localStorage.setItem('trainingWaveSettings', JSON.stringify(AOA_MAY_WAVE_SETTINGS));
+    setWaveChoiceActive('may3');
+  }else{
+    const name=document.getElementById('trainingWaveName')?.value || 'Custom training wave';
+    const start=document.getElementById('trainingWaveStart')?.value || '2026-05-03';
+    const end=document.getElementById('trainingWaveEnd')?.value || '2026-05-10';
+    localStorage.setItem('trainingWaveSettings', JSON.stringify({name,start,end}));
+    setWaveChoiceActive('custom');
+  }
+  updateWaveLabel();
+  renderWaveCalendar();
+}
+function openWaveManager(){
+  showPage('admin');
+  setTimeout(()=>document.getElementById('trainingWaveForm')?.scrollIntoView({behavior:'smooth',block:'center'}),80);
+}
+function ensureWaveHasVisibleFlights(){
+  const days=getActiveWaveDays().map(d=>d.date);
+  const hasVisible=(waveSchedule||[]).some(f=>days.includes(f.date));
+  if(!hasVisible && Array.isArray(waveSchedule) && waveSchedule.some(f=>String(f.date||'').startsWith('2026-05-'))){
+    localStorage.setItem('trainingWaveSettings', JSON.stringify(AOA_MAY_WAVE_SETTINGS));
+    setWaveChoiceActive('may3');
+  }
+}
+const AOA_originalLoadSchedule=loadSchedule;
+loadSchedule=async function(){
+  const guest=document.getElementById('scheduleGuestMessage'), app=document.getElementById('waveScheduleApp');
+  if(!token){guest?.classList.remove('hidden');app?.classList.add('hidden');return}
+  guest?.classList.add('hidden');app?.classList.remove('hidden');
+  try{
+    const r=await fetch('/api/wave-schedule',{headers:authHeaders()});
+    const d=await r.json();
+    waveSchedule=(r.ok&&Array.isArray(d.flights)&&d.flights.length>0)?d.flights:JSON.parse(JSON.stringify(defaultWaveSchedule));
+  }catch{
+    waveSchedule=JSON.parse(JSON.stringify(defaultWaveSchedule));
+  }
+  ensureWaveHasVisibleFlights();
+  renderWaveCalendar();
+};
+
+const AOA_originalLoadHomeWeather=loadHomeWeather;
+loadHomeWeather=async function(){
+  const t=document.getElementById('homeTemp'), p=document.getElementById('homePressure'), w=document.getElementById('homeWind'), sun=document.getElementById('homeSunTimes');
+  try{ await AOA_originalLoadHomeWeather(); }catch{}
+  if(sun){
+    try{
+      const r=await fetch('/api/sun/LHKA');
+      const d=await r.json();
+      if(!r.ok) throw new Error(d.detail||'Sun data failed');
+      sun.textContent=`${d.sunrise} / ${d.sunset}`;
+    }catch{
+      sun.textContent='06:00 / 19:35';
+    }
+  }
+};
+
+loadAtplAiSettings=async function(){
+  const def='https://avioren-aviation-mvp.onrender.com/';
+  const localUrl=localStorage.getItem('atplAiUrl')||def;
+  const localActive=localStorage.getItem('atplAiActive')==='true';
+  atplAiSettings={url:localUrl,active:localActive};
+  try{
+    const r=await fetch('/api/settings/atpl-ai',{cache:'no-store'});
+    const d=await r.json();
+    if(r.ok){
+      atplAiSettings={url:d.url||localUrl,active:!!d.active};
+      localStorage.setItem('atplAiUrl', atplAiSettings.url);
+      localStorage.setItem('atplAiActive', atplAiSettings.active?'true':'false');
+    }
+  }catch{}
+  const u=document.getElementById('atplAiUrlInput'), a=document.getElementById('atplAiActiveInput');
+  if(u)u.value=atplAiSettings.url||def;
+  if(a)a.checked=!!atplAiSettings.active;
+};
+saveAtplAiSettings=async function(e){
+  if(e)e.preventDefault();
+  const form=e?.target||document.getElementById('atplAiSettingsForm');
+  const url=(form?.url?.value||document.getElementById('atplAiUrlInput')?.value||'https://avioren-aviation-mvp.onrender.com/').trim();
+  const active=!!(form?.active?.checked ?? document.getElementById('atplAiActiveInput')?.checked);
+  localStorage.setItem('atplAiUrl',url);
+  localStorage.setItem('atplAiActive',active?'true':'false');
+  atplAiSettings={url,active};
+  try{
+    const r=await fetch('/api/settings/atpl-ai',{method:'POST',headers:{...authHeaders(),'Content-Type':'application/json'},body:JSON.stringify({url,active})});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(d.detail||'Saved locally, but backend save failed');
+    atplAiSettings={url:d.url||url,active:!!d.active};
+    localStorage.setItem('atplAiUrl',atplAiSettings.url);
+    localStorage.setItem('atplAiActive',atplAiSettings.active?'true':'false');
+    toast('ATPL AI settings saved');
+  }catch(err){
+    toast(err.message || 'ATPL AI saved locally');
+  }
+};
+handleAtplAiClick=async function(e){
+  if(e){e.preventDefault();e.stopPropagation()}
+  await loadAtplAiSettings();
+  if(atplAiSettings.active && atplAiSettings.url){
+    window.location.href=atplAiSettings.url;
+    return;
+  }
+  showPage('atplai');
+};
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const saved=JSON.parse(localStorage.getItem('trainingWaveSettings')||'null');
+  setWaveChoiceActive(saved?.start==='2026-05-03' && saved?.end==='2026-05-10' ? 'may3' : 'custom');
+  loadHomeWeather();
+  const form=document.getElementById('atplAiSettingsForm');
+  if(form){
+    form.removeEventListener('submit', saveAtplAiSettings);
+    form.addEventListener('submit', saveAtplAiSettings);
+  }
+});
