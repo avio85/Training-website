@@ -933,53 +933,39 @@ def update_atpl_ai_settings(url: str = Form(...), active: str = Form("false"), a
 def parse_metar_summary(raw_metar: str):
     if not raw_metar:
         return {"temperature": "N/A", "pressure": "N/A", "wind": "N/A", "visibility": "N/A", "clouds": "N/A"}
-
     first_line = raw_metar.strip().splitlines()[0]
     parts = first_line.split()
-
-    temp = "N/A"
-    pressure = "N/A"
-    wind = "N/A"
-    visibility = "N/A"
+    temp = pressure = wind = visibility = "N/A"
     clouds = []
-
     for p in parts:
-        if re.match(r"^\d{3}\d{2}(G\d{2})?KT$", p) or re.match(r"^VRB\d{2}(G\d{2})?KT$", p):
-            if p.startswith("VRB"):
-                wind = f"VRB / {int(p[3:5])} kt"
-            else:
-                wind = f"{p[0:3]}° / {int(p[3:5])} kt"
+        if re.match(r"^\d{3}\d{2}(G\d{2})?KT$", p):
+            wind = f"{p[0:3]}° / {int(p[3:5])} kt"
+            gust = re.search(r"G(\d{2})KT", p)
+            if gust:
+                wind += f" gust {int(gust.group(1))} kt"
+        elif re.match(r"^VRB\d{2}(G\d{2})?KT$", p):
+            wind = f"VRB / {int(p[3:5])} kt"
         elif re.match(r"^Q\d{4}$", p):
             pressure = f"{int(p[1:])} mb"
+        elif re.match(r"^A\d{4}$", p):
+            pressure = f"{round((int(p[1:]) / 100) * 33.8639)} mb"
         elif re.match(r"^(M?\d{2})/(M?\d{2})$", p):
-            t = p.split("/")[0].replace("M", "-")
-            temp = f"{int(t)}°C"
+            temp = f"{int(p.split('/')[0].replace('M','-'))}°C"
         elif p == "CAVOK":
-            visibility = "CAVOK"
-            clouds = ["CAVOK"]
-        elif re.match(r"^\d{4}$", p) and p != "9999":
-            visibility = f"{p} m"
+            visibility = "CAVOK"; clouds = ["CAVOK"]
         elif p == "9999":
             visibility = "10 km or more"
+        elif re.match(r"^\d{4}$", p):
+            visibility = f"{p} m"
         elif re.match(r"^(FEW|SCT|BKN|OVC)\d{3}", p):
-            cover = p[:3]
-            base = int(p[3:6]) * 100
-            clouds.append(f"{cover} {base} ft")
-
-    return {
-        "temperature": temp,
-        "pressure": pressure,
-        "wind": wind,
-        "visibility": visibility,
-        "clouds": ", ".join(clouds) if clouds else "N/A",
-    }
-
+            clouds.append(f"{p[:3]} {int(p[3:6])*100} ft")
+    return {"temperature": temp, "pressure": pressure, "wind": wind, "visibility": visibility, "clouds": ", ".join(clouds) if clouds else "N/A"}
 
 AIRPORT_WEATHER = {
-    "LHKA": {"ids": ["LHKA", "LHBP", "LHPP", "LHKE"], "lat": 46.549, "lon": 18.942},
-    "LHBP": {"ids": ["LHBP"], "lat": 47.439, "lon": 19.261},
-    "LHPP": {"ids": ["LHPP", "LHBP"], "lat": 45.990, "lon": 18.240},
-    "LHKE": {"ids": ["LHKE", "LHBP", "LHPP"], "lat": 46.917, "lon": 19.749},
+    "LHKA": {"ids": ["LHKA", "LHBP", "LHPP", "LHKE"]},
+    "LHBP": {"ids": ["LHBP"]},
+    "LHPP": {"ids": ["LHPP", "LHBP"]},
+    "LHKE": {"ids": ["LHKE", "LHBP", "LHPP"]},
 }
 
 @app.get("/api/weather/airport/{icao}")
@@ -987,9 +973,7 @@ def get_airport_weather(icao: str):
     icao = icao.upper().strip()
     if icao not in AIRPORT_WEATHER:
         raise HTTPException(404, "Airport not configured")
-    cfg = AIRPORT_WEATHER[icao]
-    ids = ",".join(cfg["ids"])
-
+    ids = ",".join(AIRPORT_WEATHER[icao]["ids"])
     def safe_get(url):
         try:
             r = requests.get(url, timeout=15, headers={"User-Agent": "AviOrenAviationTrainingPortal/1.0"})
@@ -998,52 +982,16 @@ def get_airport_weather(icao: str):
         except Exception:
             return ""
         return ""
-
     metar = safe_get(f"https://aviationweather.gov/api/data/metar?ids={ids}&format=raw&taf=false")
     taf = safe_get(f"https://aviationweather.gov/api/data/taf?ids={ids}&format=raw")
-
     source_airport = icao
     used_fallback = False
     if metar:
         first = metar.split()[0]
-        if len(first) == 4 and first != icao:
+        if len(first) == 4:
             source_airport = first
-            used_fallback = True
-
-    summary = {}
-    try:
-        om = requests.get(
-            "https://api.open-meteo.com/v1/forecast",
-            params={
-                "latitude": cfg["lat"],
-                "longitude": cfg["lon"],
-                "current": "temperature_2m,surface_pressure,wind_speed_10m,wind_direction_10m,cloud_cover,visibility",
-                "wind_speed_unit": "kn",
-                "timezone": "Europe/Budapest",
-            },
-            timeout=15,
-        ).json()
-        c = om.get("current", {})
-        summary = {
-            "temperature": f"{round(c.get('temperature_2m'))}°C" if c.get("temperature_2m") is not None else "N/A",
-            "pressure": f"{round(c.get('surface_pressure'))} mb" if c.get("surface_pressure") is not None else "N/A",
-            "wind": f"{round(c.get('wind_direction_10m'))}° / {round(c.get('wind_speed_10m'))} kt" if c.get("wind_direction_10m") is not None and c.get("wind_speed_10m") is not None else "N/A",
-            "visibility": f"{round(c.get('visibility')/1000, 1)} km" if c.get("visibility") is not None else "N/A",
-            "clouds": f"{round(c.get('cloud_cover'))}%" if c.get("cloud_cover") is not None else "N/A",
-        }
-    except Exception:
-        summary = {"temperature": "N/A", "pressure": "N/A", "wind": "N/A", "visibility": "N/A", "clouds": "N/A"}
-
-    return {
-        "icao": icao,
-        "source_airport": source_airport,
-        "used_fallback": used_fallback,
-        "metar": metar,
-        "taf": taf,
-        "summary": summary,
-    }
-
-
+            used_fallback = first != icao
+    return {"icao": icao, "source_airport": source_airport, "used_fallback": used_fallback, "metar": metar, "taf": taf, "summary": parse_metar_summary(metar)}
 
 
 @app.get("/api/notam/{icao}")
@@ -1051,40 +999,25 @@ def get_notam(icao: str):
     icao = icao.upper().strip()
     if not re.match(r"^[A-Z]{4}$", icao):
         raise HTTPException(400, "Invalid ICAO code")
-
-    sources = [
-        f"https://metar-taf.com/metar/{icao}",
-        f"https://metar.cloud/airport/{icao}",
-        f"https://www.notams.faa.gov/dinsQueryWeb/queryRetrievalMapAction.do?reportType=Raw&retrieveLocId={icao}",
-    ]
-
+    official_url = f"https://notams.aim.faa.gov/notamSearch/nsapp.html#/results?searchType=0&designatorsForLocation={icao}"
+    sources = [f"https://metar-taf.com/notam/{icao}", f"https://metar-taf.com/metar/{icao}", f"https://metar.cloud/airport/{icao}"]
     for url in sources:
         try:
             r = requests.get(url, timeout=20, headers={"User-Agent": "Mozilla/5.0 AviOrenAviationTrainingPortal/1.0"})
             if r.status_code != 200 or not r.text:
                 continue
-
-            html = r.text
-            text = re.sub(r"<script.*?</script>", " ", html, flags=re.S | re.I)
+            text = re.sub(r"<script.*?</script>", " ", r.text, flags=re.S | re.I)
             text = re.sub(r"<style.*?</style>", " ", text, flags=re.S | re.I)
             text = re.sub(r"<[^>]+>", " ", text)
             text = re.sub(r"&nbsp;|&#160;", " ", text)
             text = re.sub(r"\s+", " ", text).strip()
-
             upper = text.upper()
             if "NOTAM" in upper and len(text) > 120:
                 idx = upper.find("NOTAM")
-                useful = text[max(0, idx-300): idx+9000]
-                return {"icao": icao, "source": url, "notams": useful[:12000]}
+                return {"icao": icao, "source": url, "official_url": official_url, "notams": text[max(0, idx-300):idx+9000][:12000]}
         except Exception:
             pass
-
-    return {
-        "icao": icao,
-        "source": "manual",
-        "notams": f"Automatic NOTAM retrieval is not available for {icao} from the free public sources. Use the official NOTAM search link and verify through an official briefing source before flight."
-    }
-
+    return {"icao": icao, "source": "manual", "official_url": official_url, "notams": f"Automatic NOTAM retrieval is not available for {icao} from the free public sources.\n\nOpen the official NOTAM search link and verify through an official briefing source before flight."}
 
 @app.get("/api/wave-schedule")
 def get_wave_schedule(user=Depends(require_member)):
