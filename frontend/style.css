@@ -615,3 +615,17 @@
 @media(min-width:981px){
   .homepage-weather-grid{grid-template-columns:repeat(5,1fr)!important;}
 }
+
+/* v0.3.0 schedule manager + user admin */
+.small-modal-card{max-width:520px!important}
+.flight-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.flight-form label{display:block}
+.flight-form .slot-edit-actions{grid-column:1/3}
+.flight-card-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.flight-card-actions button{border:1px solid #b8dff8;background:#fff;color:#075da8;border-radius:10px;padding:5px 8px;font-size:11px;font-weight:900}
+.flight-card-actions button.danger{border-color:#ffd0d0;color:#b42318;background:#fff7f7}
+.user-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.user-actions select{width:auto;margin:0;padding:7px 8px;border-radius:10px}
+.user-actions button{padding:7px 10px;border-radius:10px;font-size:12px}
+.user-row{grid-template-columns:minmax(180px,1fr) auto minmax(260px,auto)!important}
+@media(max-width:720px){.flight-form{grid-template-columns:1fr}.flight-form .slot-edit-actions{grid-column:auto}.user-row{grid-template-columns:1fr!important}.user-actions{justify-content:flex-start}}

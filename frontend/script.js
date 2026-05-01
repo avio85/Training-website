@@ -1265,3 +1265,112 @@ document.addEventListener("DOMContentLoaded",()=>{
     }, true);
   }
 });
+
+/* v0.3.0 Schedule Manager + User Management */
+function scheduleTimes(){
+  const times=new Set([...(Array.isArray(waveTimes)?waveTimes:[])]);
+  (waveSchedule||[]).forEach(f=>{if(f.time)times.add(String(f.time).replace(':','').padStart(4,'0'))});
+  return Array.from(times).sort();
+}
+
+function openFlightModal(id){
+  if(!canEditSchedule())return toast('Admin only');
+  const f=id ? (waveSchedule||[]).find(x=>String(x.id)===String(id)) : null;
+  const title=document.getElementById('flightModalTitle');
+  if(title)title.textContent=f?'Edit flight':'Add flight';
+  const set=(id2,val)=>{const el=document.getElementById(id2); if(el)el.value=val||'';};
+  set('flightEditId', f?.id || '');
+  set('flightDateInput', f?.date || getActiveWaveDays()[0]?.date || '2026-05-03');
+  set('flightTimeInput', f?.time || '0800');
+  set('flightAircraftInput', f?.aircraft || 'C172');
+  set('flightStudentInput', f?.student || '');
+  set('flightInstructorInput', f?.instructor || 'Avi');
+  set('flightNoteInput', f?.note || '');
+  document.getElementById('flightModal')?.classList.remove('hidden');
+}
+function closeFlightModal(){document.getElementById('flightModal')?.classList.add('hidden')}
+function normalizeFlightTime(v){
+  const t=String(v||'').replace(/[^0-9]/g,'').padStart(4,'0').slice(0,4);
+  return /^\d{4}$/.test(t)?t:'';
+}
+function saveFlightFromModal(){
+  const editId=document.getElementById('flightEditId')?.value||'';
+  const flight={
+    id: editId || ('sf_'+Date.now().toString(36)),
+    date: document.getElementById('flightDateInput')?.value||'',
+    time: normalizeFlightTime(document.getElementById('flightTimeInput')?.value),
+    aircraft: document.getElementById('flightAircraftInput')?.value||'C172',
+    student: (document.getElementById('flightStudentInput')?.value||'').trim(),
+    instructor: document.getElementById('flightInstructorInput')?.value||'Avi',
+    note: (document.getElementById('flightNoteInput')?.value||'').trim()
+  };
+  if(!flight.date||!flight.time||!flight.student)return toast('Enter date, time and student');
+  if(!['C172','C152'].includes(flight.aircraft))return toast('Aircraft must be C172 or C152');
+  const idx=(waveSchedule||[]).findIndex(f=>String(f.id)===String(flight.id));
+  if(idx>=0)waveSchedule[idx]=flight; else waveSchedule.push(flight);
+  closeFlightModal();
+  renderWaveCalendar();
+  toast('Flight updated. Press Save changes.');
+}
+function deleteFlight(id){
+  if(!canEditSchedule())return toast('Admin only');
+  const f=(waveSchedule||[]).find(x=>String(x.id)===String(id));
+  if(!f)return;
+  if(!confirm(`Delete flight for ${f.student} at ${f.time}?`))return;
+  waveSchedule=waveSchedule.filter(x=>String(x.id)!==String(id));
+  renderWaveCalendar();
+  toast('Flight deleted. Press Save changes.');
+}
+
+renderWaveCalendar=function(){
+  const cal=document.getElementById('waveCalendar');
+  if(!cal)return;
+  updateWaveLabel?.();
+  const admin=canEditSchedule();
+  const days=getActiveWaveDays();
+  const times=scheduleTimes();
+  cal.innerHTML=days.map(day=>`<section class="wave-day-card"><div class="wave-day-header">${day.label}</div><div class="wave-day-grid">${times.map(time=>`<div class="wave-time-row"><div class="wave-time-label">${time}</div><div class="wave-slot-pair">${waveAircraft.map(ac=>renderWaveSlot(day.date,time,ac,admin)).join('')}</div></div>`).join('')}</div></section>`).join('');
+  if(admin)attachScheduleDragHandlers();
+};
+
+renderFlightCard=function(f,admin){
+  const exam=String(f.note||'').toUpperCase().includes('EXAM');
+  const safeId=escapeHtml(f.id);
+  return `<div class="flight-card ${f.aircraft==='C172'?'flight-c172':'flight-c152'} ${exam?'exam-flight':''}" draggable="${admin?'true':'false'}" data-id="${safeId}" oncontextmenu="openFlightModal('${safeId}');return false;"><strong>${escapeHtml(f.student)}</strong><div class="flight-tags"><span class="instructor-tag ${f.instructor==='Amir'?'tag-amir':'tag-avi'}">${escapeHtml(f.instructor)}</span><span class="aircraft-tag">${escapeHtml(f.aircraft)}</span>${f.note?`<span class="note-tag">${escapeHtml(f.note)}</span>`:''}</div>${admin?`<div class="flight-card-actions"><button type="button" onclick="event.stopPropagation();openFlightModal('${safeId}')">Edit</button><button type="button" class="danger" onclick="event.stopPropagation();deleteFlight('${safeId}')">Delete</button></div>`:''}</div>`;
+};
+
+// Override the old right-click editor so full flight edit opens instead of the small student/FI menu.
+openSlotEditMenu=function(e,id){if(e){e.preventDefault();e.stopPropagation()}openFlightModal(id)};
+
+saveWaveSchedule=async function(){
+  if(!canEditSchedule())return toast('Admin only');
+  try{
+    const d=await apiJson('/api/wave-schedule',{method:'POST',headers:{...authHeaders(),'Content-Type':'application/json'},body:JSON.stringify({flights:waveSchedule})});
+    if(Array.isArray(d.flights))waveSchedule=d.flights;
+    renderWaveCalendar();
+    toast('Training wave schedule saved to database');
+  }catch(err){toast(err.message)}
+};
+
+loadUsers=async function(){
+  const list=document.getElementById('usersList');if(!list)return;
+  list.innerHTML='<p>Loading users...</p>';
+  try{
+    const users=await apiJson('/api/users',{headers:authHeaders(),cache:'no-store'});
+    list.innerHTML=users.map(u=>`<div class="user-row"><strong>${escapeHtml(u.email)}</strong><span>${escapeHtml(u.role)} · ${u.approved?'approved':'suspended/pending'}</span><div class="user-actions"><select onchange="updateUserRole('${escapeHtml(u.id)}',this.value)"><option value="student" ${u.role==='student'?'selected':''}>student</option><option value="instructor" ${u.role==='instructor'?'selected':''}>instructor</option><option value="admin" ${u.role==='admin'?'selected':''}>admin</option></select>${!u.approved?`<button class="ghost-button" onclick="approveUser('${escapeHtml(u.id)}')">Approve</button>`:`<button class="ghost-button" onclick="suspendUser('${escapeHtml(u.id)}')">Suspend</button>`}<button class="ghost-button" onclick="deleteUser('${escapeHtml(u.id)}')">Delete</button></div></div>`).join('')||'<p>No users found.</p>';
+  }catch(err){list.innerHTML=`<p>${escapeHtml(err.message)}</p>`;}
+};
+async function suspendUser(id){try{await apiJson(`/api/users/${encodeURIComponent(id)}/suspend`,{method:'POST',headers:authHeaders()});toast('User suspended');loadUsers()}catch(err){toast(err.message)}}
+async function deleteUser(id){if(!confirm('Delete this user?'))return;try{await apiJson(`/api/users/${encodeURIComponent(id)}`,{method:'DELETE',headers:authHeaders()});toast('User deleted');loadUsers()}catch(err){toast(err.message)}}
+async function updateUserRole(id,role){try{await apiJson(`/api/users/${encodeURIComponent(id)}/role`,{method:'POST',headers:{...authHeaders(),'Content-Type':'application/json'},body:JSON.stringify({role})});toast('Role updated');loadUsers()}catch(err){toast(err.message)}}
+
+// Seed/verify the schedule database from the admin page if needed.
+async function verifyScheduleDb(){
+  try{const d=await apiJson('/api/wave-schedule/verify',{method:'POST',headers:authHeaders()});toast(`Schedule DB verified: ${d.count} flights`);loadSchedule();}
+  catch(err){toast(err.message)}
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const ff=document.getElementById('flightForm');
+  if(ff){ff.addEventListener('submit',e=>{e.preventDefault();saveFlightFromModal();});}
+});

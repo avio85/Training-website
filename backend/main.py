@@ -675,6 +675,83 @@ def insert_user(conn, email, password_hash, role="student", approved=False, full
             (forced_id or str(uuid.uuid4()), email, password_hash, role, approved_value, "email", created, full_name, phone)
         )
 
+
+def normalize_wave_time(value):
+    v = str(value or "").strip()
+    if re.match(r"^\d{2}:\d{2}$", v):
+        return v.replace(":", "")
+    if re.match(r"^\d{4}$", v):
+        return v
+    return v
+
+def schedule_row_to_wave_flight(row):
+    start = normalize_wave_time(row["start_time"] if "start_time" in row.keys() else row.get("start_time"))
+    return {
+        "id": str(row["id"]),
+        "date": row["date"],
+        "time": start,
+        "aircraft": row["aircraft_type"],
+        "student": row["student"],
+        "instructor": row["instructor"],
+        "note": row["notes"] or ""
+    }
+
+def upsert_schedule_flight(conn, flight):
+    fid = str(flight.get("id") or f"sf_{uuid.uuid4().hex[:10]}")
+    date = str(flight.get("date") or "").strip()
+    time = normalize_wave_time(flight.get("time"))
+    aircraft = str(flight.get("aircraft") or "C172").strip()
+    student = str(flight.get("student") or "").strip()
+    instructor = str(flight.get("instructor") or "Avi").strip()
+    note = str(flight.get("note") or "").strip()
+    if USE_POSTGRES:
+        conn.execute("""
+            INSERT INTO schedule (id,date,start_time,length_hours,student,instructor,aircraft_type,aircraft_number,notes)
+            VALUES (?,?,?,?,?,?,?,?,?)
+            ON CONFLICT (id) DO UPDATE SET
+              date=EXCLUDED.date, start_time=EXCLUDED.start_time, length_hours=EXCLUDED.length_hours,
+              student=EXCLUDED.student, instructor=EXCLUDED.instructor, aircraft_type=EXCLUDED.aircraft_type,
+              aircraft_number=EXCLUDED.aircraft_number, notes=EXCLUDED.notes
+        """, (fid, date, time, 1.0, student, instructor, aircraft, aircraft, note))
+    else:
+        conn.execute("INSERT OR REPLACE INTO schedule VALUES (?,?,?,?,?,?,?,?,?)", (
+            fid, date, time, 1.0, student, instructor, aircraft, aircraft, note
+        ))
+    return fid
+
+def ensure_default_wave_in_schedule(conn):
+    for f in DEFAULT_WAVE_SCHEDULE:
+        exists = conn.execute("SELECT id FROM schedule WHERE id=?", (f["id"],)).fetchone()
+        if not exists:
+            upsert_schedule_flight(conn, f)
+
+def get_wave_flights_from_schedule(conn):
+    rows = conn.execute("SELECT * FROM schedule ORDER BY date,start_time,aircraft_type,student").fetchall()
+    flights = []
+    for r in rows:
+        try:
+            flight = schedule_row_to_wave_flight(r)
+            if flight["date"] and flight["time"] and flight["aircraft"]:
+                flights.append(flight)
+        except Exception:
+            pass
+    return flights
+
+def sync_wave_flights_to_schedule(conn, flights):
+    ids = []
+    for f in flights:
+        fid = upsert_schedule_flight(conn, f)
+        ids.append(fid)
+        f["id"] = fid
+    # Remove DB rows in the active wave date range that were deleted in the UI.
+    if ids:
+        placeholders = ",".join(["?"] * len(ids))
+        dates = [str(f.get("date")) for f in flights if f.get("date")]
+        if dates:
+            start, end = min(dates), max(dates)
+            conn.execute(f"DELETE FROM schedule WHERE date>=? AND date<=? AND id NOT IN ({placeholders})", (start, end, *ids))
+    return flights
+
 def db_debug_status():
     info = {"database_url_exists": bool(DATABASE_URL), "postgres": USE_POSTGRES, "connected": False, "tables": []}
     try:
@@ -778,6 +855,8 @@ def init_db():
             try: cur.execute(f"ALTER TABLE users ADD COLUMN {col[0]} {col[1]}")
             except Exception: pass
 
+    ensure_default_wave_in_schedule(conn)
+
     setting_insert_default(conn, "atpl_ai_url", "https://avioren-aviation-mvp.onrender.com/")
     setting_insert_default(conn, "atpl_ai_active", "false")
     conn.commit()
@@ -838,6 +917,11 @@ def debug_db():
         conn = db()
         rows = conn.execute("SELECT email, role, approved, created_at FROM users ORDER BY created_at DESC LIMIT 10").fetchall()
         info["users_preview"] = [dict(r) for r in rows]
+        try:
+            c = conn.execute("SELECT COUNT(*) as c FROM schedule").fetchone()
+            info["schedule_count"] = int(c["c"] if isinstance(c, dict) or hasattr(c, "keys") else c[0])
+        except Exception as schedule_error:
+            info["schedule_count_error"] = str(schedule_error)
         conn.close()
     except Exception as e:
         info["users_preview_error"] = str(e)
@@ -1026,6 +1110,44 @@ def approve_user(user_id: str, admin=Depends(require_admin)):
         conn.execute("UPDATE users SET approved=? WHERE CAST(id AS TEXT)=?", (True, str(user_id)))
     else:
         conn.execute("UPDATE users SET approved=? WHERE id=?", (1, user_id))
+    conn.commit()
+    conn.close()
+    return {"ok": True}
+
+@app.post("/api/users/{user_id}/suspend")
+def suspend_user(user_id: str, admin=Depends(require_admin)):
+    conn = db()
+    if USE_POSTGRES:
+        conn.execute("UPDATE users SET approved=? WHERE CAST(id AS TEXT)=?", (False, str(user_id)))
+    else:
+        conn.execute("UPDATE users SET approved=? WHERE id=?", (0, user_id))
+    conn.commit()
+    conn.close()
+    return {"ok": True}
+
+@app.post("/api/users/{user_id}/role")
+def update_user_role(user_id: str, payload: dict = Body(...), admin=Depends(require_admin)):
+    role = str(payload.get("role") or "student").strip()
+    if role not in {"admin", "instructor", "student"}:
+        raise HTTPException(400, "Invalid role")
+    conn = db()
+    if USE_POSTGRES:
+        conn.execute("UPDATE users SET role=? WHERE CAST(id AS TEXT)=?", (role, str(user_id)))
+    else:
+        conn.execute("UPDATE users SET role=? WHERE id=?", (role, user_id))
+    conn.commit()
+    conn.close()
+    return {"ok": True, "role": role}
+
+@app.delete("/api/users/{user_id}")
+def delete_user(user_id: str, admin=Depends(require_admin)):
+    if str(user_id) == str(admin["id"]):
+        raise HTTPException(400, "You cannot delete your own admin user")
+    conn = db()
+    if USE_POSTGRES:
+        conn.execute("DELETE FROM users WHERE CAST(id AS TEXT)=?", (str(user_id),))
+    else:
+        conn.execute("DELETE FROM users WHERE id=?", (user_id,))
     conn.commit()
     conn.close()
     return {"ok": True}
@@ -1308,37 +1430,48 @@ def get_notam(icao: str):
 @app.get("/api/wave-schedule")
 def get_wave_schedule(user=Depends(require_member)):
     conn = db()
-    row = conn.execute("SELECT value FROM app_settings WHERE key=?", ("wave_schedule",)).fetchone()
-    conn.close()
-    if row:
-        try:
-            flights = json.loads(row["value"])
-            if isinstance(flights, list) and len(flights) > 0:
-                return {"flights": flights}
-        except Exception:
-            pass
-    return {"flights": DEFAULT_WAVE_SCHEDULE}
+    try:
+        flights = get_wave_flights_from_schedule(conn)
+        if not flights:
+            ensure_default_wave_in_schedule(conn)
+            conn.commit()
+            flights = get_wave_flights_from_schedule(conn)
+        return {"flights": flights or DEFAULT_WAVE_SCHEDULE}
+    finally:
+        conn.close()
 
 @app.post("/api/wave-schedule")
 def update_wave_schedule(payload: dict = Body(...), admin=Depends(require_admin)):
     flights = payload.get("flights")
     if not isinstance(flights, list):
         raise HTTPException(400, "Invalid schedule payload")
-    allowed_dates = {f"2026-05-{day:02d}" for day in range(3, 11)}
-    allowed_times = {"0800", "1000", "1200", "1400", "1600"}
     allowed_aircraft = {"C172", "C152"}
     for flight in flights:
-        if flight.get("date") not in allowed_dates:
-            raise HTTPException(400, "Schedule is limited to May 3-10")
-        if flight.get("time") not in allowed_times:
+        if not re.match(r"^\d{4}-\d{2}-\d{2}$", str(flight.get("date") or "")):
+            raise HTTPException(400, "Invalid date")
+        if not re.match(r"^\d{4}$", normalize_wave_time(flight.get("time"))):
             raise HTTPException(400, "Invalid time slot")
         if flight.get("aircraft") not in allowed_aircraft:
             raise HTTPException(400, "Invalid aircraft")
     conn = db()
-    setting_put(conn, "wave_schedule", json.dumps(flights))
-    conn.commit()
-    conn.close()
-    return {"ok": True, "flights": flights}
+    try:
+        flights = sync_wave_flights_to_schedule(conn, flights)
+        setting_put(conn, "wave_schedule", json.dumps(flights))
+        conn.commit()
+        return {"ok": True, "flights": flights}
+    finally:
+        conn.close()
+
+@app.post("/api/wave-schedule/verify")
+def verify_wave_schedule(admin=Depends(require_admin)):
+    conn = db()
+    try:
+        ensure_default_wave_in_schedule(conn)
+        conn.commit()
+        flights = get_wave_flights_from_schedule(conn)
+        return {"ok": True, "count": len(flights), "flights": flights}
+    finally:
+        conn.close()
 
 
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")

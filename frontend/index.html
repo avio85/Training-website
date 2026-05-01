@@ -46,8 +46,10 @@
           <h2>Training schedule</h2>
         </div>
         <div class="schedule-actions">
+          <button class="primary-button admin-only hidden" onclick="openFlightModal()">+ Add flight</button>
           <button class="primary-button admin-only hidden" onclick="saveWaveSchedule()">Save changes</button>
           <button class="ghost-button admin-only hidden" onclick="resetWaveSchedule()">Reset training wave</button>
+          <button class="ghost-button admin-only hidden" onclick="verifyScheduleDb()">Verify DB</button>
         </div>
       </div>
 
@@ -65,7 +67,7 @@
         <div class="wave-toolbar">
           <div>
             <strong>Training wave:</strong> <span id="activeWaveLabel">May 3–10 training wave</span>
-            <span id="waveAdminHint" class="admin-only hidden"> · Drag flights between slots, or right-click a flight card to change student/FI, then save.</span>
+            <span id="waveAdminHint" class="admin-only hidden"> · Drag flights between slots, or use Edit/Delete on a flight card, then save.</span>
           </div>
           
         </div>
@@ -594,8 +596,48 @@
     </div>
   </div>
 
+  
+
+  <div id="flightModal" class="modal hidden">
+    <div class="modal-card small-modal-card">
+      <button class="close" onclick="closeFlightModal()">×</button>
+      <h2 id="flightModalTitle">Add flight</h2>
+      <form id="flightForm" class="flight-form">
+        <input type="hidden" id="flightEditId">
+        <label>Date
+          <input id="flightDateInput" type="date" required>
+        </label>
+        <label>Time
+          <input id="flightTimeInput" placeholder="0800" maxlength="4" required>
+        </label>
+        <label>Aircraft
+          <select id="flightAircraftInput">
+            <option>C172</option>
+            <option>C152</option>
+          </select>
+        </label>
+        <label>Student
+          <input id="flightStudentInput" placeholder="Student name" required>
+        </label>
+        <label>Instructor
+          <select id="flightInstructorInput">
+            <option>Avi</option>
+            <option>Amir</option>
+          </select>
+        </label>
+        <label>Note
+          <input id="flightNoteInput" placeholder="Optional note">
+        </label>
+        <div class="slot-edit-actions">
+          <button class="primary-button" type="submit">Save flight</button>
+          <button class="ghost-button" type="button" onclick="closeFlightModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div id="toast" class="toast hidden"></div><footer class="version">
-    <span>Version 0.2.12</span>
+    <span>Version 0.3.0</span>
     <span>© Avi Oren Aviation · avi8or.easa@gmail.com</span>
   </footer><script src="script.js"></script>
 </body></html>
