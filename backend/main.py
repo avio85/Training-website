@@ -929,6 +929,52 @@ def update_atpl_ai_settings(url: str = Form(...), active: str = Form("false"), a
 
 
 
+
+def parse_metar_summary(raw_metar: str):
+    if not raw_metar:
+        return {"temperature": "N/A", "pressure": "N/A", "wind": "N/A", "visibility": "N/A", "clouds": "N/A"}
+
+    first_line = raw_metar.strip().splitlines()[0]
+    parts = first_line.split()
+
+    temp = "N/A"
+    pressure = "N/A"
+    wind = "N/A"
+    visibility = "N/A"
+    clouds = []
+
+    for p in parts:
+        if re.match(r"^\d{3}\d{2}(G\d{2})?KT$", p) or re.match(r"^VRB\d{2}(G\d{2})?KT$", p):
+            if p.startswith("VRB"):
+                wind = f"VRB / {int(p[3:5])} kt"
+            else:
+                wind = f"{p[0:3]}° / {int(p[3:5])} kt"
+        elif re.match(r"^Q\d{4}$", p):
+            pressure = f"{int(p[1:])} mb"
+        elif re.match(r"^(M?\d{2})/(M?\d{2})$", p):
+            t = p.split("/")[0].replace("M", "-")
+            temp = f"{int(t)}°C"
+        elif p == "CAVOK":
+            visibility = "CAVOK"
+            clouds = ["CAVOK"]
+        elif re.match(r"^\d{4}$", p) and p != "9999":
+            visibility = f"{p} m"
+        elif p == "9999":
+            visibility = "10 km or more"
+        elif re.match(r"^(FEW|SCT|BKN|OVC)\d{3}", p):
+            cover = p[:3]
+            base = int(p[3:6]) * 100
+            clouds.append(f"{cover} {base} ft")
+
+    return {
+        "temperature": temp,
+        "pressure": pressure,
+        "wind": wind,
+        "visibility": visibility,
+        "clouds": ", ".join(clouds) if clouds else "N/A",
+    }
+
+
 AIRPORT_WEATHER = {
     "LHKA": {"ids": ["LHKA", "LHBP", "LHPP", "LHKE"], "lat": 46.549, "lon": 18.942},
     "LHBP": {"ids": ["LHBP"], "lat": 47.439, "lon": 19.261},
@@ -999,37 +1045,45 @@ def get_airport_weather(icao: str):
 
 
 
+
 @app.get("/api/notam/{icao}")
 def get_notam(icao: str):
     icao = icao.upper().strip()
     if not re.match(r"^[A-Z]{4}$", icao):
         raise HTTPException(400, "Invalid ICAO code")
 
-    # Public NOTAM access changes frequently. This endpoint tries FAA DINS raw retrieval
-    # and returns a useful fallback message if blocked/unavailable.
-    urls = [
+    sources = [
+        f"https://metar-taf.com/metar/{icao}",
+        f"https://metar.cloud/airport/{icao}",
         f"https://www.notams.faa.gov/dinsQueryWeb/queryRetrievalMapAction.do?reportType=Raw&retrieveLocId={icao}",
-        f"https://www.notams.faa.gov/dinsQueryWeb/queryRetrievalMapAction.do?reportType=Raw&retrieveLocId={icao}&actionType=notamRetrievalByICAOs",
     ]
-    for url in urls:
+
+    for url in sources:
         try:
-            r = requests.get(url, timeout=20, headers={"User-Agent": "AviOrenAviationTrainingPortal/1.0"})
-            if r.status_code == 200 and r.text:
-                text = re.sub(r"<script.*?</script>", "", r.text, flags=re.S | re.I)
-                text = re.sub(r"<style.*?</style>", "", text, flags=re.S | re.I)
-                text = re.sub(r"<[^>]+>", " ", text)
-                text = re.sub(r"\\s+", " ", text).strip()
-                if icao in text and len(text) > 80:
-                    return {"icao": icao, "source": url, "notams": text[:12000]}
+            r = requests.get(url, timeout=20, headers={"User-Agent": "Mozilla/5.0 AviOrenAviationTrainingPortal/1.0"})
+            if r.status_code != 200 or not r.text:
+                continue
+
+            html = r.text
+            text = re.sub(r"<script.*?</script>", " ", html, flags=re.S | re.I)
+            text = re.sub(r"<style.*?</style>", " ", text, flags=re.S | re.I)
+            text = re.sub(r"<[^>]+>", " ", text)
+            text = re.sub(r"&nbsp;|&#160;", " ", text)
+            text = re.sub(r"\s+", " ", text).strip()
+
+            upper = text.upper()
+            if "NOTAM" in upper and len(text) > 120:
+                idx = upper.find("NOTAM")
+                useful = text[max(0, idx-300): idx+9000]
+                return {"icao": icao, "source": url, "notams": useful[:12000]}
         except Exception:
             pass
 
     return {
         "icao": icao,
         "source": "manual",
-        "notams": f"Automatic NOTAM retrieval was unavailable for {icao}. Open the official NOTAM search link and search manually. Always use an official briefing source before flight."
+        "notams": f"Automatic NOTAM retrieval is not available for {icao} from the free public sources. Use the official NOTAM search link and verify through an official briefing source before flight."
     }
-
 
 
 @app.get("/api/wave-schedule")

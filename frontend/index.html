@@ -29,9 +29,9 @@
         <div class="hero-copy">
           <span class="chip">Useful website for AoA EASA training students</span>
           <h2>Training support built around each student’s real life.</h2>
-          <p>This portal supports the Avi Oren Aviation training project: Israeli trainees completing EASA training in Hungary, with preparation material, schedule awareness, airfield charts, aircraft study and modular CPL guidance.</p>
+          <p>This portal supports the EASA pilot training project. You will find here briefings, preparation material, training schedule, charts, aircraft study and useful links.</p>
           <p class="strong-note">The concept: training is tailor-made for each trainee, considering personal schedule, work, family, travel constraints, training pace and life realities — while keeping professional EASA standards.</p>
-          <div class="hero-actions"><button class="primary-button" onclick="showPage('schedule')">My Schedule</button><button class="ghost-button" onclick="showPage('briefingroom')">Open Briefing Room</button><span id="scheduleGuestNotice" class="guest-schedule-note">Login to view schedule</span></div>
+          <div class="hero-actions"><button class="primary-button" onclick="showPage('schedule')">Training schedule</button><button class="ghost-button" onclick="showPage('briefingroom')">Open Briefing Room</button><span id="scheduleGuestNotice" class="guest-schedule-note">Login to view schedule</span></div>
         </div>
         <div class="hero-visual"><div class="sun"></div><div class="cloud c1"></div><div class="cloud c2"></div><div class="runway"></div><div class="plane">✈</div></div>
       </div>
@@ -42,8 +42,7 @@
     <section id="schedule" class="page">
       <div class="section-header">
         <div>
-          <h2>Training wave schedule</h2>
-          <p>May 3–10 training wave only. Students can view; admin can drag & drop flights to edit the wave.</p>
+          <h2>Training schedule</h2>
         </div>
         <div class="schedule-actions">
           <button class="primary-button admin-only hidden" onclick="saveWaveSchedule()">Save changes</button>
@@ -95,7 +94,7 @@
       <div id="briefingTab-airports" class="briefing-tab-panel active">
         <div class="briefing-layout">
           <div>
-            <h3>Airport Charts / דפיות</h3>
+            <h3>Airports charts</h3>
             <div class="airport-list">
               <button class="airport-card active" onclick="selectAirport('LHKA')"><strong>LHKA</strong><span>Kalocsa</span></button>
               <button class="airport-card" onclick="selectAirport('LHJK')"><strong>LHJK</strong><span>Chart page</span></button>
@@ -437,13 +436,19 @@
       </div>
     </section>
 
+    
     <section id="admin" class="page">
-      <div class="section-header"><div><h2>Admin Workspace</h2><p>Only Avi admin account. Manage schedule, students, users and briefing files.</p></div></div>
-      <div class="admin-grid">
+      <div class="section-header">
+        <div>
+          <h2>Admin Panel</h2>
+          <p>Manage the training portal data used by the schedule and briefing room.</p>
+        </div>
+      </div>
 
+      <div class="admin-dashboard-grid">
         <div class="admin-card atpl-admin-card">
           <h3>ATPL AI Link</h3>
-          <p>Control the ATPL AI menu item. If inactive, users will see the “Arriving soon” page instead of opening the link.</p>
+          <p>Control the ATPL AI menu item. If inactive, users see the “Arriving soon” page.</p>
           <form id="atplAiSettingsForm">
             <label>ATPL AI URL
               <input name="url" id="atplAiUrlInput" value="https://avioren-aviation-mvp.onrender.com/" placeholder="https://avioren-aviation-mvp.onrender.com/" required>
@@ -455,8 +460,68 @@
             <button class="primary-button" type="submit">Save ATPL AI settings</button>
           </form>
         </div>
-<form id="scheduleForm" class="admin-card"><h3>Add Flight</h3><input name="date" type="date" required><input name="start_time" type="time" required><input name="length_hours" type="number" min="0.5" max="4" step="0.5" placeholder="Length 0.5–4 hrs" required><input name="student" placeholder="Student name" required><input name="instructor" value="Avi Oren" required><select name="aircraft_type"><option>C152</option><option>C172</option></select><input name="aircraft_number" placeholder="Aircraft number / registration" required><input name="notes" placeholder="Notes"><button class="primary-button" type="submit">Add to schedule</button></form><form id="studentForm" class="admin-card"><h3>Add Student</h3><input name="name" placeholder="Full name" required><input name="email" placeholder="Email"><select name="program"><option>PPL(A)</option><option>Hour Building</option><option>Modular CPL(A)</option></select><input name="notes" placeholder="Notes"><button class="primary-button" type="submit">Add student</button></form><form id="briefingForm" class="admin-card"><h3>Upload Briefing / ATO Certificate</h3><input name="title" placeholder="Briefing title" required><select name="category"><option>Preparation</option><option>Exercises</option><option>Airfields</option><option>Aircraft/G1000</option><option>Modular CPL</option><option>ATO Certificate</option></select><input name="file" type="file" required><button class="primary-button" type="submit">Upload file</button></form><div class="admin-card"><h3>User Approvals</h3><button class="primary-button" onclick="loadUsers()">Load users</button><div id="usersList" class="user-list"></div></div></div>
+
+        <div class="admin-card">
+          <h3>Manage training waves</h3>
+          <p>Choose the active training wave dates. The current wave schedule is May 3–10.</p>
+          <form id="trainingWaveForm">
+            <label>Wave name
+              <input id="trainingWaveName" value="May 3–10 training wave">
+            </label>
+            <label>Start date
+              <input id="trainingWaveStart" type="date" value="2026-05-03">
+            </label>
+            <label>End date
+              <input id="trainingWaveEnd" type="date" value="2026-05-10">
+            </label>
+            <button class="primary-button" type="button" onclick="saveTrainingWaveSettings()">Save wave dates</button>
+          </form>
+          <div class="wave-scroll-actions">
+            <button class="ghost-button" type="button" onclick="showPage('schedule')">Open current training wave</button>
+          </div>
+        </div>
+
+        <div class="admin-card">
+          <h3>Manage students</h3>
+          <form id="studentForm">
+            <input name="name" placeholder="Full name" required>
+            <input name="email" placeholder="Email">
+            <select name="program"><option>PPL(A)</option><option>Hour Building</option><option>Modular CPL(A)</option></select>
+            <input name="notes" placeholder="Notes">
+            <button class="primary-button" type="submit">Add student</button>
+          </form>
+          <div class="admin-list-preview">
+            <span>Nir K</span><span>Nir D</span><span>Ofek</span><span>Harel</span><span>Lior</span><span>Aviad</span><span>Ahmad</span>
+          </div>
+        </div>
+
+        <div class="admin-card">
+          <h3>Manage FIs</h3>
+          <form id="fiAdminForm">
+            <input id="fiNameInput" placeholder="FI name">
+            <button class="primary-button" type="button" onclick="addFiFromAdmin()">Add FI</button>
+          </form>
+          <div id="fiAdminList" class="admin-list-preview"></div>
+        </div>
+
+        <div class="admin-card">
+          <h3>Manage airplanes</h3>
+          <form id="airplaneAdminForm">
+            <select id="airplaneTypeInput"><option>C172</option><option>C152</option></select>
+            <input id="airplaneNumberInput" placeholder="Aircraft number / registration">
+            <button class="primary-button" type="button" onclick="addAirplaneFromAdmin()">Add airplane</button>
+          </form>
+          <div id="airplaneAdminList" class="admin-list-preview"></div>
+        </div>
+
+        <div class="admin-card">
+          <h3>User approvals</h3>
+          <button class="primary-button" onclick="loadUsers()">Load users</button>
+          <div id="usersList" class="user-list"></div>
+        </div>
+      </div>
     </section>
+
   </main>
 </div>
 <div class="bottom-nav"><button class="mobile-nav active" data-page="dashboard">Home</button><button class="mobile-nav member-only hidden" data-page="schedule">Schedule</button><button class="mobile-nav" data-page="briefingroom">Brief</button>
@@ -493,7 +558,7 @@
   </div>
 
   <div id="toast" class="toast hidden"></div><footer class="version">
-    <span>Version 0.1.20</span>
+    <span>Version 0.1.21</span>
     <span>© Avi Oren Aviation · avi8or.easa@gmail.com</span>
   </footer><script src="script.js"></script>
 </body></html>

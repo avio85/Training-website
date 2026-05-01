@@ -506,3 +506,35 @@
 .flight-card[draggable="true"]::after{
   content:"";
 }
+
+
+/* v0.1.21 admin + briefing refinements */
+.admin-dashboard-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+}
+.admin-list-preview{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:12px;
+}
+.admin-list-preview span{
+  background:#f1f9ff;
+  border:1px solid #b8dff8;
+  color:#075da8;
+  border-radius:999px;
+  padding:7px 10px;
+  font-weight:800;
+  font-size:13px;
+}
+.wave-scroll-actions{
+  margin-top:12px;
+}
+.chart-extra-links button{
+  cursor:pointer;
+}
+@media(max-width:980px){
+  .admin-dashboard-grid{grid-template-columns:1fr}
+}
