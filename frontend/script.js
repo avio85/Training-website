@@ -1672,3 +1672,115 @@ loadNotam=async function(){
     out.textContent=d.notams||'No NOTAM text returned. Use official briefing source.';
   }catch(err){out.textContent=`${err.message}\n\nUse EAD Basic / HungaroControl NetBriefing / FAA NOTAM Search.`;}
 };
+
+/* v0.3.3 canonical student aliases + solo Time Building/CPL flights */
+const STUDENT_CANONICAL_ALIASES = {
+  'harel t':'Harel','harel':'Harel',
+  'lior a':'Lior','lior':'Lior',
+  'ofek l':'Ofek','ofek':'Ofek',
+  'aviad k':'Aviad','aviad':'Aviad',
+  'ahmad z':'Ahmad','ahmad':'Ahmad'
+};
+function canonicalStudentName(name){
+  const clean=String(name||'').trim().replace(/\s+/g,' ');
+  return STUDENT_CANONICAL_ALIASES[clean.toLowerCase()] || clean;
+}
+function isSoloProgram(program){
+  const p=String(program||'').toLowerCase();
+  return (p.includes('time')&&p.includes('building')) || p.includes('hour building') || p.includes('cpl');
+}
+function studentRecordByAnyName(name){
+  const target=canonicalStudentName(name).toLowerCase();
+  return (scheduleStudents||[]).find(s=>canonicalStudentName(s.name).toLowerCase()===target) || null;
+}
+function selectedFlightStudentRecord(){
+  const student=document.getElementById('flightStudentInput')?.value||'';
+  return studentRecordByAnyName(student);
+}
+function updateInstructorRequirementHint(){
+  const ins=document.getElementById('flightInstructorInput');
+  const note=document.getElementById('flightInstructorHint');
+  if(!ins)return;
+  const rec=selectedFlightStudentRecord();
+  const allowed=!!(rec && (rec.solo_allowed || isSoloProgram(rec.program)));
+  if(note){
+    note.textContent=allowed?'This student is Time Building/CPL: FI may be left empty.':'FI required unless student program is Time Building/CPL.';
+  }
+}
+
+const AOA_033_oldPopulateFlightPeopleSelects = populateFlightPeopleSelects;
+populateFlightPeopleSelects = function(selectedStudent='', selectedInstructor=''){
+  const stu=document.getElementById('flightStudentInput');
+  if(stu){
+    const students=(scheduleStudents||[]).length?scheduleStudents:waveStudents.map(n=>({name:n,program:'PPL(A)'}));
+    const seen=new Set();
+    const opts=[];
+    students.forEach(s=>{
+      const name=String(s.name||'').trim();
+      if(!name)return;
+      const key=name.toLowerCase();
+      if(seen.has(key))return;
+      seen.add(key);
+      const program=s.program?` · ${s.program}`:'';
+      const alias=canonicalStudentName(name)!==name?` = ${canonicalStudentName(name)}`:'';
+      opts.push(`<option value="${escapeHtml(name)}" ${name===selectedStudent?'selected':''}>${escapeHtml(name+alias+program)}</option>`);
+    });
+    stu.innerHTML='<option value="">Choose student</option>'+opts.join('');
+    stu.onchange=updateInstructorRequirementHint;
+  }
+  const ins=document.getElementById('flightInstructorInput');
+  if(ins){
+    const names=(scheduleInstructors||[]).map(i=>i.name).filter(Boolean);
+    const unique=[...new Set(names.length?names:['Avi','Amir'])];
+    ins.innerHTML='<option value="">No FI / solo flight</option>'+unique.map(n=>`<option value="${escapeHtml(n)}" ${n===selectedInstructor?'selected':''}>${escapeHtml(n)}</option>`).join('');
+    ins.value=selectedInstructor||'';
+  }
+  let hint=document.getElementById('flightInstructorHint');
+  if(!hint && ins){
+    hint=document.createElement('div');
+    hint.id='flightInstructorHint';
+    hint.className='field-hint';
+    ins.parentElement?.appendChild(hint);
+  }
+  updateInstructorRequirementHint();
+};
+
+const AOA_033_oldFilteredScheduleFlights = filteredScheduleFlights;
+filteredScheduleFlights = function(){
+  const mode=document.getElementById('scheduleViewFilter')?.value||'all';
+  const flights=Array.isArray(waveSchedule)?waveSchedule:[];
+  const hint=document.getElementById('scheduleFilterHint');
+  const studentFilter=document.getElementById('scheduleStudentFilter')?.value||'';
+  if(studentFilter && (userRole==='admin'||userRole==='instructor')){
+    const wanted=canonicalStudentName(studentFilter).toLowerCase();
+    if(hint)hint.textContent=`Showing flights for ${studentFilter}.`;
+    return flights.filter(f=>canonicalStudentName(f.student).toLowerCase()===wanted);
+  }
+  if(mode==='mine'){
+    const myName=(currentUserProfile?.student_name||'').trim();
+    if(hint)hint.textContent=myName?`Showing flights linked to: ${myName}`:'No student profile is linked to your user yet. Ask admin to link you.';
+    if(!myName)return [];
+    const wanted=canonicalStudentName(myName).toLowerCase();
+    return flights.filter(f=>canonicalStudentName(f.student).toLowerCase()===wanted);
+  }
+  if(hint)hint.textContent='My flights require admin to link your user to a student profile.';
+  return flights;
+};
+
+const AOA_033_oldSaveFlightFromModal = saveFlightFromModal;
+saveFlightFromModal = function(){
+  const student=(document.getElementById('flightStudentInput')?.value||'').trim();
+  const instructor=(document.getElementById('flightInstructorInput')?.value||'').trim();
+  const rec=studentRecordByAnyName(student);
+  if(student && !instructor && !(rec && (rec.solo_allowed || isSoloProgram(rec.program)))){
+    return toast('Instructor is required unless this student is Time Building/CPL.');
+  }
+  return AOA_033_oldSaveFlightFromModal();
+};
+
+const AOA_033_oldRenderFlightCard = renderFlightCard;
+renderFlightCard = function(f,admin){
+  const card = AOA_033_oldRenderFlightCard(f,admin);
+  if(String(f.instructor||'').trim()) return card;
+  return card.replace('<span class="aircraft-tag">', '<span class="instructor-tag tag-solo">No FI</span><span class="aircraft-tag">');
+};

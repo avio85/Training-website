@@ -18,6 +18,49 @@ FRONTEND_DIR = os.getenv("FRONTEND_DIR", str(BASE_DIR / "frontend"))
 DATABASE_URL = os.getenv("DATABASE_URL")
 USE_POSTGRES = bool(DATABASE_URL)
 
+# v0.3.3: canonical student aliases to avoid mismatches after display-name edits.
+STUDENT_CANONICAL_ALIASES = {
+    "harel t": "Harel", "harel": "Harel",
+    "lior a": "Lior", "lior": "Lior",
+    "ofek l": "Ofek", "ofek": "Ofek",
+    "aviad k": "Aviad", "aviad": "Aviad",
+    "ahmad z": "Ahmad", "ahmad": "Ahmad",
+}
+
+def canonical_student_name(name: str) -> str:
+    clean = re.sub(r"\s+", " ", str(name or "").strip())
+    return STUDENT_CANONICAL_ALIASES.get(clean.lower(), clean)
+
+def student_aliases_for(name: str):
+    canon = canonical_student_name(name)
+    aliases = [k for k, v in STUDENT_CANONICAL_ALIASES.items() if v == canon]
+    out = {str(name or "").strip(), canon}
+    for a in aliases:
+        out.add(a); out.add(a.title())
+    return [x for x in out if x]
+
+def is_solo_program(program: str) -> bool:
+    p = str(program or "").lower()
+    return ("time" in p and "building" in p) or "hour building" in p or "cpl" in p
+
+def student_program_for_flight(conn, student_name: str) -> str:
+    for alias in student_aliases_for(student_name):
+        row = conn.execute("SELECT program FROM students WHERE LOWER(name)=LOWER(?)", (alias,)).fetchone()
+        if row:
+            return row["program"]
+    try:
+        rows = conn.execute("SELECT name, program FROM students").fetchall()
+        wanted = canonical_student_name(student_name).lower()
+        for r in rows:
+            if canonical_student_name(r["name"]).lower() == wanted:
+                return r["program"]
+    except Exception:
+        pass
+    return ""
+
+def solo_flight_allowed(conn, student_name: str) -> bool:
+    return is_solo_program(student_program_for_flight(conn, student_name))
+
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -702,7 +745,7 @@ def upsert_schedule_flight(conn, flight):
     time = normalize_wave_time(flight.get("time"))
     aircraft = str(flight.get("aircraft") or "C172").strip()
     student = str(flight.get("student") or "").strip()
-    instructor = str(flight.get("instructor") or "Avi").strip()
+    instructor = str(flight.get("instructor") or "").strip()
     note = str(flight.get("note") or "").strip()
     if USE_POSTGRES:
         conn.execute("""
@@ -1114,7 +1157,12 @@ def add_schedule(date: str = Form(...), start_time: str = Form(...), length_hour
 @app.get("/api/students")
 def list_students(admin=Depends(require_admin)):
     conn = db()
-    rows = [dict(r) for r in conn.execute("SELECT * FROM students ORDER BY name").fetchall()]
+    rows = []
+    for r in conn.execute("SELECT * FROM students ORDER BY name").fetchall():
+        d = dict(r)
+        d["canonical_name"] = canonical_student_name(d.get("name", ""))
+        d["solo_allowed"] = is_solo_program(d.get("program", ""))
+        rows.append(d)
     conn.close()
     return rows
 
@@ -1577,15 +1625,21 @@ def update_wave_schedule(payload: dict = Body(...), admin=Depends(require_admin)
     if not isinstance(flights, list):
         raise HTTPException(400, "Invalid schedule payload")
     allowed_aircraft = {"C172", "C152"}
-    for flight in flights:
-        if not re.match(r"^\d{4}-\d{2}-\d{2}$", str(flight.get("date") or "")):
-            raise HTTPException(400, "Invalid date")
-        if not re.match(r"^\d{4}$", normalize_wave_time(flight.get("time"))):
-            raise HTTPException(400, "Invalid time slot")
-        if flight.get("aircraft") not in allowed_aircraft:
-            raise HTTPException(400, "Invalid aircraft")
     conn = db()
     try:
+        for flight in flights:
+            if not re.match(r"^\d{4}-\d{2}-\d{2}$", str(flight.get("date") or "")):
+                raise HTTPException(400, "Invalid date")
+            if not re.match(r"^\d{4}$", normalize_wave_time(flight.get("time"))):
+                raise HTTPException(400, "Invalid time slot")
+            if flight.get("aircraft") not in allowed_aircraft:
+                raise HTTPException(400, "Invalid aircraft")
+            student = str(flight.get("student") or "").strip()
+            instructor = str(flight.get("instructor") or "").strip()
+            if not student:
+                raise HTTPException(400, "Student is required")
+            if not instructor and not solo_flight_allowed(conn, student):
+                raise HTTPException(400, f"Instructor is required for {student}. Only Time Building / CPL students may be assigned without FI.")
         flights = sync_wave_flights_to_schedule(conn, flights)
         setting_put(conn, "wave_schedule", json.dumps(flights))
         conn.commit()
