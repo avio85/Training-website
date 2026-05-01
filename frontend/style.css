@@ -594,3 +594,14 @@
 .wave-day-header{direction:ltr;text-align:left}
 .version{display:flex!important}
 @media(max-width:980px){.version{display:flex!important}}
+
+/* v0.2.2 dashboard polish */
+.homepage-weather-grid{
+  grid-template-columns:repeat(5, minmax(0, 1fr));
+}
+@media(max-width:1200px){
+  .homepage-weather-grid{grid-template-columns:repeat(2, minmax(0, 1fr));}
+}
+@media(max-width:720px){
+  .homepage-weather-grid{grid-template-columns:1fr;}
+}

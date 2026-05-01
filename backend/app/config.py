@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 APP_NAME = "Avi Oren Aviation"
-APP_VERSION = "0.2.0"
+APP_VERSION = "0.2.2"
 JWT_SECRET = os.getenv("JWT_SECRET", "change-this-secret-before-production")
 DB_PATH = os.getenv("DB_PATH", "avi_aviation.db")
 UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", "uploads"))

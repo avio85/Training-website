@@ -1279,3 +1279,119 @@ document.addEventListener("DOMContentLoaded",()=>{
     renderWaveCalendar();
   };
 })();
+
+/* =========================================================
+   v0.2.2 fixes
+   - ATPL AI active/url persist reliably
+   - Dashboard has 5 boxes including baro pressure
+   - LHKA dashboard uses backend fallback if METAR is unavailable
+   ========================================================= */
+(function(){
+  const VERSION = "0.2.2";
+
+  window.loadAtplAiSettings = async function(){
+    const fallback = localStorage.getItem("atplAiUrl") || "https://avioren-aviation-mvp.onrender.com/";
+    try{
+      const r = await fetch("/api/settings/atpl-ai", {cache:"no-store"});
+      const d = await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(d.detail || "Could not load ATPL AI settings");
+      atplAiSettings = {url: d.url || fallback, active: !!d.active};
+      localStorage.setItem("atplAiUrl", atplAiSettings.url);
+      localStorage.setItem("atplAiActive", atplAiSettings.active ? "true" : "false");
+    }catch{
+      atplAiSettings = {
+        url: fallback,
+        active: localStorage.getItem("atplAiActive") === "true"
+      };
+    }
+    const u = document.getElementById("atplAiUrlInput");
+    const a = document.getElementById("atplAiActiveInput");
+    if(u) u.value = atplAiSettings.url || fallback;
+    if(a) a.checked = !!atplAiSettings.active;
+    return atplAiSettings;
+  };
+
+  window.saveAtplAiSettings = async function(e){
+    if(e) e.preventDefault();
+    const form = e?.target || document.getElementById("atplAiSettingsForm");
+    const url = (form?.url?.value || document.getElementById("atplAiUrlInput")?.value || "https://avioren-aviation-mvp.onrender.com/").trim();
+    const active = !!(form?.active?.checked || document.getElementById("atplAiActiveInput")?.checked);
+
+    localStorage.setItem("atplAiUrl", url);
+    localStorage.setItem("atplAiActive", active ? "true" : "false");
+    atplAiSettings = {url, active};
+
+    const fd = new FormData();
+    fd.append("url", url);
+    fd.append("active", active ? "true" : "false");
+
+    try{
+      const r = await fetch("/api/settings/atpl-ai", {method:"POST", headers:authHeaders(), body:fd});
+      const d = await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(d.detail || "Could not save ATPL AI settings");
+      atplAiSettings = {url:d.url || url, active:!!d.active};
+      localStorage.setItem("atplAiUrl", atplAiSettings.url);
+      localStorage.setItem("atplAiActive", atplAiSettings.active ? "true" : "false");
+      const a = document.getElementById("atplAiActiveInput");
+      if(a) a.checked = atplAiSettings.active;
+      toast(atplAiSettings.active ? "ATPL AI saved as active" : "ATPL AI saved as inactive");
+    }catch(err){
+      toast(err.message);
+    }
+    return false;
+  };
+
+  window.handleAtplAiClick = async function(e){
+    if(e){ e.preventDefault(); e.stopPropagation(); }
+    const settings = await loadAtplAiSettings();
+    if(settings.active && settings.url){
+      window.open(settings.url, "_blank", "noopener,noreferrer");
+      return false;
+    }
+    showPage("atplai");
+    return false;
+  };
+
+  window.loadHomeWeather = async function(){
+    const temp = document.getElementById("homeTemp");
+    const pressure = document.getElementById("homePressure");
+    const wind = document.getElementById("homeWind");
+    const sun = document.getElementById("homeSunTimes");
+    const source = document.getElementById("homeWeatherSource");
+
+    if(temp) temp.textContent = "Loading...";
+    if(pressure) pressure.textContent = "Loading...";
+    if(wind) wind.textContent = "Loading...";
+    if(sun) sun.textContent = "Loading...";
+
+    try{
+      const r = await fetch("/api/weather/airport/LHKA", {cache:"no-store"});
+      const d = await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(d.detail || "Weather request failed");
+      const s = d.summary || {};
+      if(temp) temp.textContent = s.temperature || "N/A";
+      if(pressure) pressure.textContent = s.pressure || "N/A";
+      if(wind) wind.textContent = s.wind || "N/A";
+      if(sun) sun.textContent = d.sun ? `${d.sun.sunrise} / ${d.sun.sunset}` : "N/A";
+      if(source){
+        const sourceNote = d.source_note || `${d.source_airport || "LHKA"} METAR via backend`;
+        source.textContent = `Weather source: ${sourceNote}. Sunrise/sunset calculated for LHKA. Always verify official aviation weather before flight.`;
+      }
+    }catch(err){
+      if(temp) temp.textContent = "N/A";
+      if(pressure) pressure.textContent = "N/A";
+      if(wind) wind.textContent = "N/A";
+      if(sun) sun.textContent = "N/A";
+      if(source) source.textContent = "LHKA dashboard data is unavailable. Verify official aviation weather before flight.";
+    }
+  };
+
+  window.addEventListener("DOMContentLoaded", () => {
+    const versionText = document.querySelector(".version span:first-child");
+    if(versionText) versionText.textContent = "Version " + VERSION;
+    const form = document.getElementById("atplAiSettingsForm");
+    if(form) form.onsubmit = saveAtplAiSettings;
+    loadAtplAiSettings();
+    loadHomeWeather();
+  });
+})();
