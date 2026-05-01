@@ -12,3 +12,28 @@ for router in [auth_users.router, settings.router, weather.router, schedule.rout
     app.include_router(router)
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
+from app.db import get_conn
+
+def init_db():
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email TEXT UNIQUE,
+        password TEXT,
+        role TEXT DEFAULT 'member',
+        approved BOOLEAN DEFAULT FALSE
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS app_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT
+    )
+    """)
+
+    conn.commit()
+    conn.close()
