@@ -15,6 +15,7 @@
       <button class="nav-item member-only hidden" data-page="schedule">Schedule</button>
       <button class="nav-item" data-page="briefingroom">Briefing Room</button>
       <button class="nav-item" data-page="modular">Modular CPL</button>
+      <button class="nav-item member-only hidden" data-page="profile">Profile</button>
       <button class="nav-item admin-only hidden" data-page="admin">Admin</button>
       <button class="nav-item atpl-ai-link" data-page="atplai" onclick="handleAtplAiClick(event)">ATPL AI</button>
     </nav>
@@ -437,6 +438,41 @@
     </section>
 
     
+    <section id="profile" class="page">
+      <div class="section-header">
+        <div>
+          <h2>User Profile</h2>
+          <p>Basic account information and personal training notes.</p>
+        </div>
+        <button class="ghost-button" onclick="logout()">Logout</button>
+      </div>
+
+      <div class="admin-dashboard-grid">
+        <div class="admin-card">
+          <h3>Account</h3>
+          <div id="profileStatus" class="profile-status">Loading profile...</div>
+        </div>
+        <div class="admin-card">
+          <h3>Basic info</h3>
+          <form id="profileForm">
+            <label>Full name
+              <input id="profileFullName" name="full_name" placeholder="Full name">
+            </label>
+            <label>Phone
+              <input id="profilePhone" name="phone" placeholder="Phone number">
+            </label>
+            <label>Licence / training info
+              <input id="profileLicense" name="license_info" placeholder="PPL / CPL / FI / student notes">
+            </label>
+            <label>Notes
+              <input id="profileNotes" name="notes" placeholder="Optional notes">
+            </label>
+            <button class="primary-button" type="submit">Save profile</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
     <section id="admin" class="page">
       <div class="section-header">
         <div>
@@ -524,8 +560,9 @@
 
   </main>
 </div>
-<div class="bottom-nav"><button class="mobile-nav active" data-page="dashboard">Home</button><button class="mobile-nav member-only hidden" data-page="schedule">Schedule</button><button class="mobile-nav" data-page="briefingroom">Brief</button>
+<div class="bottom-nav"><button class="mobile-nav active" data-page="dashboard">Home</button><button class="mobile-nav member-only hidden" data-page="schedule">Schedule</button><button class="mobile-nav" data-page="briefingroom">Brief</button><button class="mobile-nav member-only hidden" data-page="profile">Profile</button>
     <button class="mobile-nav atpl-ai-mobile" data-page="atplai" onclick="handleAtplAiClick(event)">ATPL AI</button></div>
+<button id="mobileLogoutBtn" class="mobile-logout hidden" onclick="logout()">Logout</button>
 <div id="loginModal" class="modal hidden"><div class="modal-card"><button class="close" onclick="closeLoginModal()">×</button><h2>Member Access</h2><p>Login to view schedule and briefing files. New users require admin approval.</p><div class="auth-grid"><form id="loginForm" autocomplete="on"><h3>Login</h3><input name="email" type="email" placeholder="Email" autocomplete="username" required><input name="password" type="password" placeholder="Password" autocomplete="current-password" required><button class="primary-button" type="submit">Login</button></form><form id="signupForm" autocomplete="on"><h3>Sign up</h3><input name="email" type="email" placeholder="Email" required><input name="password" type="password" placeholder="Password" autocomplete="new-password" required><button class="ghost-button" type="submit">Sign up</button></form></div></div></div>
 
   <div id="filePreviewModal" class="modal hidden">

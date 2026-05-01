@@ -782,7 +782,7 @@ let token=localStorage.getItem("token")||"";
 let userRole=localStorage.getItem("role")||"";
 let atplAiSettings={url:"https://avioren-aviation-mvp.onrender.com/",active:false};
 let waveSchedule=[];let selectedWeatherAirport="LHKA";let slotEditFlightId=null;
-const pageTitles={dashboard:"Dashboard",schedule:"Training schedule",briefingroom:"Briefing Room",modular:"Modular CPL",admin:"Admin Panel",atplai:"ATPL AI"};
+const pageTitles={dashboard:"Dashboard",schedule:"Training schedule",briefingroom:"Briefing Room",modular:"Modular CPL",profile:"User Profile",admin:"Admin Panel",atplai:"ATPL AI"};
 const waveDays=[{date:"2026-05-03",label:"May 3"},{date:"2026-05-04",label:"May 4"},{date:"2026-05-05",label:"May 5"},{date:"2026-05-06",label:"May 6"},{date:"2026-05-07",label:"May 7"},{date:"2026-05-08",label:"May 8"},{date:"2026-05-09",label:"May 9"},{date:"2026-05-10",label:"May 10"}];
 const waveTimes=["0800","1000","1200","1400","1600"];const waveAircraft=["C172","C152"];const waveStudents=["Nir K","Nir D","Ofek","Harel","Lior","Aviad","Ahmad"];
 const airportCharts={
@@ -822,7 +822,7 @@ let adminFis=JSON.parse(localStorage.getItem("adminFis")||'["Avi","Amir"]');let 
 function renderAdminLists(){const fi=document.getElementById("fiAdminList");if(fi)fi.innerHTML=adminFis.map(x=>`<span>${escapeHtml(x)}</span>`).join("");const ap=document.getElementById("airplaneAdminList");if(ap)ap.innerHTML=adminAirplanes.map(a=>`<span>${escapeHtml(a.type)}${a.number?" · "+escapeHtml(a.number):""}</span>`).join("")}
 function addFiFromAdmin(){const i=document.getElementById("fiNameInput"),name=(i?.value||"").trim();if(!name)return toast("Enter FI name");if(!adminFis.includes(name))adminFis.push(name);localStorage.setItem("adminFis",JSON.stringify(adminFis));i.value="";renderAdminLists();toast("FI added")}function addAirplaneFromAdmin(){const type=document.getElementById("airplaneTypeInput")?.value||"C172",number=(document.getElementById("airplaneNumberInput")?.value||"").trim();adminAirplanes.push({type,number});localStorage.setItem("adminAirplanes",JSON.stringify(adminAirplanes));const i=document.getElementById("airplaneNumberInput");if(i)i.value="";renderAdminLists();toast("Airplane added")}function saveTrainingWaveSettings(){const name=document.getElementById("trainingWaveName")?.value||"Training wave",start=document.getElementById("trainingWaveStart")?.value||"2026-05-03",end=document.getElementById("trainingWaveEnd")?.value||"2026-05-10";localStorage.setItem("trainingWaveSettings",JSON.stringify({name,start,end}));toast("Training wave dates saved")}
 async function loadUsers(){const list=document.getElementById("usersList");if(!list)return;list.innerHTML="<p>Loading users...</p>";try{const r=await fetch("/api/users",{headers:authHeaders()}),users=await r.json();if(!r.ok)throw new Error(users.detail||"Could not load users");list.innerHTML=users.map(u=>`<div class="user-row"><strong>${escapeHtml(u.email)}</strong><span>${escapeHtml(u.role)} · ${u.approved?"approved":"pending"}</span>${!u.approved?`<button class="ghost-button" onclick="approveUser('${escapeHtml(u.id)}')">Approve</button>`:""}</div>`).join("")}catch(err){list.innerHTML=`<p>${escapeHtml(err.message)}</p>`}}async function approveUser(id){try{const r=await fetch(`/api/users/${encodeURIComponent(id)}/approve`,{method:"POST",headers:authHeaders()}),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||"Could not approve user");toast("User approved");loadUsers()}catch(err){toast(err.message)}}
-document.addEventListener("DOMContentLoaded",()=>{setAuthUi();loadHomeWeather();loadAtplAiSettings();renderAdminLists();document.getElementById("logoutBtn")?.addEventListener("click",logout);document.getElementById("loginForm")?.addEventListener("submit",async e=>{e.preventDefault();try{const d=await postForm("/api/login",e.target);token=d.token;userRole=d.role;localStorage.setItem("token",token);localStorage.setItem("role",userRole);setAuthUi();closeLoginModal();toast(d.approved?"Logged in":"Logged in, waiting for approval");if(userRole==="admin")showPage("admin")}catch(err){toast(err.message)}});document.getElementById("signupForm")?.addEventListener("submit",async e=>{e.preventDefault();try{const d=await postForm("/api/signup",e.target);toast(d.message||"Signup created")}catch(err){toast(err.message)}});document.getElementById("studentForm")?.addEventListener("submit",async e=>{e.preventDefault();try{await postForm("/api/students",e.target);e.target.reset();toast("Student added")}catch(err){toast(err.message)}});document.getElementById("atplAiSettingsForm")?.addEventListener("submit",saveAtplAiSettings);document.querySelectorAll(".nav-item,.mobile-nav").forEach(btn=>btn.addEventListener("click",e=>{if(btn.dataset.page==="atplai")return handleAtplAiClick(e);showPage(btn.dataset.page)}));document.addEventListener("click",e=>{const menu=document.getElementById("slotEditMenu");if(menu&&!menu.classList.contains("hidden")&&!menu.contains(e.target))closeSlotEditMenu()});document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSlotEditMenu()});selectAirport("LHKA")});
+document.addEventListener("DOMContentLoaded",()=>{setAuthUi();loadHomeWeather();loadAtplAiSettings();renderAdminLists();document.getElementById("logoutBtn")?.addEventListener("click",logout);document.getElementById("loginForm")?.addEventListener("submit",async e=>{e.preventDefault();try{const d=await postForm("/api/login",e.target);token=d.token;userRole=d.role;localStorage.setItem("token",token);localStorage.setItem("role",userRole);setAuthUi();closeLoginModal();toast(d.approved?"Logged in":"Logged in, waiting for approval");if(userRole==="admin")showPage("admin")}catch(err){toast(err.message)}});document.getElementById("signupForm")?.addEventListener("submit",async e=>{e.preventDefault();try{const d=await postForm("/api/signup",e.target);toast(d.message||"Signup created");closeLoginModal()}catch(err){toast(err.message||"Signup failed")}});document.getElementById("studentForm")?.addEventListener("submit",async e=>{e.preventDefault();try{await postForm("/api/students",e.target);e.target.reset();toast("Student added")}catch(err){toast(err.message)}});document.getElementById("atplAiSettingsForm")?.addEventListener("submit",saveAtplAiSettings);document.querySelectorAll(".nav-item,.mobile-nav").forEach(btn=>btn.addEventListener("click",e=>{if(btn.dataset.page==="atplai")return handleAtplAiClick(e);showPage(btn.dataset.page)}));document.addEventListener("click",e=>{const menu=document.getElementById("slotEditMenu");if(menu&&!menu.classList.contains("hidden")&&!menu.contains(e.target))closeSlotEditMenu()});document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSlotEditMenu()});selectAirport("LHKA")});
 
 /* v0.1.25 stable overrides: NOTAM, wave switcher, mobile polish */
 function scrollToLatestAssistantTop(){
@@ -1139,4 +1139,104 @@ document.addEventListener("DOMContentLoaded",()=>{
   updateWaveLabel();
   loadHomeWeather();
   selectAirport("LHKA");
+});
+
+
+/* v0.2.10 auth/profile/mobile hotfix */
+function clearAuthState(){
+  localStorage.removeItem("token");
+  localStorage.removeItem("role");
+  token=""; userRole="";
+  setAuthUi();
+}
+function handleAuthFailure(message){
+  clearAuthState();
+  showPage("dashboard");
+  openLoginModal();
+  toast(message||"Session expired. Please login again.");
+}
+const AOA_OLD_setAuthUi=setAuthUi;
+setAuthUi=function(){
+  AOA_OLD_setAuthUi();
+  const logged=!!token;
+  document.getElementById("mobileLogoutBtn")?.classList.toggle("hidden",!logged);
+  document.querySelectorAll('.member-only').forEach(e=>e.classList.toggle('hidden',!logged));
+};
+const AOA_OLD_logout=logout;
+logout=function(){
+  clearAuthState();
+  showPage("dashboard");
+  toast("Logged out");
+};
+async function apiJson(url, options={}){
+  const r=await fetch(url,options);
+  const d=await r.json().catch(()=>({}));
+  if(r.status===401){
+    handleAuthFailure(d.detail||"Invalid token. Please login again.");
+    throw new Error(d.detail||"Invalid token");
+  }
+  if(!r.ok) throw new Error(d.detail||"Request failed");
+  return d;
+}
+loadProfile=async function(){
+  const box=document.getElementById("profileStatus");
+  if(!token){openLoginModal();return;}
+  if(box)box.textContent="Loading profile...";
+  try{
+    const d=await apiJson("/api/me",{headers:authHeaders(),cache:"no-store"});
+    if(box){
+      box.innerHTML=`<div class="profile-line"><strong>Email:</strong> ${escapeHtml(d.email||"")}</div>
+      <div class="profile-line"><strong>Role:</strong> ${escapeHtml(d.role||"")}</div>
+      <div class="profile-line"><strong>Status:</strong> ${d.approved?"Approved":"Waiting for approval"}</div>
+      <div class="profile-line"><strong>Created:</strong> ${escapeHtml(d.created_at||"")}</div>`;
+    }
+    const set=(id,val)=>{const el=document.getElementById(id); if(el)el.value=val||"";};
+    set("profileFullName",d.full_name); set("profilePhone",d.phone); set("profileLicense",d.license_info); set("profileNotes",d.notes);
+  }catch(err){ if(box)box.textContent=err.message; }
+};
+const AOA_OLD_showPage=showPage;
+showPage=function(id){
+  if(id==="profile"&&!token){openLoginModal();toast("Login required");return;}
+  AOA_OLD_showPage(id);
+  if(id==="profile")loadProfile();
+};
+loadUsers=async function(){
+  const list=document.getElementById("usersList");if(!list)return;
+  list.innerHTML="<p>Loading users...</p>";
+  try{
+    const users=await apiJson("/api/users",{headers:authHeaders(),cache:"no-store"});
+    list.innerHTML=users.map(u=>`<div class="user-row"><strong>${escapeHtml(u.email)}</strong><span>${escapeHtml(u.role)} · ${u.approved?"approved":"pending"}</span>${!u.approved?`<button class="ghost-button" onclick="approveUser('${escapeHtml(u.id)}')">Approve</button>`:""}</div>`).join("")||"<p>No users found.</p>";
+  }catch(err){list.innerHTML=`<p>${escapeHtml(err.message)}</p>`;}
+};
+approveUser=async function(id){
+  try{await apiJson(`/api/users/${encodeURIComponent(id)}/approve`,{method:"POST",headers:authHeaders()});toast("User approved");loadUsers();}
+  catch(err){toast(err.message)}
+};
+saveAtplAiSettings=async function(e){
+  if(e)e.preventDefault();
+  const form=e?.target||document.getElementById('atplAiSettingsForm');
+  const url=(form?.url?.value||document.getElementById('atplAiUrlInput')?.value||'https://avioren-aviation-mvp.onrender.com/').trim();
+  const active=!!(form?.active?.checked ?? document.getElementById('atplAiActiveInput')?.checked);
+  try{
+    const d=await apiJson('/api/settings/atpl-ai',{method:'POST',headers:{...authHeaders(),'Content-Type':'application/json'},body:JSON.stringify({url,active})});
+    atplAiSettings={url:d.url||url,active:!!d.active};
+    localStorage.setItem('atplAiUrl',atplAiSettings.url);
+    localStorage.setItem('atplAiActive',atplAiSettings.active?'true':'false');
+    toast('ATPL AI settings saved');
+  }catch(err){toast(err.message)}
+};
+document.addEventListener("DOMContentLoaded",()=>{
+  setAuthUi();
+  const pf=document.getElementById("profileForm");
+  if(pf){
+    pf.addEventListener("submit",async e=>{
+      e.preventDefault();
+      try{await apiJson('/api/me',{method:'POST',headers:authHeaders(),body:new FormData(e.target)});toast('Profile saved');loadProfile();}
+      catch(err){toast(err.message)}
+    });
+  }
+  const form=document.getElementById('atplAiSettingsForm');
+  if(form){
+    form.addEventListener('submit',saveAtplAiSettings);
+  }
 });

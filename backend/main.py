@@ -711,6 +711,40 @@ def init_db():
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
     )""")
+
+    # Safe migrations for Supabase/Postgres and older temporary schemas.
+    # These keep existing users while adding the fields used by the stable app.
+    if USE_POSTGRES:
+        for ddl in [
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'student'",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS approved BOOLEAN DEFAULT FALSE",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider TEXT DEFAULT 'email'",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS license_info TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS notes TEXT"
+        ]:
+            try:
+                cur.execute(ddl)
+            except Exception:
+                conn.rollback()
+        try:
+            cur.execute("UPDATE users SET password_hash=password WHERE password_hash IS NULL AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='password')")
+        except Exception:
+            conn.rollback()
+        cur.execute("UPDATE users SET created_at=? WHERE created_at IS NULL", (datetime.datetime.utcnow().isoformat(),))
+        cur.execute("UPDATE users SET auth_provider='email' WHERE auth_provider IS NULL")
+        cur.execute("UPDATE users SET role='student' WHERE role IS NULL")
+        cur.execute("UPDATE users SET approved=FALSE WHERE approved IS NULL")
+    else:
+        for col in [
+            ("full_name", "TEXT"), ("phone", "TEXT"), ("license_info", "TEXT"), ("notes", "TEXT")
+        ]:
+            try: cur.execute(f"ALTER TABLE users ADD COLUMN {col[0]} {col[1]}")
+            except Exception: pass
+
     setting_insert_default(conn, "atpl_ai_url", "https://avioren-aviation-mvp.onrender.com/")
     setting_insert_default(conn, "atpl_ai_active", "false")
     conn.commit()
@@ -723,14 +757,14 @@ def init_db():
     cur.execute("SELECT id FROM users WHERE email=?", (admin_email,))
     existing_admin = cur.fetchone()
     if not existing_admin:
-        cur.execute("INSERT INTO users VALUES (?,?,?,?,?,?,?)", (
+        cur.execute("INSERT INTO users (id,email,password_hash,role,approved,auth_provider,created_at) VALUES (?,?,?,?,?,?,?)", (
             str(uuid.uuid4()), admin_email,
             admin_hash,
             "admin", admin_approved, "email", datetime.datetime.utcnow().isoformat()
         ))
     else:
         # Keep Render ADMIN_EMAIL / ADMIN_PASSWORD authoritative after DB migration.
-        cur.execute("UPDATE users SET password_hash=?, role=?, approved=? WHERE email=?", (
+        cur.execute("UPDATE users SET password_hash=?, role=?, approved=?, auth_provider='email' WHERE email=?", (
             admin_hash, "admin", admin_approved, admin_email
         ))
     # demo data
@@ -805,7 +839,7 @@ def get_current_user(request: Request):
         admin_email = os.getenv("ADMIN_EMAIL", "admin@avioren.local").lower()
         if email == admin_email:
             try:
-                conn.execute("INSERT INTO users VALUES (?,?,?,?,?,?,?)", (
+                conn.execute("INSERT INTO users (id,email,password_hash,role,approved,auth_provider,created_at) VALUES (?,?,?,?,?,?,?)", (
                     payload["sub"], admin_email,
                     pwd_context.hash(os.getenv("ADMIN_PASSWORD", "ChangeMe123!")),
                     "admin", True if USE_POSTGRES else 1, "email", datetime.datetime.utcnow().isoformat()
@@ -831,16 +865,20 @@ def require_member(user=Depends(get_current_user)):
     return user
 
 @app.post("/api/signup")
-def signup(email: str = Form(...), password: str = Form(...)):
+def signup(email: str = Form(...), password: str = Form(...), full_name: str = Form(""), phone: str = Form("")):
     conn = db()
     try:
-        conn.execute("INSERT INTO users VALUES (?,?,?,?,?,?,?)", (
-            str(uuid.uuid4()), email.lower(), pwd_context.hash(password),
-            "student", False if USE_POSTGRES else 0, "email", datetime.datetime.utcnow().isoformat()
+        conn.execute("INSERT INTO users (id,email,password_hash,role,approved,auth_provider,created_at,full_name,phone) VALUES (?,?,?,?,?,?,?,?,?)", (
+            str(uuid.uuid4()), email.lower().strip(), pwd_context.hash(password),
+            "student", False if USE_POSTGRES else 0, "email", datetime.datetime.utcnow().isoformat(), full_name.strip(), phone.strip()
         ))
         conn.commit()
     except DBIntegrityError:
+        conn.rollback()
         raise HTTPException(400, "Email already exists")
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(500, f"Signup failed: {str(e)}")
     finally:
         conn.close()
     return {"ok": True, "message": "Account created. Waiting for admin approval."}
@@ -853,6 +891,37 @@ def login(email: str = Form(...), password: str = Form(...)):
     if not user or not pwd_context.verify(password, user["password_hash"]):
         raise HTTPException(401, "Wrong email or password")
     return {"token": make_token(user), "role": user["role"], "approved": bool(user["approved"]), "email": user["email"]}
+
+@app.get("/api/me")
+def get_me(user=Depends(require_member)):
+    return {
+        "email": user["email"],
+        "role": user["role"],
+        "approved": bool(user["approved"]),
+        "created_at": user["created_at"] if "created_at" in user.keys() else "",
+        "full_name": user["full_name"] if "full_name" in user.keys() else "",
+        "phone": user["phone"] if "phone" in user.keys() else "",
+        "license_info": user["license_info"] if "license_info" in user.keys() else "",
+        "notes": user["notes"] if "notes" in user.keys() else ""
+    }
+
+@app.post("/api/me")
+def update_me(full_name: str = Form(""), phone: str = Form(""), license_info: str = Form(""), notes: str = Form(""), user=Depends(require_member)):
+    conn = db()
+    conn.execute("UPDATE users SET full_name=?, phone=?, license_info=?, notes=? WHERE id=?", (
+        full_name.strip(), phone.strip(), license_info.strip(), notes.strip(), user["id"]
+    ))
+    conn.commit()
+    conn.close()
+    return {"ok": True}
+
+@app.get("/debug/db")
+def debug_db_shortcut():
+    return debug_db()
+
+@app.get("/api/debug/db/")
+def debug_db_trailing():
+    return debug_db()
 
 @app.get("/api/public/info")
 def public_info():
