@@ -1240,3 +1240,28 @@ document.addEventListener("DOMContentLoaded",()=>{
     form.addEventListener('submit',saveAtplAiSettings);
   }
 });
+
+/* v0.2.11 token-safe schedule + signup/auth recovery */
+saveWaveSchedule=async function(){
+  if(!canEditSchedule())return toast("Admin only");
+  try{
+    await apiJson("/api/wave-schedule",{method:"POST",headers:{...authHeaders(),"Content-Type":"application/json"},body:JSON.stringify({flights:waveSchedule})});
+    toast("Training wave schedule saved");
+  }catch(err){toast(err.message)}
+};
+
+// Capture signup before older listeners, so it submits once only.
+document.addEventListener("DOMContentLoaded",()=>{
+  const sf=document.getElementById("signupForm");
+  if(sf){
+    sf.addEventListener("submit",async e=>{
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      try{
+        const d=await postForm("/api/signup",e.target);
+        toast(d.message||"Signup created. Waiting for admin approval.");
+        e.target.reset();
+      }catch(err){toast(err.message||"Signup failed")}
+    }, true);
+  }
+});

@@ -642,6 +642,39 @@ def setting_insert_default(conn, key, value):
     if not row:
         conn.execute("INSERT INTO app_settings VALUES (?,?)", (key, value))
 
+def pg_user_id_kind(conn):
+    """Return the current Postgres users.id type. Older temporary schemas used SERIAL/integer."""
+    if not USE_POSTGRES:
+        return "text"
+    row = conn.execute("""
+        SELECT data_type, udt_name
+        FROM information_schema.columns
+        WHERE table_schema='public' AND table_name='users' AND column_name='id'
+        LIMIT 1
+    """).fetchone()
+    if not row:
+        return "text"
+    return str(row.get("data_type") or row.get("udt_name") or "text").lower()
+
+def pg_user_id_accepts_manual(conn):
+    kind = pg_user_id_kind(conn)
+    return kind in ("text", "character varying", "uuid")
+
+def insert_user(conn, email, password_hash, role="student", approved=False, full_name="", phone="", forced_id=None):
+    """Insert user safely for both old integer-id Supabase schemas and new text-id schemas."""
+    approved_value = bool(approved) if USE_POSTGRES else (1 if approved else 0)
+    created = datetime.datetime.utcnow().isoformat()
+    if USE_POSTGRES and not pg_user_id_accepts_manual(conn):
+        conn.execute(
+            "INSERT INTO users (email,password_hash,role,approved,auth_provider,created_at,full_name,phone) VALUES (?,?,?,?,?,?,?,?)",
+            (email, password_hash, role, approved_value, "email", created, full_name, phone)
+        )
+    else:
+        conn.execute(
+            "INSERT INTO users (id,email,password_hash,role,approved,auth_provider,created_at,full_name,phone) VALUES (?,?,?,?,?,?,?,?,?)",
+            (forced_id or str(uuid.uuid4()), email, password_hash, role, approved_value, "email", created, full_name, phone)
+        )
+
 def db_debug_status():
     info = {"database_url_exists": bool(DATABASE_URL), "postgres": USE_POSTGRES, "connected": False, "tables": []}
     try:
@@ -757,11 +790,7 @@ def init_db():
     cur.execute("SELECT id FROM users WHERE email=?", (admin_email,))
     existing_admin = cur.fetchone()
     if not existing_admin:
-        cur.execute("INSERT INTO users (id,email,password_hash,role,approved,auth_provider,created_at) VALUES (?,?,?,?,?,?,?)", (
-            str(uuid.uuid4()), admin_email,
-            admin_hash,
-            "admin", admin_approved, "email", datetime.datetime.utcnow().isoformat()
-        ))
+        insert_user(conn, admin_email, admin_hash, role="admin", approved=True)
     else:
         # Keep Render ADMIN_EMAIL / ADMIN_PASSWORD authoritative after DB migration.
         cur.execute("UPDATE users SET password_hash=?, role=?, approved=?, auth_provider='email' WHERE email=?", (
@@ -839,15 +868,17 @@ def get_current_user(request: Request):
         admin_email = os.getenv("ADMIN_EMAIL", "admin@avioren.local").lower()
         if email == admin_email:
             try:
-                conn.execute("INSERT INTO users (id,email,password_hash,role,approved,auth_provider,created_at) VALUES (?,?,?,?,?,?,?)", (
-                    payload["sub"], admin_email,
-                    pwd_context.hash(os.getenv("ADMIN_PASSWORD", "ChangeMe123!")),
-                    "admin", True if USE_POSTGRES else 1, "email", datetime.datetime.utcnow().isoformat()
-                ))
-                conn.commit()
+                existing_by_email = conn.execute("SELECT * FROM users WHERE email=?", (admin_email,)).fetchone()
+                if existing_by_email:
+                    user = existing_by_email
+                else:
+                    insert_user(conn, admin_email, pwd_context.hash(os.getenv("ADMIN_PASSWORD", "ChangeMe123!")), role="admin", approved=True, forced_id=payload["sub"])
+                    conn.commit()
+                    user = conn.execute("SELECT * FROM users WHERE email=?", (admin_email,)).fetchone()
             except DBIntegrityError:
                 conn.rollback()
-            user = conn.execute("SELECT * FROM users WHERE id=?", (payload["sub"],)).fetchone()
+            if not user:
+                user = conn.execute("SELECT * FROM users WHERE email=?", (admin_email,)).fetchone()
         if not user:
             conn.close()
             raise HTTPException(401, "User not found. Please log out and log in again.")
@@ -868,10 +899,7 @@ def require_member(user=Depends(get_current_user)):
 def signup(email: str = Form(...), password: str = Form(...), full_name: str = Form(""), phone: str = Form("")):
     conn = db()
     try:
-        conn.execute("INSERT INTO users (id,email,password_hash,role,approved,auth_provider,created_at,full_name,phone) VALUES (?,?,?,?,?,?,?,?,?)", (
-            str(uuid.uuid4()), email.lower().strip(), pwd_context.hash(password),
-            "student", False if USE_POSTGRES else 0, "email", datetime.datetime.utcnow().isoformat(), full_name.strip(), phone.strip()
-        ))
+        insert_user(conn, email.lower().strip(), pwd_context.hash(password), role="student", approved=False, full_name=full_name.strip(), phone=phone.strip())
         conn.commit()
     except DBIntegrityError:
         conn.rollback()
