@@ -538,3 +538,15 @@
 @media(max-width:980px){
   .admin-dashboard-grid{grid-template-columns:1fr}
 }
+
+/* v0.1.23 CLEAN stabilization */
+.briefing-room-tabs{grid-template-columns:repeat(6,1fr)}
+.briefing-tab-panel.active{animation:fadeIn .18s ease}
+.chart-extra-links button{min-width:130px}
+.weather-summary-item strong{word-break:break-word}
+.wave-calendar{grid-template-columns:repeat(auto-fit,minmax(360px,1fr))}
+.wave-day-card{transition:transform .18s ease,box-shadow .18s ease}.wave-day-card:hover{transform:translateY(-2px)}
+.flight-card{position:relative}.flight-card[draggable="true"]:hover{outline:2px solid #b8dff8}
+.flight-card[draggable="true"]::before{content:"⋮⋮";position:absolute;right:8px;top:7px;color:#9aa9b8;font-weight:900;letter-spacing:-2px}
+.user-row{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.user-row span{color:var(--muted);font-size:13px}
+@media(max-width:980px){.briefing-room-tabs{grid-template-columns:repeat(2,1fr)}.wave-calendar{grid-template-columns:1fr}.user-row{grid-template-columns:1fr}}

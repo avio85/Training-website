@@ -16,7 +16,7 @@
       <button class="nav-item" data-page="briefingroom">Briefing Room</button>
       <button class="nav-item" data-page="modular">Modular CPL</button>
       <button class="nav-item admin-only hidden" data-page="admin">Admin</button>
-      <<button class="nav-item atpl-ai-link" data-page="atplai">ATPL AI</button>
+      <button class="nav-item atpl-ai-link" data-page="atplai" onclick="handleAtplAiClick(event)">ATPL AI</button>
     </nav>
     <div class="sidebar-footer"><div id="loginStatus" class="status-pill">Guest mode</div><button id="logoutBtn" class="ghost-button hidden">Logout</button></div>
   </aside>
@@ -35,7 +35,7 @@
         </div>
         <div class="hero-visual"><div class="sun"></div><div class="cloud c1"></div><div class="cloud c2"></div><div class="runway"></div><div class="plane">✈</div></div>
       </div>
-      <div class="metric-grid homepage-weather-grid"><article class="metric-card"><span>Base</span><strong>LHKA</strong><p>Kalocsa airfield</p></article><article class="metric-card"><span>Current Temperature</span><strong id="homeTemp">—</strong><p>LHKA / Kalocsa area</p></article><article class="metric-card"><span>Current Pressure</span><strong id="homePressure">—</strong><p>mb / hPa</p></article><article class="metric-card"><span>Current Wind</span><strong id="homeWind">—</strong><p>direction / speed</p></article></div><div id="homeWeatherSource" class="weather-source-line">Weather source: Open-Meteo for Kalocsa/LHKA area. Always verify official aviation weather before flight.</div>
+      <div class="metric-grid homepage-weather-grid"><article class="metric-card"><span>Base</span><strong>LHKA</strong><p>Kalocsa airfield</p></article><article class="metric-card"><span>Current Temperature</span><strong id="homeTemp">—</strong><p>LHKA / Kalocsa area</p></article><article class="metric-card"><span>Current Pressure</span><strong id="homePressure">—</strong><p>mb / hPa</p></article><article class="metric-card"><span>Current Wind</span><strong id="homeWind">—</strong><p>direction / speed</p></article></div><div id="homeWeatherSource" class="weather-source-line">Weather source: aviation METAR via backend. Always verify official aviation weather before flight.</div>
     </section>
 
     
@@ -96,10 +96,10 @@
           <div>
             <h3>Airports charts</h3>
             <div class="airport-list">
-              <button class="airport-card active" onclick="selectAirport('LHKA')"><strong>LHKA</strong><span>Kalocsa</span></button>
-              <button class="airport-card" onclick="selectAirport('LHJK')"><strong>LHJK</strong><span>Chart page</span></button>
-              <button class="airport-card" onclick="selectAirport('LHPP')"><strong>LHPP</strong><span>AD 2.24 charts</span></button>
-              <button class="airport-card" onclick="selectAirport('LHSM')"><strong>LHSM</strong><span>Chart page</span></button>
+              <button class="airport-card active" data-airport="LHKA" onclick="selectAirport('LHKA')"><strong>LHKA</strong><span>Kalocsa</span></button>
+              <button class="airport-card" data-airport="LHJK" onclick="selectAirport('LHJK')"><strong>LHJK</strong><span>Chart page</span></button>
+              <button class="airport-card" data-airport="LHPP" onclick="selectAirport('LHPP')"><strong>LHPP</strong><span>AD 2.24 charts</span></button>
+              <button class="airport-card" data-airport="LHSM" onclick="selectAirport('LHSM')"><strong>LHSM</strong><span>Chart page</span></button>
             </div>
 
             <div class="vfr-chart-card">
@@ -525,7 +525,7 @@
   </main>
 </div>
 <div class="bottom-nav"><button class="mobile-nav active" data-page="dashboard">Home</button><button class="mobile-nav member-only hidden" data-page="schedule">Schedule</button><button class="mobile-nav" data-page="briefingroom">Brief</button>
-    <button class="mobile-nav atpl-ai-mobile" data-page="atplai">ATPL AI</button></div>
+    <button class="mobile-nav atpl-ai-mobile" data-page="atplai" onclick="handleAtplAiClick(event)">ATPL AI</button></div>
 <div id="loginModal" class="modal hidden"><div class="modal-card"><button class="close" onclick="closeLoginModal()">×</button><h2>Member Access</h2><p>Login to view schedule and briefing files. New users require admin approval.</p><div class="auth-grid"><form id="loginForm" autocomplete="on"><h3>Login</h3><input name="email" type="email" placeholder="Email" autocomplete="username" required><input name="password" type="password" placeholder="Password" autocomplete="current-password" required><button class="primary-button" type="submit">Login</button></form><form id="signupForm" autocomplete="on"><h3>Sign up</h3><input name="email" type="email" placeholder="Email" required><input name="password" type="password" placeholder="Password" autocomplete="new-password" required><button class="ghost-button" type="submit">Request access</button></form></div></div></div>
 
   <div id="filePreviewModal" class="modal hidden">
@@ -558,7 +558,7 @@
   </div>
 
   <div id="toast" class="toast hidden"></div><footer class="version">
-    <span>Version 0.1.22</span>
+    <span>Version 0.1.23</span>
     <span>© Avi Oren Aviation · avi8or.easa@gmail.com</span>
   </footer><script src="script.js"></script>
 </body></html>
