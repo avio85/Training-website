@@ -838,7 +838,7 @@ function ymdFromDate(d){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
 function shortDateLabel(d){
-  return d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+  return d.toLocaleDateString("en-US",{month:"short",day:"numeric"});
 }
 function getTrainingWaveSettings(){
   const saved=JSON.parse(localStorage.getItem("trainingWaveSettings")||"null");
@@ -1032,7 +1032,7 @@ handleAtplAiClick=async function(e){
   if(e){e.preventDefault();e.stopPropagation()}
   await loadAtplAiSettings();
   if(atplAiSettings.active && atplAiSettings.url){
-    window.location.href=atplAiSettings.url;
+    window.open(atplAiSettings.url,"_blank","noopener,noreferrer");
     return;
   }
   showPage('atplai');
@@ -1047,4 +1047,96 @@ document.addEventListener('DOMContentLoaded',()=>{
     form.removeEventListener('submit', saveAtplAiSettings);
     form.addEventListener('submit', saveAtplAiSettings);
   }
+});
+
+/* v0.1.28 stabilization: fixed May wave, English dates, dashboard LHKA, chart buttons, ATPL new tab */
+function aoaEnglishMayDays(){
+  return [
+    {date:"2026-05-03",label:"May 3"},{date:"2026-05-04",label:"May 4"},
+    {date:"2026-05-05",label:"May 5"},{date:"2026-05-06",label:"May 6"},
+    {date:"2026-05-07",label:"May 7"},{date:"2026-05-08",label:"May 8"},
+    {date:"2026-05-09",label:"May 9"},{date:"2026-05-10",label:"May 10"}
+  ];
+}
+getActiveWaveDays=function(){ return aoaEnglishMayDays(); };
+updateWaveLabel=function(){
+  const label=document.getElementById("activeWaveLabel");
+  if(label) label.textContent="May 3–10 training wave";
+};
+
+showChartInViewer=function(url){
+  if(!url)return;
+  const f=document.getElementById("chartFrame"), o=document.getElementById("chartOpenLink");
+  if(f)f.src=url;
+  if(o)o.href=url;
+};
+selectAirport=function(code){
+  const item=airportCharts[code];
+  if(!item)return;
+  document.querySelectorAll(".airport-card").forEach(b=>b.classList.toggle("active",b.dataset.airport===code||b.querySelector("strong")?.innerText===code));
+  const chip=document.getElementById("selectedAirportChip"), name=document.getElementById("selectedAirportName");
+  if(chip)chip.textContent=code;
+  if(name)name.textContent=item.name;
+  showChartInViewer(item.chart);
+  const maps=document.getElementById("googleMapsLink");
+  if(maps)maps.href=item.maps;
+  const extra=document.getElementById("chartExtraLinks");
+  if(extra){
+    extra.innerHTML=(item.links||[]).map(l=>`<button class="ghost-button chart-link-button" type="button" data-url="${escapeHtml(l.url)}">${escapeHtml(l.label)}</button>`).join("");
+  }
+};
+
+document.addEventListener("click",function(e){
+  const btn=e.target.closest(".chart-link-button");
+  if(btn){
+    e.preventDefault();
+    showChartInViewer(btn.dataset.url);
+  }
+});
+
+loadHomeWeather=async function(){
+  const t=document.getElementById("homeTemp"), p=document.getElementById("homePressure"), w=document.getElementById("homeWind"), sun=document.getElementById("homeSunTimes");
+  if(t)t.textContent="Loading...";
+  if(w)w.textContent="Loading...";
+  if(p)p.textContent="Loading...";
+  if(sun)sun.textContent="Loading...";
+  try{
+    const r=await fetch("/api/weather/airport/LHKA",{cache:"no-store"});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.detail||"Weather failed");
+    const s=d.summary||{};
+    if(t)t.textContent=s.temperature||"N/A";
+    if(w)w.textContent=s.wind||"N/A";
+    if(p)p.textContent=s.pressure||"N/A";
+  }catch{
+    if(t)t.textContent="N/A";
+    if(w)w.textContent="N/A";
+    if(p)p.textContent="N/A";
+  }
+  if(sun){
+    try{
+      const r=await fetch("/api/sun/LHKA",{cache:"no-store"});
+      const d=await r.json();
+      if(!r.ok)throw new Error(d.detail||"Sun failed");
+      sun.textContent=`${d.sunrise} / ${d.sunset}`;
+    }catch{
+      sun.textContent="—";
+    }
+  }
+};
+
+handleAtplAiClick=async function(e){
+  if(e){e.preventDefault();e.stopPropagation()}
+  await loadAtplAiSettings();
+  if(atplAiSettings.active && atplAiSettings.url){
+    window.open(atplAiSettings.url,"_blank","noopener,noreferrer");
+    return;
+  }
+  showPage("atplai");
+};
+
+document.addEventListener("DOMContentLoaded",()=>{
+  updateWaveLabel();
+  loadHomeWeather();
+  selectAirport("LHKA");
 });
