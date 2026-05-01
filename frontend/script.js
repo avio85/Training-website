@@ -1,6 +1,4 @@
-function scrollToLatestAssistantTop(){
-  window.scrollTo({top:0, behavior:"smooth"});
-}
+
 const preloadedExercisePresentations = [
   {
     "title": "Exercise 1 (Part 1) - Aircraft Familiarisation",
@@ -801,17 +799,7 @@ async function postForm(url,form){const r=await fetch(url,{method:"POST",headers
 function showPage(id){if(id==="schedule"&&!token){openLoginModal();toast("Login required to view schedule");return}const target=document.getElementById(id);if(!target)return;document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));target.classList.add("active");const title=document.getElementById("pageTitle");if(title)title.textContent=pageTitles[id]||"Avi Oren Aviation";document.querySelectorAll(".nav-item,.mobile-nav").forEach(b=>b.classList.toggle("active",b.dataset.page===id));if(id==="schedule")loadSchedule(false);if(id==="briefingroom"){renderPreloadedExercisePresentations();selectAirport("LHKA")}if(id==="admin"){renderAdminLists();loadAtplAiSettings()}}
 async function loadAtplAiSettings(){const def="https://avioren-aviation-mvp.onrender.com/";try{const r=await fetch("/api/settings/atpl-ai");const d=await r.json();if(r.ok)atplAiSettings={url:d.url||def,active:!!d.active}}catch{atplAiSettings={url:def,active:false}}const u=document.getElementById("atplAiUrlInput"),a=document.getElementById("atplAiActiveInput");if(u)u.value=atplAiSettings.url||def;if(a)a.checked=!!atplAiSettings.active}
 async function saveAtplAiSettings(e){e.preventDefault();const f=e.target,fd=new FormData();fd.append("url",f.url.value||"https://avioren-aviation-mvp.onrender.com/");fd.append("active",f.active.checked?"true":"false");try{const r=await fetch("/api/settings/atpl-ai",{method:"POST",headers:authHeaders(),body:fd});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||"Could not save ATPL AI settings");atplAiSettings={url:d.url,active:!!d.active};toast("ATPL AI settings saved")}catch(err){toast(err.message)}}
-async function handleAtplAiClick(e){
-  if(e){e.preventDefault();e.stopPropagation()}
-  await loadAtplAiSettings();
-
-  if(atplAiSettings.active && atplAiSettings.url){
-    window.open(atplAiSettings.url, "_blank");
-    return;
-  }
-
-  showPage("atplai");
-}
+async function handleAtplAiClick(e){if(e){e.preventDefault();e.stopPropagation()}await loadAtplAiSettings();if(atplAiSettings.active&&atplAiSettings.url)window.open(atplAiSettings.url,"_blank","noopener");else showPage("atplai")}
 function showBriefingTab(tab){document.querySelectorAll(".briefing-tab").forEach(b=>b.classList.toggle("active",b.dataset.briefingTab===tab));document.querySelectorAll(".briefing-tab-panel").forEach(p=>p.classList.toggle("active",p.id==="briefingTab-"+tab));if(tab==="airports")selectAirport("LHKA");if(tab==="weather")loadSelectedAirportWeather();if(tab==="notam")loadNotam();if(tab==="exercises")renderPreloadedExercisePresentations()}
 function showChartInViewer(url){const f=document.getElementById("chartFrame"),o=document.getElementById("chartOpenLink");if(f)f.src=url;if(o)o.href=url}
 function selectAirport(code){const item=airportCharts[code];if(!item)return;document.querySelectorAll(".airport-card").forEach(b=>b.classList.toggle("active",b.dataset.airport===code||b.querySelector("strong")?.innerText===code));document.getElementById("selectedAirportChip").textContent=code;document.getElementById("selectedAirportName").textContent=item.name;showChartInViewer(item.chart);const maps=document.getElementById("googleMapsLink");if(maps)maps.href=item.maps;const extra=document.getElementById("chartExtraLinks");if(extra)extra.innerHTML=(item.links||[]).map(l=>`<button class="ghost-button" type="button" onclick="showChartInViewer('${escapeHtml(l.url)}')">${escapeHtml(l.label)}</button>`).join("")}
@@ -835,21 +823,106 @@ function renderAdminLists(){const fi=document.getElementById("fiAdminList");if(f
 function addFiFromAdmin(){const i=document.getElementById("fiNameInput"),name=(i?.value||"").trim();if(!name)return toast("Enter FI name");if(!adminFis.includes(name))adminFis.push(name);localStorage.setItem("adminFis",JSON.stringify(adminFis));i.value="";renderAdminLists();toast("FI added")}function addAirplaneFromAdmin(){const type=document.getElementById("airplaneTypeInput")?.value||"C172",number=(document.getElementById("airplaneNumberInput")?.value||"").trim();adminAirplanes.push({type,number});localStorage.setItem("adminAirplanes",JSON.stringify(adminAirplanes));const i=document.getElementById("airplaneNumberInput");if(i)i.value="";renderAdminLists();toast("Airplane added")}function saveTrainingWaveSettings(){const name=document.getElementById("trainingWaveName")?.value||"Training wave",start=document.getElementById("trainingWaveStart")?.value||"2026-05-03",end=document.getElementById("trainingWaveEnd")?.value||"2026-05-10";localStorage.setItem("trainingWaveSettings",JSON.stringify({name,start,end}));toast("Training wave dates saved")}
 async function loadUsers(){const list=document.getElementById("usersList");if(!list)return;list.innerHTML="<p>Loading users...</p>";try{const r=await fetch("/api/users",{headers:authHeaders()}),users=await r.json();if(!r.ok)throw new Error(users.detail||"Could not load users");list.innerHTML=users.map(u=>`<div class="user-row"><strong>${escapeHtml(u.email)}</strong><span>${escapeHtml(u.role)} · ${u.approved?"approved":"pending"}</span>${!u.approved?`<button class="ghost-button" onclick="approveUser('${escapeHtml(u.id)}')">Approve</button>`:""}</div>`).join("")}catch(err){list.innerHTML=`<p>${escapeHtml(err.message)}</p>`}}async function approveUser(id){try{const r=await fetch(`/api/users/${encodeURIComponent(id)}/approve`,{method:"POST",headers:authHeaders()}),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||"Could not approve user");toast("User approved");loadUsers()}catch(err){toast(err.message)}}
 document.addEventListener("DOMContentLoaded",()=>{setAuthUi();loadHomeWeather();loadAtplAiSettings();renderAdminLists();document.getElementById("logoutBtn")?.addEventListener("click",logout);document.getElementById("loginForm")?.addEventListener("submit",async e=>{e.preventDefault();try{const d=await postForm("/api/login",e.target);token=d.token;userRole=d.role;localStorage.setItem("token",token);localStorage.setItem("role",userRole);setAuthUi();closeLoginModal();toast(d.approved?"Logged in":"Logged in, waiting for approval");if(userRole==="admin")showPage("admin")}catch(err){toast(err.message)}});document.getElementById("signupForm")?.addEventListener("submit",async e=>{e.preventDefault();try{const d=await postForm("/api/signup",e.target);toast(d.message||"Signup created")}catch(err){toast(err.message)}});document.getElementById("studentForm")?.addEventListener("submit",async e=>{e.preventDefault();try{await postForm("/api/students",e.target);e.target.reset();toast("Student added")}catch(err){toast(err.message)}});document.getElementById("atplAiSettingsForm")?.addEventListener("submit",saveAtplAiSettings);document.querySelectorAll(".nav-item,.mobile-nav").forEach(btn=>btn.addEventListener("click",e=>{if(btn.dataset.page==="atplai")return handleAtplAiClick(e);showPage(btn.dataset.page)}));document.addEventListener("click",e=>{const menu=document.getElementById("slotEditMenu");if(menu&&!menu.classList.contains("hidden")&&!menu.contains(e.target))closeSlotEditMenu()});document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSlotEditMenu()});selectAirport("LHKA")});
-async function loadSunTimes(){
-  try{
-    const res = await fetch("https://api.sunrise-sunset.org/json?lat=46.53&lng=18.98&formatted=0");
-    const data = await res.json();
 
-    const sunrise = new Date(data.results.sunrise).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-    const sunset = new Date(data.results.sunset).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-
-    document.getElementById("sunriseTime").textContent = sunrise;
-    document.getElementById("sunsetTime").textContent = sunset;
-  }catch{
-    document.getElementById("sunriseTime").textContent = "—";
-    document.getElementById("sunsetTime").textContent = "—";
-  }
+/* v0.1.25 stable overrides: NOTAM, wave switcher, mobile polish */
+function scrollToLatestAssistantTop(){
+  window.scrollTo({top:0, behavior:"smooth"});
 }
-document.addEventListener("DOMContentLoaded", ()=>{
-  loadSunTimes();
+
+function parseLocalDate(value){
+  const parts=String(value||"").split("-").map(Number);
+  if(parts.length!==3||parts.some(isNaN)) return null;
+  return new Date(parts[0],parts[1]-1,parts[2]);
+}
+function ymdFromDate(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function shortDateLabel(d){
+  return d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+}
+function getTrainingWaveSettings(){
+  const saved=JSON.parse(localStorage.getItem("trainingWaveSettings")||"null");
+  const name=saved?.name||document.getElementById("trainingWaveName")?.value||"May 3–10 training wave";
+  const start=saved?.start||document.getElementById("trainingWaveStart")?.value||"2026-05-03";
+  const end=saved?.end||document.getElementById("trainingWaveEnd")?.value||"2026-05-10";
+  return {name,start,end};
+}
+function getActiveWaveDays(){
+  const {start,end}=getTrainingWaveSettings();
+  const s=parseLocalDate(start), e=parseLocalDate(end);
+  if(!s||!e||e<s) return [{date:"2026-05-03",label:"May 3"},{date:"2026-05-04",label:"May 4"},{date:"2026-05-05",label:"May 5"},{date:"2026-05-06",label:"May 6"},{date:"2026-05-07",label:"May 7"},{date:"2026-05-08",label:"May 8"},{date:"2026-05-09",label:"May 9"},{date:"2026-05-10",label:"May 10"}];
+  const days=[];
+  for(const d=new Date(s); d<=e && days.length<21; d.setDate(d.getDate()+1)){
+    days.push({date:ymdFromDate(d),label:shortDateLabel(d)});
+  }
+  return days;
+}
+function updateWaveLabel(){
+  const settings=getTrainingWaveSettings();
+  const label=document.getElementById("activeWaveLabel");
+  if(label) label.textContent=settings.name || `${settings.start} to ${settings.end}`;
+  const nameInput=document.getElementById("trainingWaveName");
+  const startInput=document.getElementById("trainingWaveStart");
+  const endInput=document.getElementById("trainingWaveEnd");
+  if(nameInput) nameInput.value=settings.name;
+  if(startInput) startInput.value=settings.start;
+  if(endInput) endInput.value=settings.end;
+}
+
+renderWaveCalendar=function(){
+  const cal=document.getElementById("waveCalendar");
+  if(!cal)return;
+  updateWaveLabel();
+  const admin=canEditSchedule();
+  const days=getActiveWaveDays();
+  cal.innerHTML=days.map(day=>`<section class="wave-day-card"><div class="wave-day-header">${day.label}</div><div class="wave-day-grid">${waveTimes.map(time=>`<div class="wave-time-row"><div class="wave-time-label">${time}</div><div class="wave-slot-pair">${waveAircraft.map(ac=>renderWaveSlot(day.date,time,ac,admin)).join("")}</div></div>`).join("")}</div></section>`).join("");
+  if(admin)attachScheduleDragHandlers();
+};
+
+saveTrainingWaveSettings=function(){
+  const name=document.getElementById("trainingWaveName")?.value||"Training wave";
+  const start=document.getElementById("trainingWaveStart")?.value||"2026-05-03";
+  const end=document.getElementById("trainingWaveEnd")?.value||"2026-05-10";
+  const s=parseLocalDate(start), e=parseLocalDate(end);
+  if(!s||!e||e<s){toast("Check wave dates");return;}
+  localStorage.setItem("trainingWaveSettings",JSON.stringify({name,start,end}));
+  updateWaveLabel();
+  renderWaveCalendar();
+  toast("Training wave dates saved");
+};
+
+handleAtplAiClick=async function(e){
+  if(e){e.preventDefault();e.stopPropagation()}
+  await loadAtplAiSettings();
+  if(atplAiSettings.active&&atplAiSettings.url){
+    window.open(atplAiSettings.url,"_blank","noopener,noreferrer");
+    return;
+  }
+  showPage("atplai");
+};
+
+loadNotam=async function(){
+  const sel=document.getElementById("notamAirportSelect"),out=document.getElementById("notamOutput"),title=document.getElementById("notamTitle"),official=document.getElementById("notamOfficialLink");
+  if(!sel||!out||!title)return;
+  const icao=sel.value||"LHKE";
+  const officialUrl=`https://notams.aim.faa.gov/notamSearch/nsapp.html#/results?searchType=0&designatorsForLocation=${encodeURIComponent(icao)}`;
+  title.textContent=`${icao} NOTAM`;
+  out.textContent="Loading NOTAM...";
+  if(official)official.href=officialUrl;
+  try{
+    const r=await fetch(`/api/notam/${encodeURIComponent(icao)}`);
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.detail||"NOTAM fetch failed");
+    const source=d.source?`\n\nSource: ${d.source}`:"";
+    const openLine=d.official_url?`\nOfficial verification: ${d.official_url}`:`\nOfficial verification: ${officialUrl}`;
+    out.textContent=(d.notams||`No automatic NOTAM text returned for ${icao}.`)+source+openLine;
+  }catch(err){
+    out.textContent=`Automatic NOTAM loading failed for ${icao}.\n\n${err.message}\n\nUse official verification: ${officialUrl}`;
+  }
+};
+
+document.addEventListener("DOMContentLoaded",()=>{
+  updateWaveLabel();
+  const version=document.querySelector(".version");
+  if(version) version.style.display="flex";
 });
