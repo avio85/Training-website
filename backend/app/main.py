@@ -1,3 +1,5 @@
+import os
+import psycopg2
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -7,6 +9,11 @@ from .routers import auth_users, settings, weather, schedule, notam, admin_data
 
 init_db()
 app = FastAPI(title=APP_NAME)
+@app.on_event("startup")
+def startup():
+    init_db()
+    conn.commit()
+    conn.close()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 for router in [auth_users.router, settings.router, weather.router, schedule.router, notam.router, admin_data.router]:
     app.include_router(router)
@@ -34,8 +41,36 @@ def init_db():
         value TEXT
     )
     """)
-@app.on_event("startup")
-def startup():
-    init_db()
-    conn.commit()
-    conn.close()
+
+def get_conn():
+    return psycopg2.connect(os.getenv("DATABASE_URL"))
+def init_db():
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            email TEXT UNIQUE,
+            password TEXT,
+            role TEXT DEFAULT 'member',
+            approved BOOLEAN DEFAULT FALSE
+        )
+        """)
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS app_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )
+        """)
+
+        conn.commit()
+        conn.close()
+
+        print("✅ Supabase tables initialized")
+
+    except Exception as e:
+        print("❌ DB INIT ERROR:", e)
+
