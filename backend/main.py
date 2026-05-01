@@ -1,5 +1,5 @@
 
-import os, sqlite3, shutil, uuid, datetime, re, json
+import os, sqlite3, shutil, uuid, datetime, re, json, math
 from typing import Optional
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, Request, Body
 from fastapi.middleware.cors import CORSMiddleware
@@ -915,17 +915,75 @@ def get_atpl_ai_settings():
     }
 
 @app.post("/api/settings/atpl-ai")
-def update_atpl_ai_settings(url: str = Form(...), active: str = Form("false"), admin=Depends(require_admin)):
-    clean_url = url.strip()
+async def update_atpl_ai_settings(request: Request, admin=Depends(require_admin)):
+    # Accept both JSON and FormData so the admin panel does not fail if the browser sends either.
+    content_type = request.headers.get("content-type", "").lower()
+    if "application/json" in content_type:
+        data = await request.json()
+        clean_url = str(data.get("url", "")).strip()
+        is_active = bool(data.get("active", False))
+    else:
+        form = await request.form()
+        clean_url = str(form.get("url", "")).strip()
+        is_active = str(form.get("active", "false")).lower() in ("true", "1", "yes", "on")
+    if not clean_url:
+        clean_url = "https://avioren-aviation-mvp.onrender.com/"
     if not (clean_url.startswith("https://") or clean_url.startswith("http://")):
         raise HTTPException(400, "URL must start with http:// or https://")
-    is_active = str(active).lower() in ("true", "1", "yes", "on")
     conn = db()
     conn.execute("INSERT OR REPLACE INTO app_settings VALUES (?,?)", ("atpl_ai_url", clean_url))
     conn.execute("INSERT OR REPLACE INTO app_settings VALUES (?,?)", ("atpl_ai_active", "true" if is_active else "false"))
     conn.commit()
     conn.close()
     return {"url": clean_url, "active": is_active}
+
+
+def _sun_time_utc(day, latitude, longitude, is_sunrise=True):
+    # NOAA-style approximation, sufficient for dashboard planning only.
+    zenith = 90.833
+    n = day.timetuple().tm_yday
+    lng_hour = longitude / 15.0
+    t = n + ((6 - lng_hour) / 24 if is_sunrise else (18 - lng_hour) / 24)
+    m = (0.9856 * t) - 3.289
+    l = m + (1.916 * math.sin(math.radians(m))) + (0.020 * math.sin(math.radians(2*m))) + 282.634
+    l = l % 360
+    ra = math.degrees(math.atan(0.91764 * math.tan(math.radians(l)))) % 360
+    l_quadrant = (math.floor(l/90)) * 90
+    ra_quadrant = (math.floor(ra/90)) * 90
+    ra = (ra + l_quadrant - ra_quadrant) / 15
+    sin_dec = 0.39782 * math.sin(math.radians(l))
+    cos_dec = math.cos(math.asin(sin_dec))
+    cos_h = (math.cos(math.radians(zenith)) - (sin_dec * math.sin(math.radians(latitude)))) / (cos_dec * math.cos(math.radians(latitude)))
+    if cos_h > 1 or cos_h < -1:
+        return None
+    h = 360 - math.degrees(math.acos(cos_h)) if is_sunrise else math.degrees(math.acos(cos_h))
+    h = h / 15
+    local_mean_time = h + ra - (0.06571 * t) - 6.622
+    return (local_mean_time - lng_hour) % 24
+
+@app.get("/api/sun/LHKA")
+def get_lhka_sun_times():
+    # LHKA approx position: Kalocsa Airfield, Hungary. Output is Europe/Budapest local time.
+    today = datetime.datetime.utcnow().date()
+    lat, lon = 46.549, 18.942
+    sunrise_utc = _sun_time_utc(today, lat, lon, True)
+    sunset_utc = _sun_time_utc(today, lat, lon, False)
+    # Hungary local time: CET/CEST. Simple DST: last Sunday Mar to last Sunday Oct.
+    def last_sunday(year, month):
+        d = datetime.date(year, month + 1, 1) - datetime.timedelta(days=1) if month < 12 else datetime.date(year, 12, 31)
+        while d.weekday() != 6:
+            d -= datetime.timedelta(days=1)
+        return d
+    offset = 2 if last_sunday(today.year,3) <= today < last_sunday(today.year,10) else 1
+    def fmt(hours):
+        if hours is None:
+            return "—"
+        h = int((hours + offset) % 24)
+        m = int(round((((hours + offset) % 24) - h) * 60))
+        if m == 60:
+            h = (h + 1) % 24; m = 0
+        return f"{h:02d}:{m:02d}"
+    return {"icao":"LHKA", "sunrise":fmt(sunrise_utc), "sunset":fmt(sunset_utc), "timezone":"Europe/Budapest"}
 
 
 
