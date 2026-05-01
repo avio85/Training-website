@@ -34,6 +34,8 @@ def init_db():
         value TEXT
     )
     """)
-
+@app.on_event("startup")
+def startup():
+    init_db()
     conn.commit()
     conn.close()
