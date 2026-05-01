@@ -1140,3 +1140,142 @@ document.addEventListener("DOMContentLoaded",()=>{
   loadHomeWeather();
   selectAirport("LHKA");
 });
+
+/* =========================================================
+   v0.2.0 clean stability overrides
+   - stable dashboard LHKA info
+   - chart links are real links and also update the viewer
+   - ATPL AI opens in new tab from saved admin URL
+   - English schedule date labels
+   ========================================================= */
+(function(){
+  const VERSION = "0.2.0";
+  window.addEventListener("DOMContentLoaded", () => {
+    const versionText = document.querySelector(".version span:first-child");
+    if(versionText) versionText.textContent = "Version " + VERSION;
+  });
+
+  window.loadAtplAiSettings = async function(){
+    const fallback = "https://avioren-aviation-mvp.onrender.com/";
+    try{
+      const r = await fetch("/api/settings/atpl-ai", {cache:"no-store"});
+      const d = await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(d.detail || "Could not load ATPL AI settings");
+      atplAiSettings = {url: d.url || fallback, active: !!d.active};
+    }catch{
+      atplAiSettings = {url: fallback, active: false};
+    }
+    const u = document.getElementById("atplAiUrlInput");
+    const a = document.getElementById("atplAiActiveInput");
+    if(u) u.value = atplAiSettings.url || fallback;
+    if(a) a.checked = !!atplAiSettings.active;
+    return atplAiSettings;
+  };
+
+  window.saveAtplAiSettings = async function(e){
+    if(e) e.preventDefault();
+    const form = e?.target || document.getElementById("atplAiSettingsForm");
+    const fd = new FormData();
+    fd.append("url", form?.url?.value || document.getElementById("atplAiUrlInput")?.value || "https://avioren-aviation-mvp.onrender.com/");
+    fd.append("active", (form?.active?.checked || document.getElementById("atplAiActiveInput")?.checked) ? "true" : "false");
+    try{
+      const r = await fetch("/api/settings/atpl-ai", {method:"POST", headers:authHeaders(), body:fd});
+      const d = await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(d.detail || "Could not save ATPL AI settings");
+      atplAiSettings = {url:d.url, active:!!d.active};
+      toast("ATPL AI settings saved");
+    }catch(err){ toast(err.message); }
+  };
+
+  window.handleAtplAiClick = async function(e){
+    if(e){ e.preventDefault(); e.stopPropagation(); }
+    const settings = await loadAtplAiSettings();
+    if(settings.active && settings.url){
+      window.open(settings.url, "_blank", "noopener,noreferrer");
+      return false;
+    }
+    showPage("atplai");
+    return false;
+  };
+
+  window.showChartInViewer = function(url){
+    if(!url) return;
+    const frame = document.getElementById("chartFrame");
+    const open = document.getElementById("chartOpenLink");
+    if(frame) frame.src = url;
+    if(open){ open.href = url; open.target = "_blank"; open.rel = "noopener"; }
+  };
+
+  window.selectAirport = function(code){
+    const item = airportCharts[code];
+    if(!item) return;
+    document.querySelectorAll(".airport-card").forEach(b=>b.classList.toggle("active", b.dataset.airport===code || b.querySelector("strong")?.innerText===code));
+    const chip = document.getElementById("selectedAirportChip");
+    const name = document.getElementById("selectedAirportName");
+    if(chip) chip.textContent = code;
+    if(name) name.textContent = item.name;
+    showChartInViewer(item.chart);
+    const maps = document.getElementById("googleMapsLink");
+    if(maps){ maps.href = item.maps; maps.target = "_blank"; maps.rel = "noopener"; }
+    const extra = document.getElementById("chartExtraLinks");
+    if(extra){
+      extra.innerHTML = (item.links || []).map(l =>
+        `<a class="ghost-button" target="_blank" rel="noopener" href="${escapeHtml(l.url)}" onclick="showChartInViewer('${escapeHtml(l.url)}')">${escapeHtml(l.label)}</a>`
+      ).join("");
+    }
+  };
+
+  window.loadHomeWeather = async function(){
+    const temp = document.getElementById("homeTemp");
+    const wind = document.getElementById("homeWind");
+    const sun = document.getElementById("homeSunTimes");
+    const source = document.getElementById("homeWeatherSource");
+    if(temp) temp.textContent = "Loading...";
+    if(wind) wind.textContent = "Loading...";
+    if(sun) sun.textContent = "Loading...";
+    try{
+      const r = await fetch("/api/weather/airport/LHKA", {cache:"no-store"});
+      const d = await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(d.detail || "Weather request failed");
+      const s = d.summary || {};
+      if(temp) temp.textContent = s.temperature || "N/A";
+      if(wind) wind.textContent = s.wind || "N/A";
+      if(sun) sun.textContent = d.sun ? `${d.sun.sunrise} / ${d.sun.sunset}` : "N/A";
+      if(source) source.textContent = `Weather source: ${d.source_airport || "LHKA"} METAR via backend. Sunrise/sunset calculated for LHKA. Always verify official aviation weather before flight.`;
+    }catch(err){
+      if(temp) temp.textContent = "N/A";
+      if(wind) wind.textContent = "N/A";
+      if(sun) sun.textContent = "N/A";
+      if(source) source.textContent = "LHKA dashboard data is unavailable. Verify official aviation weather before flight.";
+    }
+  };
+
+  function englishWaveLabel(dateString){
+    const d = new Date(dateString + "T00:00:00Z");
+    return new Intl.DateTimeFormat("en-US", {month:"short", day:"numeric", timeZone:"UTC"}).format(d);
+  }
+
+  window.renderWaveCalendar = function(){
+    const cal = document.getElementById("waveCalendar");
+    if(!cal) return;
+    const admin = canEditSchedule();
+    const days = (window.waveDays || waveDays || []).map(d => ({...d, label: englishWaveLabel(d.date)}));
+    cal.innerHTML = days.map(day => `<section class="wave-day-card"><div class="wave-day-header">${day.label}</div><div class="wave-day-grid">${waveTimes.map(time=>`<div class="wave-time-row"><div class="wave-time-label">${time}</div><div class="wave-slot-pair">${waveAircraft.map(ac=>renderWaveSlot(day.date,time,ac,admin)).join("")}</div></div>`).join("")}</div></section>`).join("");
+    if(admin) attachScheduleDragHandlers();
+  };
+
+  window.loadSchedule = async function(){
+    const guest = document.getElementById("scheduleGuestMessage");
+    const app = document.getElementById("waveScheduleApp");
+    if(!token){ guest?.classList.remove("hidden"); app?.classList.add("hidden"); return; }
+    guest?.classList.add("hidden"); app?.classList.remove("hidden");
+    try{
+      const r = await fetch("/api/wave-schedule", {headers:authHeaders(), cache:"no-store"});
+      const d = await r.json().catch(()=>({}));
+      waveSchedule = (r.ok && Array.isArray(d.flights) && d.flights.length) ? d.flights : JSON.parse(JSON.stringify(defaultWaveSchedule));
+    }catch{
+      waveSchedule = JSON.parse(JSON.stringify(defaultWaveSchedule));
+    }
+    renderWaveCalendar();
+  };
+})();
