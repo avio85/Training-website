@@ -5,7 +5,6 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, Request, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, Response
 from passlib.context import CryptContext
 import jwt
 import requests
@@ -662,22 +661,26 @@ def db_debug_status():
 def init_db():
     conn = db()
     cur = conn.cursor()
-    cur.execute("""CREATE TABLE IF NOT EXISTS users (
-        id TEXT PRIMARY KEY,
-        email TEXT UNIQUE NOT NULL,
-        password_hash TEXT,
-        role TEXT NOT NULL DEFAULT 'student',
-        approved INTEGER NOT NULL DEFAULT 0,
-        auth_provider TEXT NOT NULL DEFAULT 'email',
-        created_at TEXT NOT NULL
-    )""")
     if USE_POSTGRES:
-        # Safe migration for earlier temporary Supabase schemas.
-        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT")
-        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'student'")
-        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS approved INTEGER DEFAULT 0")
-        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider TEXT DEFAULT 'email'")
-        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TEXT")
+        cur.execute("""CREATE TABLE IF NOT EXISTS users (
+            id TEXT PRIMARY KEY,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'student',
+            approved BOOLEAN NOT NULL DEFAULT FALSE,
+            auth_provider TEXT NOT NULL DEFAULT 'email',
+            created_at TEXT NOT NULL
+        )""")
+    else:
+        cur.execute("""CREATE TABLE IF NOT EXISTS users (
+            id TEXT PRIMARY KEY,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'student',
+            approved INTEGER NOT NULL DEFAULT 0,
+            auth_provider TEXT NOT NULL DEFAULT 'email',
+            created_at TEXT NOT NULL
+        )""")
     cur.execute("""CREATE TABLE IF NOT EXISTS students (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -715,23 +718,21 @@ def init_db():
     # default admin from env or demo
     admin_email = os.getenv("ADMIN_EMAIL", "admin@avioren.local").lower()
     admin_password = os.getenv("ADMIN_PASSWORD", "ChangeMe123!")
+    admin_approved = True if USE_POSTGRES else 1
     admin_hash = pwd_context.hash(admin_password)
-    cur.execute("SELECT * FROM users WHERE email=?", (admin_email,))
+    cur.execute("SELECT id FROM users WHERE email=?", (admin_email,))
     existing_admin = cur.fetchone()
-    if existing_admin:
-        # Keep the Render ADMIN_PASSWORD authoritative, so changing it in Render fixes login.
-        cur.execute("UPDATE users SET password_hash=?, role=?, approved=?, auth_provider=?, created_at=COALESCE(created_at, ?) WHERE email=?", (
-            admin_hash, "admin", 1, "email", datetime.datetime.utcnow().isoformat(), admin_email
+    if not existing_admin:
+        cur.execute("INSERT INTO users VALUES (?,?,?,?,?,?,?)", (
+            str(uuid.uuid4()), admin_email,
+            admin_hash,
+            "admin", admin_approved, "email", datetime.datetime.utcnow().isoformat()
         ))
     else:
-        if USE_POSTGRES:
-            cur.execute("INSERT INTO users (email,password_hash,role,approved,auth_provider,created_at) VALUES (?,?,?,?,?,?)", (
-                admin_email, admin_hash, "admin", 1, "email", datetime.datetime.utcnow().isoformat()
-            ))
-        else:
-            cur.execute("INSERT INTO users VALUES (?,?,?,?,?,?,?)", (
-                str(uuid.uuid4()), admin_email, admin_hash, "admin", 1, "email", datetime.datetime.utcnow().isoformat()
-            ))
+        # Keep Render ADMIN_EMAIL / ADMIN_PASSWORD authoritative after DB migration.
+        cur.execute("UPDATE users SET password_hash=?, role=?, approved=? WHERE email=?", (
+            admin_hash, "admin", admin_approved, admin_email
+        ))
     # demo data
     cur.execute("SELECT COUNT(*) as c FROM students")
     if cur.fetchone()["c"] == 0:
@@ -769,11 +770,19 @@ def startup_init_db():
 
 @app.get("/api/debug/db")
 def debug_db():
-    return db_debug_status()
+    info = db_debug_status()
+    try:
+        conn = db()
+        rows = conn.execute("SELECT email, role, approved, created_at FROM users ORDER BY created_at DESC LIMIT 10").fetchall()
+        info["users_preview"] = [dict(r) for r in rows]
+        conn.close()
+    except Exception as e:
+        info["users_preview_error"] = str(e)
+    return info
 
 def make_token(user):
     payload = {
-        "sub": str(user["id"]),
+        "sub": user["id"],
         "email": user["email"],
         "role": user["role"],
         "approved": bool(user["approved"]),
@@ -790,7 +799,7 @@ def get_current_user(request: Request):
     except Exception:
         raise HTTPException(401, "Invalid token")
     conn = db()
-    user = conn.execute("SELECT * FROM users WHERE CAST(id AS TEXT)=?", (str(payload["sub"]),)).fetchone()
+    user = conn.execute("SELECT * FROM users WHERE id=?", (payload["sub"],)).fetchone()
     if not user:
         email = payload.get("email", "").lower()
         admin_email = os.getenv("ADMIN_EMAIL", "admin@avioren.local").lower()
@@ -799,12 +808,12 @@ def get_current_user(request: Request):
                 conn.execute("INSERT INTO users VALUES (?,?,?,?,?,?,?)", (
                     payload["sub"], admin_email,
                     pwd_context.hash(os.getenv("ADMIN_PASSWORD", "ChangeMe123!")),
-                    "admin", 1, "email", datetime.datetime.utcnow().isoformat()
+                    "admin", True if USE_POSTGRES else 1, "email", datetime.datetime.utcnow().isoformat()
                 ))
                 conn.commit()
             except DBIntegrityError:
                 conn.rollback()
-            user = conn.execute("SELECT * FROM users WHERE CAST(id AS TEXT)=?", (str(payload["sub"]),)).fetchone()
+            user = conn.execute("SELECT * FROM users WHERE id=?", (payload["sub"],)).fetchone()
         if not user:
             conn.close()
             raise HTTPException(401, "User not found. Please log out and log in again.")
@@ -825,14 +834,10 @@ def require_member(user=Depends(get_current_user)):
 def signup(email: str = Form(...), password: str = Form(...)):
     conn = db()
     try:
-        if USE_POSTGRES:
-            conn.execute("INSERT INTO users (email,password_hash,role,approved,auth_provider,created_at) VALUES (?,?,?,?,?,?)", (
-                email.lower(), pwd_context.hash(password), "student", 0, "email", datetime.datetime.utcnow().isoformat()
-            ))
-        else:
-            conn.execute("INSERT INTO users VALUES (?,?,?,?,?,?,?)", (
-                str(uuid.uuid4()), email.lower(), pwd_context.hash(password), "student", 0, "email", datetime.datetime.utcnow().isoformat()
-            ))
+        conn.execute("INSERT INTO users VALUES (?,?,?,?,?,?,?)", (
+            str(uuid.uuid4()), email.lower(), pwd_context.hash(password),
+            "student", False if USE_POSTGRES else 0, "email", datetime.datetime.utcnow().isoformat()
+        ))
         conn.commit()
     except DBIntegrityError:
         raise HTTPException(400, "Email already exists")
@@ -845,8 +850,7 @@ def login(email: str = Form(...), password: str = Form(...)):
     conn = db()
     user = conn.execute("SELECT * FROM users WHERE email=?", (email.lower(),)).fetchone()
     conn.close()
-    stored_hash = user.get("password_hash") if user else None
-    if not user or not stored_hash or not pwd_context.verify(password, stored_hash):
+    if not user or not pwd_context.verify(password, user["password_hash"]):
         raise HTTPException(401, "Wrong email or password")
     return {"token": make_token(user), "role": user["role"], "approved": bool(user["approved"]), "email": user["email"]}
 
@@ -909,7 +913,7 @@ def list_users(admin=Depends(require_admin)):
 @app.post("/api/users/{user_id}/approve")
 def approve_user(user_id: str, admin=Depends(require_admin)):
     conn = db()
-    conn.execute("UPDATE users SET approved=1 WHERE id=?", (user_id,))
+    conn.execute("UPDATE users SET approved=? WHERE id=?", (True if USE_POSTGRES else 1, user_id))
     conn.commit()
     conn.close()
     return {"ok": True}
@@ -1224,22 +1228,6 @@ def update_wave_schedule(payload: dict = Body(...), admin=Depends(require_admin)
     conn.close()
     return {"ok": True, "flights": flights}
 
-
-@app.get("/health")
-def health():
-    return {"status": "ok", "version": "0.2.8"}
-
-@app.get("/style.css")
-def serve_style():
-    return FileResponse(str(Path(FRONTEND_DIR) / "style.css"), media_type="text/css")
-
-@app.get("/script.js")
-def serve_script():
-    return FileResponse(str(Path(FRONTEND_DIR) / "script.js"), media_type="application/javascript")
-
-@app.get("/favicon.ico")
-def favicon():
-    return Response(status_code=204)
 
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
