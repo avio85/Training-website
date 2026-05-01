@@ -629,3 +629,30 @@
 .user-actions button{padding:7px 10px;border-radius:10px;font-size:12px}
 .user-row{grid-template-columns:minmax(180px,1fr) auto minmax(260px,auto)!important}
 @media(max-width:720px){.flight-form{grid-template-columns:1fr}.flight-form .slot-edit-actions{grid-column:auto}.user-row{grid-template-columns:1fr!important}.user-actions{justify-content:flex-start}}
+
+/* v0.3.1 admin UX + schedule filter */
+.schedule-filter-bar{
+  display:flex;
+  align-items:end;
+  gap:14px;
+  flex-wrap:wrap;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:20px;
+  box-shadow:var(--shadow);
+  padding:14px;
+  margin:10px 0 16px;
+}
+.schedule-filter-bar label{min-width:220px}.schedule-filter-bar select{margin-bottom:0}.schedule-filter-bar span{color:var(--muted);font-size:13px;font-weight:800}
+.admin-tabs{
+  display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 18px;
+  background:#fff;border:1px solid var(--line);border-radius:22px;padding:8px;box-shadow:var(--shadow)
+}
+.admin-tab{border:1px solid #b8dff8;background:#f1f9ff;color:#075da8;border-radius:14px;padding:10px 14px;font-weight:900}
+.admin-tab.active{background:#0877d9;color:#fff}
+.modern-admin-grid{grid-template-columns:1fr!important}
+.admin-panel-card{display:none}.admin-panel-card.active-admin-panel{display:block}
+.admin-card{padding:18px!important}.admin-card form{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;align-items:end}.admin-card form button{align-self:end}
+.user-list{display:grid;gap:8px;margin-top:12px}.compact-user-row,.user-row{background:#f8fcff;border:1px solid var(--line);border-radius:16px;padding:10px 12px!important}.compact-user-row{grid-template-columns:1.2fr .7fr 2fr!important}.compact-user-row strong{display:block}.compact-user-row span{display:block;color:var(--muted);font-size:12px}.user-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.user-actions select{width:auto;min-width:128px;margin:0;padding:8px}.user-actions button{padding:8px 10px}
+#flightStudentInput{width:100%;padding:13px;margin:7px 0;border-radius:14px;border:1px solid #cfe1f2;background:#fff;color:var(--text)}
+@media(max-width:980px){.compact-user-row{grid-template-columns:1fr!important}.user-actions{justify-content:flex-start}.admin-tabs{position:sticky;top:8px;z-index:5}.admin-card form{grid-template-columns:1fr}.schedule-filter-bar{align-items:stretch}.schedule-filter-bar label{min-width:0;width:100%}}

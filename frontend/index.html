@@ -60,6 +60,15 @@
         <span class="legend-pill instructor-amir">Amir</span>
         <span class="legend-pill exam-pill">EXAM</span>
       </div>
+      <div class="schedule-filter-bar member-only hidden">
+        <label>Schedule view
+          <select id="scheduleViewFilter" onchange="renderWaveCalendar()">
+            <option value="all">All flights</option>
+            <option value="mine">My flights</option>
+          </select>
+        </label>
+        <span id="scheduleFilterHint">My flights require admin to link your user to a student profile.</span>
+      </div>
 
       <div id="scheduleGuestMessage" class="empty-state">Login as an approved member to view the schedule.</div>
 
@@ -479,12 +488,19 @@
       <div class="section-header">
         <div>
           <h2>Admin Panel</h2>
-          <p>Manage the training portal data used by the schedule and briefing room.</p>
+          <p>Manage users, training people, schedule data and app settings.</p>
         </div>
       </div>
 
-      <div class="admin-dashboard-grid">
-        <div class="admin-card atpl-admin-card">
+      <div class="admin-tabs">
+        <button class="admin-tab active" data-admin-tab="users" onclick="showAdminTab('users')">Users</button>
+        <button class="admin-tab" data-admin-tab="people" onclick="showAdminTab('people')">Students & FIs</button>
+        <button class="admin-tab" data-admin-tab="schedule" onclick="showAdminTab('schedule')">Schedule tools</button>
+        <button class="admin-tab" data-admin-tab="settings" onclick="showAdminTab('settings')">Settings</button>
+      </div>
+
+      <div class="admin-dashboard-grid modern-admin-grid">
+        <div class="admin-card atpl-admin-card admin-panel-card" data-admin-panel="settings">
           <h3>ATPL AI Link</h3>
           <p>Control the ATPL AI menu item. If inactive, users see the “Arriving soon” page.</p>
           <form id="atplAiSettingsForm">
@@ -499,7 +515,7 @@
           </form>
         </div>
 
-        <div class="admin-card">
+        <div class="admin-card admin-panel-card" data-admin-panel="schedule">
           <h3>Manage training waves</h3>
           <p>Choose the active training wave dates. The current wave schedule is May 3–10.</p>
           <form id="trainingWaveForm">
@@ -519,7 +535,7 @@
           </div>
         </div>
 
-        <div class="admin-card">
+        <div class="admin-card admin-panel-card" data-admin-panel="people">
           <h3>Manage students</h3>
           <form id="studentForm">
             <input name="name" placeholder="Full name" required>
@@ -533,7 +549,7 @@
           </div>
         </div>
 
-        <div class="admin-card">
+        <div class="admin-card admin-panel-card" data-admin-panel="people">
           <h3>Manage FIs</h3>
           <form id="fiAdminForm">
             <input id="fiNameInput" placeholder="FI name">
@@ -542,7 +558,7 @@
           <div id="fiAdminList" class="admin-list-preview"></div>
         </div>
 
-        <div class="admin-card">
+        <div class="admin-card admin-panel-card" data-admin-panel="people">
           <h3>Manage airplanes</h3>
           <form id="airplaneAdminForm">
             <select id="airplaneTypeInput"><option>C172</option><option>C152</option></select>
@@ -552,8 +568,9 @@
           <div id="airplaneAdminList" class="admin-list-preview"></div>
         </div>
 
-        <div class="admin-card">
-          <h3>User approvals</h3>
+        <div class="admin-card admin-panel-card active-admin-panel" data-admin-panel="users">
+          <h3>User approvals & matching</h3>
+          <p>Link a website user to a student profile so they can filter the schedule to “My flights”.</p>
           <button class="primary-button" onclick="loadUsers()">Load users</button>
           <div id="usersList" class="user-list"></div>
         </div>
@@ -617,7 +634,7 @@
           </select>
         </label>
         <label>Student
-          <input id="flightStudentInput" placeholder="Student name" required>
+          <select id="flightStudentInput" required></select>
         </label>
         <label>Instructor
           <select id="flightInstructorInput">
@@ -637,7 +654,7 @@
   </div>
 
   <div id="toast" class="toast hidden"></div><footer class="version">
-    <span>Version 0.3.0</span>
+    <span>Version 0.3.1</span>
     <span>© Avi Oren Aviation · avi8or.easa@gmail.com</span>
   </footer><script src="script.js"></script>
 </body></html>

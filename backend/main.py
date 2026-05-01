@@ -798,6 +798,13 @@ def init_db():
         program TEXT NOT NULL,
         notes TEXT
     )""")
+    cur.execute("""CREATE TABLE IF NOT EXISTS instructors (
+        id TEXT PRIMARY KEY,
+        name TEXT UNIQUE NOT NULL,
+        email TEXT,
+        phone TEXT,
+        notes TEXT
+    )""")
     cur.execute("""CREATE TABLE IF NOT EXISTS schedule (
         id TEXT PRIMARY KEY,
         date TEXT NOT NULL,
@@ -834,7 +841,8 @@ def init_db():
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name TEXT",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS license_info TEXT",
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS notes TEXT"
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS notes TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS student_id TEXT"
         ]:
             try:
                 cur.execute(ddl)
@@ -850,7 +858,7 @@ def init_db():
         cur.execute("UPDATE users SET approved=FALSE WHERE approved IS NULL")
     else:
         for col in [
-            ("full_name", "TEXT"), ("phone", "TEXT"), ("license_info", "TEXT"), ("notes", "TEXT")
+            ("full_name", "TEXT"), ("phone", "TEXT"), ("license_info", "TEXT"), ("notes", "TEXT"), ("student_id", "TEXT")
         ]:
             try: cur.execute(f"ALTER TABLE users ADD COLUMN {col[0]} {col[1]}")
             except Exception: pass
@@ -876,18 +884,23 @@ def init_db():
             admin_hash, "admin", admin_approved, admin_email
         ))
     # demo data
-    cur.execute("SELECT COUNT(*) as c FROM students")
-    if cur.fetchone()["c"] == 0:
-        demo_students = [
-            ("David Cohen","david@example.com","PPL(A)"),
-            ("Noa Levi","noa@example.com","Hour Building"),
-            ("Yossi Amir","yossi@example.com","Modular CPL(A)"),
-            ("Maya Ben-David","maya@example.com","PPL(A)"),
-            ("Eitan Katz","eitan@example.com","Hour Building"),
-            ("Lior Shani","lior@example.com","Modular CPL(A)")
-        ]
-        for name,email,program in demo_students:
-            cur.execute("INSERT INTO students VALUES (?,?,?,?,?)", (str(uuid.uuid4()), name, email, program, "Demo student"))
+    # Seed/repair the real training people used by the schedule.
+    training_students = [
+        ("Nir K", "", "PPL(A)", "May training wave"),
+        ("Nir D", "", "PPL(A)", "May training wave"),
+        ("Ofek", "", "PPL(A)", "May training wave"),
+        ("Harel", "", "PPL(A)", "May training wave"),
+        ("Lior", "", "PPL(A)", "May training wave"),
+        ("Aviad", "", "PPL(A)", "May training wave"),
+        ("Ahmad", "", "PPL(A)", "May training wave")
+    ]
+    for name,email,program,notes in training_students:
+        if not conn.execute("SELECT id FROM students WHERE name=?", (name,)).fetchone():
+            conn.execute("INSERT INTO students VALUES (?,?,?,?,?)", (str(uuid.uuid4()), name, email, program, notes))
+
+    for name,email,phone,notes in [("Avi", "", "", "Instructor"), ("Amir", "", "", "Instructor")]:
+        if not conn.execute("SELECT id FROM instructors WHERE name=?", (name,)).fetchone():
+            conn.execute("INSERT INTO instructors VALUES (?,?,?,?,?)", (str(uuid.uuid4()), name, email, phone, notes))
     cur.execute("SELECT COUNT(*) as c FROM schedule")
     if cur.fetchone()["c"] == 0:
         demo_schedule = [
@@ -1016,6 +1029,21 @@ def login(email: str = Form(...), password: str = Form(...)):
         raise HTTPException(401, "Wrong email or password")
     return {"token": make_token(user), "role": user["role"], "approved": bool(user["approved"]), "email": user["email"]}
 
+def get_user_student_name(user):
+    sid = ""
+    try:
+        sid = user["student_id"] if "student_id" in user.keys() else ""
+    except Exception:
+        sid = ""
+    if not sid:
+        return ""
+    conn = db()
+    try:
+        row = conn.execute("SELECT name FROM students WHERE id=?", (sid,)).fetchone()
+        return row["name"] if row else ""
+    finally:
+        conn.close()
+
 @app.get("/api/me")
 def get_me(user=Depends(require_member)):
     return {
@@ -1026,7 +1054,9 @@ def get_me(user=Depends(require_member)):
         "full_name": user["full_name"] if "full_name" in user.keys() else "",
         "phone": user["phone"] if "phone" in user.keys() else "",
         "license_info": user["license_info"] if "license_info" in user.keys() else "",
-        "notes": user["notes"] if "notes" in user.keys() else ""
+        "notes": user["notes"] if "notes" in user.keys() else "",
+        "student_id": user["student_id"] if "student_id" in user.keys() else "",
+        "student_name": get_user_student_name(user)
     }
 
 @app.post("/api/me")
@@ -1096,10 +1126,42 @@ def add_student(name: str = Form(...), email: str = Form(""), program: str = For
     conn.close()
     return {"ok": True}
 
+@app.get("/api/instructors")
+def list_instructors(user=Depends(require_member)):
+    conn = db()
+    rows = [dict(r) for r in conn.execute("SELECT * FROM instructors ORDER BY name").fetchall()]
+    conn.close()
+    return rows
+
+@app.post("/api/instructors")
+def add_instructor(name: str = Form(...), email: str = Form(""), phone: str = Form(""), notes: str = Form(""), admin=Depends(require_admin)):
+    conn = db()
+    try:
+        conn.execute("INSERT INTO instructors VALUES (?,?,?,?,?)", (str(uuid.uuid4()), name.strip(), email.strip(), phone.strip(), notes.strip()))
+        conn.commit()
+    except DBIntegrityError:
+        conn.rollback()
+        raise HTTPException(400, "Instructor already exists")
+    finally:
+        conn.close()
+    return {"ok": True}
+
+@app.post("/api/users/{user_id}/student-link")
+def update_user_student_link(user_id: str, payload: dict = Body(...), admin=Depends(require_admin)):
+    student_id = str(payload.get("student_id") or "").strip()
+    conn = db()
+    if USE_POSTGRES:
+        conn.execute("UPDATE users SET student_id=? WHERE CAST(id AS TEXT)=?", (student_id, str(user_id)))
+    else:
+        conn.execute("UPDATE users SET student_id=? WHERE id=?", (student_id, user_id))
+    conn.commit()
+    conn.close()
+    return {"ok": True, "student_id": student_id}
+
 @app.get("/api/users")
 def list_users(admin=Depends(require_admin)):
     conn = db()
-    rows = [dict(r) for r in conn.execute("SELECT id,email,role,approved,created_at FROM users ORDER BY created_at DESC").fetchall()]
+    rows = [dict(r) for r in conn.execute("SELECT id,email,role,approved,created_at,full_name,phone,student_id FROM users ORDER BY created_at DESC").fetchall()]
     conn.close()
     return rows
 
@@ -1408,24 +1470,15 @@ def get_notam(icao: str):
     if not re.match(r"^[A-Z]{4}$", icao):
         raise HTTPException(400, "Invalid ICAO code")
     official_url = f"https://notams.aim.faa.gov/notamSearch/nsapp.html#/results?searchType=0&designatorsForLocation={icao}"
-    sources = [f"https://metar-taf.com/notam/{icao}", f"https://metar-taf.com/metar/{icao}", f"https://metar.cloud/airport/{icao}"]
-    for url in sources:
-        try:
-            r = requests.get(url, timeout=20, headers={"User-Agent": "Mozilla/5.0 AviOrenAviationTrainingPortal/1.0"})
-            if r.status_code != 200 or not r.text:
-                continue
-            text = re.sub(r"<script.*?</script>", " ", r.text, flags=re.S | re.I)
-            text = re.sub(r"<style.*?</style>", " ", text, flags=re.S | re.I)
-            text = re.sub(r"<[^>]+>", " ", text)
-            text = re.sub(r"&nbsp;|&#160;", " ", text)
-            text = re.sub(r"\s+", " ", text).strip()
-            upper = text.upper()
-            if "NOTAM" in upper and len(text) > 120:
-                idx = upper.find("NOTAM")
-                return {"icao": icao, "source": url, "official_url": official_url, "notams": text[max(0, idx-300):idx+9000][:12000]}
-        except Exception:
-            pass
-    return {"icao": icao, "source": "manual", "official_url": official_url, "notams": f"Automatic NOTAM retrieval is not available for {icao} from the free public sources.\n\nOpen the official NOTAM search link and verify through an official briefing source before flight."}
+    ais_url = "https://ais-en.hungarocontrol.hu/"
+    text = (
+        f"Automatic NOTAM text retrieval is intentionally disabled for {icao} in this build because the previous free sources returned airport/general information, not real NOTAMs.\n\n"
+        "Use an official briefing source before flight.\n\n"
+        f"Official NOTAM search: {official_url}\n"
+        f"HungaroControl AIS / AIP: {ais_url}\n\n"
+        "This section now avoids showing misleading data as NOTAM. The next production step is connecting a verified NOTAM provider/API."
+    )
+    return {"icao": icao, "source": "official-link-only", "official_url": official_url, "ais_url": ais_url, "notams": text}
 
 @app.get("/api/wave-schedule")
 def get_wave_schedule(user=Depends(require_member)):

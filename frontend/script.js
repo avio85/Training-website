@@ -1374,3 +1374,165 @@ document.addEventListener('DOMContentLoaded',()=>{
   const ff=document.getElementById('flightForm');
   if(ff){ff.addEventListener('submit',e=>{e.preventDefault();saveFlightFromModal();});}
 });
+
+/* v0.3.1 people DB, my-flights filter, admin UX, NOTAM honesty */
+let scheduleStudents=[];
+let scheduleInstructors=[];
+let currentUserProfile=null;
+
+async function loadPeopleForSchedule(){
+  try{
+    const students=await apiJson('/api/students',{headers:authHeaders(),cache:'no-store'});
+    scheduleStudents=Array.isArray(students)?students:[];
+  }catch(err){
+    scheduleStudents=[];
+  }
+  try{
+    const instructors=await apiJson('/api/instructors',{headers:authHeaders(),cache:'no-store'});
+    scheduleInstructors=Array.isArray(instructors)?instructors:[];
+  }catch(err){
+    scheduleInstructors=[{name:'Avi'},{name:'Amir'}];
+  }
+}
+
+async function loadCurrentUserProfile(){
+  if(!token)return null;
+  try{
+    currentUserProfile=await apiJson('/api/me',{headers:authHeaders(),cache:'no-store'});
+  }catch(err){currentUserProfile=null;}
+  return currentUserProfile;
+}
+
+function populateFlightPeopleSelects(selectedStudent='', selectedInstructor=''){
+  const stu=document.getElementById('flightStudentInput');
+  if(stu){
+    const names=(scheduleStudents||[]).map(s=>s.name).filter(Boolean);
+    const unique=[...new Set(names.length?names:waveStudents)];
+    stu.innerHTML='<option value="">Choose student</option>'+unique.map(n=>`<option value="${escapeHtml(n)}" ${n===selectedStudent?'selected':''}>${escapeHtml(n)}</option>`).join('');
+  }
+  const ins=document.getElementById('flightInstructorInput');
+  if(ins){
+    const names=(scheduleInstructors||[]).map(i=>i.name).filter(Boolean);
+    const unique=[...new Set(names.length?names:['Avi','Amir'])];
+    ins.innerHTML=unique.map(n=>`<option value="${escapeHtml(n)}" ${n===selectedInstructor?'selected':''}>${escapeHtml(n)}</option>`).join('');
+  }
+}
+
+const AOA_031_oldShowPage = showPage;
+showPage = function(id){
+  AOA_031_oldShowPage(id);
+  if(id==='schedule'){
+    loadCurrentUserProfile().then(()=>renderWaveCalendar());
+    loadPeopleForSchedule();
+  }
+  if(id==='admin'){
+    showAdminTab('users');
+    loadPeopleForSchedule();
+  }
+};
+
+const AOA_031_oldLoadSchedule = loadSchedule;
+loadSchedule = async function(){
+  await loadPeopleForSchedule();
+  await loadCurrentUserProfile();
+  return AOA_031_oldLoadSchedule();
+};
+
+function filteredScheduleFlights(){
+  const mode=document.getElementById('scheduleViewFilter')?.value||'all';
+  const flights=Array.isArray(waveSchedule)?waveSchedule:[];
+  const myName=(currentUserProfile?.student_name||'').trim();
+  const hint=document.getElementById('scheduleFilterHint');
+  if(mode==='mine'){
+    if(hint)hint.textContent=myName?`Showing flights linked to: ${myName}`:'No student profile is linked to your user yet. Ask admin to link you.';
+    if(!myName)return [];
+    return flights.filter(f=>String(f.student||'').trim().toLowerCase()===myName.toLowerCase());
+  }
+  if(hint)hint.textContent='My flights require admin to link your user to a student profile.';
+  return flights;
+}
+
+renderWaveSlot=function(date,time,aircraft,admin){
+  const flights=filteredScheduleFlights().filter(f=>f.date===date&&f.time===time&&f.aircraft===aircraft);
+  return `<div class="wave-slot ${aircraft==='C172'?'slot-c172':'slot-c152'}" data-date="${date}" data-time="${time}" data-aircraft="${aircraft}"><div class="slot-aircraft">${aircraft}</div>${flights.map(f=>renderFlightCard(f,admin)).join('')||'<div class="empty-slot">—</div>'}</div>`;
+};
+
+const AOA_031_oldOpenFlightModal = openFlightModal;
+openFlightModal = async function(id){
+  if(!canEditSchedule())return toast('Admin only');
+  await loadPeopleForSchedule();
+  const f=id ? (waveSchedule||[]).find(x=>String(x.id)===String(id)) : null;
+  AOA_031_oldOpenFlightModal(id);
+  populateFlightPeopleSelects(f?.student||'', f?.instructor||'Avi');
+};
+
+function showAdminTab(tab){
+  document.querySelectorAll('.admin-tab').forEach(b=>b.classList.toggle('active',b.dataset.adminTab===tab));
+  document.querySelectorAll('.admin-panel-card').forEach(c=>c.classList.toggle('active-admin-panel',c.dataset.adminPanel===tab));
+  if(tab==='users')loadUsers();
+  if(tab==='people')loadPeopleAdminLists();
+}
+
+async function loadPeopleAdminLists(){
+  await loadPeopleForSchedule();
+  const stuPreview=document.querySelector('#studentForm')?.parentElement?.querySelector('.admin-list-preview');
+  if(stuPreview)stuPreview.innerHTML=(scheduleStudents||[]).map(s=>`<span>${escapeHtml(s.name)}</span>`).join('')||'<span>No students</span>';
+  const fi=document.getElementById('fiAdminList');
+  if(fi)fi.innerHTML=(scheduleInstructors||[]).map(x=>`<span>${escapeHtml(x.name)}</span>`).join('')||'<span>No instructors</span>';
+}
+
+addFiFromAdmin=async function(){
+  const i=document.getElementById('fiNameInput'),name=(i?.value||'').trim();
+  if(!name)return toast('Enter FI name');
+  const fd=new FormData();fd.append('name',name);fd.append('email','');fd.append('phone','');fd.append('notes','');
+  try{await apiJson('/api/instructors',{method:'POST',headers:authHeaders(),body:fd});i.value='';toast('FI added');loadPeopleAdminLists();}
+  catch(err){toast(err.message)}
+};
+
+const AOA_031_oldStudentSubmit = document.getElementById('studentForm');
+document.addEventListener('DOMContentLoaded',()=>{
+  const lf=document.querySelector('#loginForm input[name="email"]');
+  if(lf){
+    const saved=localStorage.getItem('lastLoginEmail')||'';
+    if(saved&&!lf.value)lf.value=saved;
+  }
+  const loginForm=document.getElementById('loginForm');
+  if(loginForm){
+    loginForm.addEventListener('submit',()=>{
+      const email=loginForm.querySelector('input[name="email"]')?.value||'';
+      if(email)localStorage.setItem('lastLoginEmail',email);
+    },true);
+  }
+  const sf=document.getElementById('studentForm');
+  if(sf){
+    sf.addEventListener('submit',()=>setTimeout(loadPeopleAdminLists,500));
+  }
+});
+
+loadUsers=async function(){
+  const list=document.getElementById('usersList');if(!list)return;
+  list.innerHTML='<p>Loading users...</p>';
+  try{
+    await loadPeopleForSchedule();
+    const users=await apiJson('/api/users',{headers:authHeaders(),cache:'no-store'});
+    const studentOptions=(selected)=>'<option value="">No student link</option>'+(scheduleStudents||[]).map(s=>`<option value="${escapeHtml(s.id)}" ${String(s.id)===String(selected||'')?'selected':''}>${escapeHtml(s.name)}</option>`).join('');
+    list.innerHTML=users.map(u=>`<div class="user-row compact-user-row"><div><strong>${escapeHtml(u.email)}</strong><span>${escapeHtml(u.full_name||'')} ${u.phone?(' · '+escapeHtml(u.phone)):''}</span></div><span>${escapeHtml(u.role)} · ${u.approved?'approved':'suspended/pending'}</span><div class="user-actions"><select onchange="updateUserRole('${escapeHtml(u.id)}',this.value)"><option value="student" ${u.role==='student'?'selected':''}>student</option><option value="instructor" ${u.role==='instructor'?'selected':''}>instructor</option><option value="admin" ${u.role==='admin'?'selected':''}>admin</option></select><select onchange="updateUserStudentLink('${escapeHtml(u.id)}',this.value)">${studentOptions(u.student_id)}</select>${!u.approved?`<button class="ghost-button" onclick="approveUser('${escapeHtml(u.id)}')">Approve</button>`:`<button class="ghost-button" onclick="suspendUser('${escapeHtml(u.id)}')">Suspend</button>`}<button class="ghost-button" onclick="deleteUser('${escapeHtml(u.id)}')">Delete</button></div></div>`).join('')||'<p>No users found.</p>';
+  }catch(err){list.innerHTML=`<p>${escapeHtml(err.message)}</p>`;}
+};
+async function updateUserStudentLink(id,student_id){
+  try{await apiJson(`/api/users/${encodeURIComponent(id)}/student-link`,{method:'POST',headers:{...authHeaders(),'Content-Type':'application/json'},body:JSON.stringify({student_id})});toast('Student link updated');}
+  catch(err){toast(err.message)}
+}
+
+loadNotam=async function(){
+  const sel=document.getElementById('notamAirportSelect'),out=document.getElementById('notamOutput'),title=document.getElementById('notamTitle'),official=document.getElementById('notamOfficialLink');
+  if(!sel||!out||!title)return;
+  const icao=sel.value||'LHKE';
+  title.textContent=`${icao} NOTAM`;
+  out.textContent='Loading official NOTAM links...';
+  try{
+    const d=await apiJson(`/api/notam/${encodeURIComponent(icao)}`,{cache:'no-store'});
+    if(official)official.href=d.official_url||`https://notams.aim.faa.gov/notamSearch/nsapp.html#/results?searchType=0&designatorsForLocation=${encodeURIComponent(icao)}`;
+    out.textContent=d.notams||'Use official briefing source.';
+  }catch(err){out.textContent=`${err.message}\n\nUse official NOTAM briefing source.`;}
+};
