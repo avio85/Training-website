@@ -1126,6 +1126,33 @@ def add_student(name: str = Form(...), email: str = Form(""), program: str = For
     conn.close()
     return {"ok": True}
 
+@app.put("/api/students/{student_id}")
+def update_student(student_id: str, payload: dict = Body(...), admin=Depends(require_admin)):
+    name = str(payload.get("name") or "").strip()
+    email = str(payload.get("email") or "").strip()
+    program = str(payload.get("program") or "PPL(A)").strip()
+    notes = str(payload.get("notes") or "").strip()
+    if not name:
+        raise HTTPException(400, "Student name is required")
+    conn = db()
+    try:
+        conn.execute("UPDATE students SET name=?, email=?, program=?, notes=? WHERE id=?", (name, email, program, notes, student_id))
+        conn.commit()
+        return {"ok": True}
+    finally:
+        conn.close()
+
+@app.delete("/api/students/{student_id}")
+def delete_student(student_id: str, admin=Depends(require_admin)):
+    conn = db()
+    try:
+        conn.execute("UPDATE users SET student_id='' WHERE student_id=?", (student_id,))
+        conn.execute("DELETE FROM students WHERE id=?", (student_id,))
+        conn.commit()
+        return {"ok": True}
+    finally:
+        conn.close()
+
 @app.get("/api/instructors")
 def list_instructors(user=Depends(require_member)):
     conn = db()
@@ -1464,21 +1491,72 @@ def get_airport_weather(icao: str):
     return {"icao": icao, "source_airport": source_airport, "used_fallback": used_fallback, "metar": metar, "taf": taf, "summary": parse_metar_summary(metar)}
 
 
+def _looks_like_notam(text: str) -> bool:
+    t = (text or "").upper()
+    return "NOTAM" in t and " Q)" in (" " + t) and " A)" in (" " + t) and " E)" in (" " + t)
+
+def _split_notams(text: str):
+    clean = (text or "").replace("\r", "")
+    blocks = re.split(r"(?=\([A-Z]\d{3,5}/\d{2}\s+NOTAM)", clean)
+    return [b.strip() for b in blocks if _looks_like_notam(b)]
+
+def _fetch_public_hungary_notams(icao: str):
+    headers = {"User-Agent": "AviOrenAviationTrainingPortal/1.0"}
+    urls = [
+        ("romatsa-hungary-a", "https://flightplan.romatsa.ro/init/notam/getnotamlist?dosar=33&tip=A"),
+        ("romatsa-hungary-w", "https://flightplan.romatsa.ro/init/notam/getnotamlist?dosar=33&tip=W"),
+    ]
+    matches = []
+    for source, url in urls:
+        try:
+            r = requests.get(url, timeout=15, headers=headers)
+            if r.status_code != 200 or not r.text:
+                continue
+            text = re.sub(r"<[^>]+>", " ", r.text)
+            text = re.sub(r"&nbsp;|&#160;", " ", text)
+            text = re.sub(r"[ \t]+", " ", text)
+            blocks = _split_notams(text)
+            for b in blocks:
+                ub = b.upper()
+                if f"A) {icao}" in ub or f"A){icao}" in ub or (icao in {"LHKA", "LHJK"} and "A) LHCC" in ub):
+                    matches.append((source, b))
+        except Exception:
+            continue
+    return matches
+
 @app.get("/api/notam/{icao}")
 def get_notam(icao: str):
     icao = icao.upper().strip()
     if not re.match(r"^[A-Z]{4}$", icao):
         raise HTTPException(400, "Invalid ICAO code")
-    official_url = f"https://notams.aim.faa.gov/notamSearch/nsapp.html#/results?searchType=0&designatorsForLocation={icao}"
+    faa_url = f"https://notams.aim.faa.gov/notamSearch/nsapp.html#/results?searchType=0&designatorsForLocation={icao}"
+    ead_url = "https://www.ead.eurocontrol.int/cms-eadbasic/opencms/en/login/ead-basic/"
+    netbriefing_url = "https://www.netbriefing.hu/"
     ais_url = "https://ais-en.hungarocontrol.hu/"
+
+    matches = _fetch_public_hungary_notams(icao)
+    if matches:
+        shown = []
+        for source, block in matches[:25]:
+            shown.append(f"Source: {source}\n{block.strip()}")
+        text = (
+            f"Live public NOTAM mirror results for {icao}. Verify operationally with official briefing before flight.\n\n"
+            + "\n\n---\n\n".join(shown)
+            + f"\n\nOfficial verification links:\nEAD Basic: {ead_url}\nHungaroControl / NetBriefing: {netbriefing_url}\nFAA NOTAM Search: {faa_url}"
+        )
+        return {"icao": icao, "source": "public-notam-mirror", "official_url": faa_url, "ead_url": ead_url, "netbriefing_url": netbriefing_url, "ais_url": ais_url, "notams": text[:16000]}
+
     text = (
-        f"Automatic NOTAM text retrieval is intentionally disabled for {icao} in this build because the previous free sources returned airport/general information, not real NOTAMs.\n\n"
-        "Use an official briefing source before flight.\n\n"
-        f"Official NOTAM search: {official_url}\n"
-        f"HungaroControl AIS / AIP: {ais_url}\n\n"
-        "This section now avoids showing misleading data as NOTAM. The next production step is connecting a verified NOTAM provider/API."
+        f"No aerodrome-specific NOTAM text was found for {icao} from the public raw-NOTAM mirror used by this MVP.\n\n"
+        "This is NOT a confirmation that there are no NOTAMs. Use official briefing before flight.\n\n"
+        f"Best official sources to check:\n"
+        f"1. EAD Basic: {ead_url}\n"
+        f"2. HungaroControl / NetBriefing: {netbriefing_url}\n"
+        f"3. FAA NOTAM Search: {faa_url}\n"
+        f"4. HungaroControl AIS: {ais_url}\n\n"
+        "The website now avoids showing METAR/airport general information as NOTAM."
     )
-    return {"icao": icao, "source": "official-link-only", "official_url": official_url, "ais_url": ais_url, "notams": text}
+    return {"icao": icao, "source": "official-links-no-match", "official_url": faa_url, "ead_url": ead_url, "netbriefing_url": netbriefing_url, "ais_url": ais_url, "notams": text}
 
 @app.get("/api/wave-schedule")
 def get_wave_schedule(user=Depends(require_member)):

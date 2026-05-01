@@ -656,3 +656,11 @@
 .user-list{display:grid;gap:8px;margin-top:12px}.compact-user-row,.user-row{background:#f8fcff;border:1px solid var(--line);border-radius:16px;padding:10px 12px!important}.compact-user-row{grid-template-columns:1.2fr .7fr 2fr!important}.compact-user-row strong{display:block}.compact-user-row span{display:block;color:var(--muted);font-size:12px}.user-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.user-actions select{width:auto;min-width:128px;margin:0;padding:8px}.user-actions button{padding:8px 10px}
 #flightStudentInput{width:100%;padding:13px;margin:7px 0;border-radius:14px;border:1px solid #cfe1f2;background:#fff;color:var(--text)}
 @media(max-width:980px){.compact-user-row{grid-template-columns:1fr!important}.user-actions{justify-content:flex-start}.admin-tabs{position:sticky;top:8px;z-index:5}.admin-card form{grid-template-columns:1fr}.schedule-filter-bar{align-items:stretch}.schedule-filter-bar label{min-width:0;width:100%}}
+
+/* v0.3.2 schedule/admin refinements */
+.schedule-filter-bar{display:flex;gap:12px;align-items:end;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:20px;padding:12px;margin:10px 0 16px;box-shadow:var(--shadow)}
+.schedule-filter-bar label{min-width:170px}.schedule-filter-bar span{color:var(--muted);font-size:13px;font-weight:800}
+.student-admin-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;width:100%;background:#f8fcff;border:1px solid #d7e7f7;border-radius:14px;padding:10px;margin:6px 0}
+.student-admin-row span{display:block;color:var(--muted);font-size:12px;margin-top:3px}.ghost-button.danger,.user-actions .danger{color:#b42318;border-color:#ffd0d0;background:#fff7f7}.compact-modal{max-width:560px}
+.admin-list-preview{align-items:stretch}.admin-list-preview .student-admin-row span{border:0;background:transparent;padding:0;border-radius:0;color:var(--muted)}
+@media(max-width:720px){.student-admin-row{grid-template-columns:1fr}.schedule-filter-bar label{width:100%}}

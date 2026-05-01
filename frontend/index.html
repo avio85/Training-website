@@ -62,9 +62,15 @@
       </div>
       <div class="schedule-filter-bar member-only hidden">
         <label>Schedule view
-          <select id="scheduleViewFilter" onchange="renderWaveCalendar()">
+          <select id="scheduleViewFilter" onchange="onScheduleFilterChange()">
             <option value="all">All flights</option>
             <option value="mine">My flights</option>
+            <option value="student">By student</option>
+          </select>
+        </label>
+        <label id="scheduleStudentFilterWrap" class="admin-instructor-filter hidden">Student
+          <select id="scheduleStudentFilter" onchange="renderWaveCalendar()">
+            <option value="">Choose student</option>
           </select>
         </label>
         <span id="scheduleFilterHint">My flights require admin to link your user to a student profile.</span>
@@ -653,8 +659,27 @@
     </div>
   </div>
 
-  <div id="toast" class="toast hidden"></div><footer class="version">
-    <span>Version 0.3.1</span>
+  <div id="studentEditModal" class="modal hidden">
+    <div class="modal-card compact-modal">
+      <button class="close" onclick="closeStudentEditModal()">×</button>
+      <h2>Edit student</h2>
+      <form id="studentEditForm">
+        <input type="hidden" id="studentEditId">
+        <label>Name <input id="studentEditName" required></label>
+        <label>Email <input id="studentEditEmail" type="email"></label>
+        <label>Program
+          <select id="studentEditProgram"><option>PPL(A)</option><option>Hour Building</option><option>Modular CPL(A)</option></select>
+        </label>
+        <label>Notes <input id="studentEditNotes"></label>
+        <div class="slot-edit-actions">
+          <button class="primary-button" type="submit">Save student</button>
+          <button class="ghost-button" type="button" onclick="closeStudentEditModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+<div id="toast" class="toast hidden"></div><footer class="version">
+    <span>Version 0.3.2</span>
     <span>© Avi Oren Aviation · avi8or.easa@gmail.com</span>
   </footer><script src="script.js"></script>
 </body></html>
