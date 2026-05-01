@@ -845,7 +845,7 @@ def debug_db():
 
 def make_token(user):
     payload = {
-        "sub": user["id"],
+        "sub": str(user["id"]),
         "email": user["email"],
         "role": user["role"],
         "approved": bool(user["approved"]),
@@ -861,27 +861,39 @@ def get_current_user(request: Request):
         payload = jwt.decode(auth.split(" ", 1)[1], JWT_SECRET, algorithms=["HS256"])
     except Exception:
         raise HTTPException(401, "Invalid token")
+
     conn = db()
-    user = conn.execute("SELECT * FROM users WHERE id=?", (payload["sub"],)).fetchone()
+    email = str(payload.get("email", "")).lower().strip()
+    user = None
+
+    # Prefer email lookup. It avoids old Supabase schemas where users.id was SERIAL/integer
+    # while JWT sub must be a string in PyJWT 2.10+.
+    if email:
+        user = conn.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
+
     if not user:
-        email = payload.get("email", "").lower()
-        admin_email = os.getenv("ADMIN_EMAIL", "admin@avioren.local").lower()
-        if email == admin_email:
+        sub = str(payload.get("sub", "")).strip()
+        if sub:
             try:
-                existing_by_email = conn.execute("SELECT * FROM users WHERE email=?", (admin_email,)).fetchone()
-                if existing_by_email:
-                    user = existing_by_email
+                if USE_POSTGRES:
+                    user = conn.execute("SELECT * FROM users WHERE CAST(id AS TEXT)=?", (sub,)).fetchone()
                 else:
-                    insert_user(conn, admin_email, pwd_context.hash(os.getenv("ADMIN_PASSWORD", "ChangeMe123!")), role="admin", approved=True, forced_id=payload["sub"])
-                    conn.commit()
-                    user = conn.execute("SELECT * FROM users WHERE email=?", (admin_email,)).fetchone()
-            except DBIntegrityError:
+                    user = conn.execute("SELECT * FROM users WHERE id=?", (sub,)).fetchone()
+            except Exception:
                 conn.rollback()
-            if not user:
-                user = conn.execute("SELECT * FROM users WHERE email=?", (admin_email,)).fetchone()
-        if not user:
-            conn.close()
-            raise HTTPException(401, "User not found. Please log out and log in again.")
+
+    if not user and email == os.getenv("ADMIN_EMAIL", "admin@avioren.local").lower():
+        try:
+            insert_user(conn, email, pwd_context.hash(os.getenv("ADMIN_PASSWORD", "ChangeMe123!")), role="admin", approved=True)
+            conn.commit()
+        except DBIntegrityError:
+            conn.rollback()
+        user = conn.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
+
+    if not user:
+        conn.close()
+        raise HTTPException(401, "User not found. Please log out and log in again.")
+
     conn.close()
     return user
 
@@ -936,8 +948,8 @@ def get_me(user=Depends(require_member)):
 @app.post("/api/me")
 def update_me(full_name: str = Form(""), phone: str = Form(""), license_info: str = Form(""), notes: str = Form(""), user=Depends(require_member)):
     conn = db()
-    conn.execute("UPDATE users SET full_name=?, phone=?, license_info=?, notes=? WHERE id=?", (
-        full_name.strip(), phone.strip(), license_info.strip(), notes.strip(), user["id"]
+    conn.execute("UPDATE users SET full_name=?, phone=?, license_info=?, notes=? WHERE email=?", (
+        full_name.strip(), phone.strip(), license_info.strip(), notes.strip(), user["email"]
     ))
     conn.commit()
     conn.close()
@@ -1010,7 +1022,10 @@ def list_users(admin=Depends(require_admin)):
 @app.post("/api/users/{user_id}/approve")
 def approve_user(user_id: str, admin=Depends(require_admin)):
     conn = db()
-    conn.execute("UPDATE users SET approved=? WHERE id=?", (True if USE_POSTGRES else 1, user_id))
+    if USE_POSTGRES:
+        conn.execute("UPDATE users SET approved=? WHERE CAST(id AS TEXT)=?", (True, str(user_id)))
+    else:
+        conn.execute("UPDATE users SET approved=? WHERE id=?", (1, user_id))
     conn.commit()
     conn.close()
     return {"ok": True}

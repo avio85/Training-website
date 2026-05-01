@@ -610,3 +610,8 @@
   .mobile-logout:not(.hidden){display:inline-flex!important;}
   .bottom-nav{grid-template-columns:repeat(5,1fr)!important;}
 }
+
+/* v0.2.12 dashboard 5-box layout */
+@media(min-width:981px){
+  .homepage-weather-grid{grid-template-columns:repeat(5,1fr)!important;}
+}
