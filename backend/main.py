@@ -1,15 +1,14 @@
-"""Render/uvicorn entrypoint for Avi Oren Aviation.
-
-This shim keeps the clean backend/app architecture working with both common
-start commands:
-- uvicorn backend.main:app
-- uvicorn main:app  (when the working directory is /backend)
-"""
+"""Render/uvicorn entrypoint for Avi Oren Aviation."""
 from pathlib import Path
 import sys
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 BACKEND_DIR = Path(__file__).resolve().parent
-if str(BACKEND_DIR) not in sys.path:
-    sys.path.insert(0, str(BACKEND_DIR))
+for path in (PROJECT_ROOT, BACKEND_DIR):
+    if str(path) not in sys.path:
+        sys.path.insert(0, str(path))
 
-from app.main import app  # noqa: E402
+try:
+    from backend.app.main import app
+except Exception:
+    from app.main import app

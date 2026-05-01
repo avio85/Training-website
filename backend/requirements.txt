@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+python-multipart
+requests
+PyJWT
+passlib[bcrypt]
+psycopg2-binary

@@ -1281,13 +1281,13 @@ document.addEventListener("DOMContentLoaded",()=>{
 })();
 
 /* =========================================================
-   v0.2.2 fixes
+   v0.2.3 fixes
    - ATPL AI active/url persist reliably
    - Dashboard has 5 boxes including baro pressure
    - LHKA dashboard uses backend fallback if METAR is unavailable
    ========================================================= */
 (function(){
-  const VERSION = "0.2.2";
+  const VERSION = "0.2.3";
 
   window.loadAtplAiSettings = async function(){
     const fallback = localStorage.getItem("atplAiUrl") || "https://avioren-aviation-mvp.onrender.com/";
