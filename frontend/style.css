@@ -670,7 +670,7 @@
 .tag-solo{background:#fff7e6;color:#9a5b00}
 
 
-/* v0.3.7 schedule filter/day/conflict polish */
+/* v0.3.8 schedule filter/day/conflict polish */
 .schedule-filter-bar{display:flex;gap:12px;align-items:end;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:20px;padding:12px;margin:12px 0;box-shadow:var(--shadow)}
 .schedule-filter-bar label{min-width:160px}
 #scheduleFilterHint{color:var(--muted);font-size:13px;font-weight:800;align-self:center}
@@ -679,7 +679,7 @@
 @media(max-width:720px){.schedule-filter-bar{display:grid;grid-template-columns:1fr}.schedule-filter-bar label{min-width:0}}
 
 
-/* v0.3.7 day share image button */
+/* v0.3.8 day share image button */
 .wave-day-header{
   display:flex;
   align-items:center;
@@ -703,7 +703,7 @@
 }
 
 
-/* v0.3.7 mobile admin access + visible day image button */
+/* v0.3.8 mobile admin access + visible day image button */
 .bottom-nav{
   overflow-x:auto;
   -webkit-overflow-scrolling:touch;
@@ -751,5 +751,44 @@
   }
   .bottom-nav .mobile-nav{
     flex:0 0 auto;
+  }
+}
+
+/* v0.3.8 real DOM screenshot capture */
+.day-share-btn{
+  min-width:132px!important;
+  height:40px!important;
+  background:#fff!important;
+  color:#075da8!important;
+  border:2px solid rgba(255,255,255,.95)!important;
+  box-shadow:0 10px 24px rgba(8,40,70,.18)!important;
+  font-weight:950!important;
+}
+.day-share-btn:hover{
+  background:#eef8ff!important;
+  color:#075da8!important;
+}
+.capture-mode{
+  transform:none!important;
+  box-shadow:0 0 0 1px #d7e7f7!important;
+  overflow:visible!important;
+}
+.capture-mode .day-share-btn,
+.capture-mode .flight-card[draggable="true"]::before{
+  display:none!important;
+}
+.capture-mode .flight-card{
+  break-inside:avoid;
+}
+@media(max-width:720px){
+  .wave-day-header{
+    position:relative;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .day-share-btn{
+    min-width:124px!important;
+    height:38px!important;
+    font-size:13px!important;
   }
 }

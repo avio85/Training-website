@@ -826,7 +826,7 @@ function renderWaveCalendar(){
   cal.innerHTML=waveDays.map(day=>`<section class="wave-day-card" data-date="${day.date}">
     <div class="wave-day-header">
       <span>${formatWaveDayTitle(day.date,day.label)}</span>
-      <button class="day-share-btn" type="button" title="Create schedule image" aria-label="Create schedule image" onclick="event.stopPropagation();createDayScheduleImage('${day.date}','${escapeHtml(formatWaveDayTitle(day.date,day.label))}')"><span class="day-share-icon">📸</span><span class="day-share-text">Image</span></button>
+      <button class="day-share-btn" type="button" title="Share day schedule image" aria-label="Share day schedule image" onclick="event.stopPropagation();createDayScheduleImage('${day.date}','${escapeHtml(formatWaveDayTitle(day.date,day.label))}')"><span class="day-share-icon">📸</span><span class="day-share-text">Share image</span></button>
     </div>
     <div class="wave-day-grid">${waveTimes.map(time=>`<div class="wave-time-row"><div class="wave-time-label">${time}</div><div class="wave-slot-pair">${waveAircraft.map(ac=>renderWaveSlot(day.date,time,ac,admin)).join("")}</div></div>`).join("")}</div>
   </section>`).join("");
@@ -834,6 +834,86 @@ function renderWaveCalendar(){
 }
 
 async function createDayScheduleImage(date,label){
+  const card=document.querySelector(`.wave-day-card[data-date="${date}"]`);
+  if(!card){
+    toast("Could not find this day on screen");
+    return;
+  }
+
+  const originalScrollX=window.scrollX;
+  const originalScrollY=window.scrollY;
+
+  try{
+    toast("Creating schedule image...");
+
+    // Temporarily make the card capture-friendly.
+    card.classList.add("capture-mode");
+
+    // html2canvas gives a real screenshot of the rendered DOM card.
+    if(typeof html2canvas==="function"){
+      const canvas=await html2canvas(card,{
+        backgroundColor:"#f5f9fd",
+        scale:2,
+        useCORS:true,
+        allowTaint:true,
+        logging:false,
+        scrollX:0,
+        scrollY:0,
+        windowWidth:document.documentElement.scrollWidth,
+        windowHeight:document.documentElement.scrollHeight
+      });
+      await shareOrDownloadCanvas(canvas,date,label);
+      return;
+    }
+
+    // Fallback if CDN fails: generate a clean table image from the current data.
+    const canvas=buildFallbackDayCanvas(date,label);
+    await shareOrDownloadCanvas(canvas,date,label);
+  }catch(err){
+    console.error(err);
+    toast("Could not create image. Try again after refresh.");
+  }finally{
+    card.classList.remove("capture-mode");
+    window.scrollTo(originalScrollX,originalScrollY);
+  }
+}
+
+async function shareOrDownloadCanvas(canvas,date,label){
+  return new Promise(resolve=>{
+    canvas.toBlob(async blob=>{
+      if(!blob){
+        toast("Image creation failed");
+        resolve();
+        return;
+      }
+      const safeLabel=String(label||date).replace(/[^a-z0-9]+/gi,"_").replace(/^_|_$/g,"");
+      const file=new File([blob],`AOA_schedule_${safeLabel||date}.png`,{type:"image/png"});
+
+      if(navigator.canShare&&navigator.canShare({files:[file]})){
+        try{
+          await navigator.share({files:[file],title:`Schedule ${label}`,text:`Avi Oren Aviation schedule - ${label}`});
+          resolve();
+          return;
+        }catch(e){
+          // user cancelled or browser blocked. Fall back to download.
+        }
+      }
+
+      const a=document.createElement("a");
+      const url=URL.createObjectURL(blob);
+      a.href=url;
+      a.download=file.name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),1200);
+      toast("Schedule image created");
+      resolve();
+    },"image/png",0.95);
+  });
+}
+
+function buildFallbackDayCanvas(date,label){
   const flights=waveSchedule
     .filter(f=>f.date===date)
     .sort((a,b)=>String(a.time||"").localeCompare(String(b.time||"")) || String(a.aircraft||"").localeCompare(String(b.aircraft||"")));
@@ -870,16 +950,7 @@ async function createDayScheduleImage(date,label){
     });
   }
   ctx.fillStyle="#60738a";ctx.font="18px Arial";ctx.fillText(`Generated ${new Date().toLocaleString()}`,48,height-36);
-  canvas.toBlob(async blob=>{
-    if(!blob)return;
-    const file=new File([blob],`AOA_schedule_${date}.png`,{type:"image/png"});
-    if(navigator.canShare&&navigator.canShare({files:[file]})){
-      try{await navigator.share({files:[file],title:`Schedule ${label}`,text:`Avi Oren Aviation schedule - ${label}`});return;}catch(e){}
-    }
-    const a=document.createElement("a");
-    a.href=URL.createObjectURL(blob);a.download=`AOA_schedule_${date}.png`;document.body.appendChild(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-  },"image/png");
+  return canvas;
 }
 
 function roundRect(ctx,x,y,w,h,r,fill,stroke){
@@ -1862,7 +1933,7 @@ renderFlightCard = function(f,admin){
 };
 
 
-/* v0.3.7 schedule day names, robust all/student/FI filters, conflict marking */
+/* v0.3.8 schedule day names, robust all/student/FI filters, conflict marking */
 function aoa035DateLabel(dateStr){
   const parts=String(dateStr||'').split('-').map(Number);
   const d=parts.length===3?new Date(parts[0],parts[1]-1,parts[2]):new Date(dateStr);
