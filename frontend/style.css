@@ -670,10 +670,34 @@
 .tag-solo{background:#fff7e6;color:#9a5b00}
 
 
-/* v0.3.5 schedule filter/day/conflict polish */
+/* v0.3.6 schedule filter/day/conflict polish */
 .schedule-filter-bar{display:flex;gap:12px;align-items:end;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:20px;padding:12px;margin:12px 0;box-shadow:var(--shadow)}
 .schedule-filter-bar label{min-width:160px}
 #scheduleFilterHint{color:var(--muted);font-size:13px;font-weight:800;align-self:center}
 .conflict-pill{display:inline-flex;margin-top:6px;border-radius:999px;background:#fff0f0;color:#b42318;border:1px solid #ffd1d1;padding:4px 7px;font-size:11px;font-weight:900}
 .conflict-summary{background:#fff0f0;color:#b42318;border:1px solid #ffd1d1;border-radius:14px;padding:10px 12px;margin:10px 0;font-weight:900}
 @media(max-width:720px){.schedule-filter-bar{display:grid;grid-template-columns:1fr}.schedule-filter-bar label{min-width:0}}
+
+
+/* v0.3.6 day share image button */
+.wave-day-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.day-share-btn{
+  border:1px solid rgba(255,255,255,.55);
+  background:rgba(255,255,255,.18);
+  color:#fff;
+  border-radius:12px;
+  width:38px;
+  height:34px;
+  display:inline-grid;
+  place-items:center;
+  font-size:18px;
+  box-shadow:none;
+}
+.day-share-btn:hover{
+  background:rgba(255,255,255,.3);
+}

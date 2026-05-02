@@ -810,8 +810,84 @@ async function loadHomeWeather(){const t=document.getElementById("homeTemp"),p=d
 function selectWeatherAirport(icao){selectedWeatherAirport=icao;const d=weatherAirportData[icao];document.querySelectorAll(".weather-airport-tab").forEach(tab=>tab.classList.toggle("active",tab.dataset.icao===icao));document.getElementById("weatherAirportChip").textContent=icao;document.getElementById("weatherAirportName").textContent=d?.name||icao;document.getElementById("metarTafLink").href=d?.metarTaf||`https://metar-taf.com/metar/${icao}`;loadSelectedAirportWeather()}
 async function loadSelectedAirportWeather(){const icao=selectedWeatherAirport||"LHKA",m=document.getElementById("airportMetarBox"),taf=document.getElementById("airportTafBox"),sum=document.getElementById("airportWeatherSummary");if(!m||!taf||!sum)return;m.textContent="Loading METAR...";taf.textContent="Loading TAF...";sum.innerHTML="<p>Loading general weather information...</p>";try{const r=await fetch(`/api/weather/airport/${encodeURIComponent(icao)}`);const d=await r.json();if(!r.ok)throw new Error(d.detail||"Weather fetch failed");m.textContent=d.metar||`No public METAR returned for ${icao}.`;taf.textContent=d.taf||`No public TAF returned for ${icao}.`;const s=d.summary||{};sum.innerHTML=`<div class="weather-summary-item"><span>Source airport used</span><strong>${escapeHtml(d.source_airport||"N/A")}</strong></div><div class="weather-summary-item"><span>Temperature</span><strong>${escapeHtml(s.temperature||"N/A")}</strong></div><div class="weather-summary-item"><span>Pressure / QNH</span><strong>${escapeHtml(s.pressure||"N/A")}</strong></div><div class="weather-summary-item"><span>Wind</span><strong>${escapeHtml(s.wind||"N/A")}</strong></div><div class="weather-summary-item"><span>Visibility</span><strong>${escapeHtml(s.visibility||"N/A")}</strong></div><div class="weather-summary-item"><span>Clouds</span><strong>${escapeHtml(s.clouds||"N/A")}</strong></div><div class="weather-summary-item"><span>Nearby fallback</span><strong>${d.used_fallback?"Yes":"No"}</strong></div>`}catch(err){m.textContent=`Could not load METAR for ${icao}.`;taf.textContent=`Could not load TAF for ${icao}.`;sum.innerHTML=`<p>${escapeHtml(err.message)}. Open the METAR-TAF page as fallback.</p>`}}
 async function loadNotam(){const sel=document.getElementById("notamAirportSelect"),out=document.getElementById("notamOutput"),title=document.getElementById("notamTitle"),official=document.getElementById("notamOfficialLink");if(!sel||!out||!title)return;const icao=sel.value||"LHKE";title.textContent=`${icao} NOTAM`;out.textContent="Loading NOTAM...";if(official)official.href=`https://notams.aim.faa.gov/notamSearch/nsapp.html#/results?searchType=0&designatorsForLocation=${encodeURIComponent(icao)}`;try{const r=await fetch(`/api/notam/${encodeURIComponent(icao)}`);const d=await r.json();if(!r.ok)throw new Error(d.detail||"NOTAM fetch failed");out.textContent=d.notams||`No automatic NOTAM text returned for ${icao}. Use the official NOTAM search link.`}catch(err){out.textContent=`${err.message}\n\nUse the official NOTAM search link.`}}
-function canEditSchedule(){return userRole==="admin"}async function loadSchedule(){const guest=document.getElementById("scheduleGuestMessage"),app=document.getElementById("waveScheduleApp");if(!token){guest?.classList.remove("hidden");app?.classList.add("hidden");return}guest?.classList.add("hidden");app?.classList.remove("hidden");try{const r=await fetch("/api/wave-schedule",{headers:authHeaders()});const d=await r.json();waveSchedule=(r.ok&&Array.isArray(d.flights)&&d.flights.length>0)?d.flights:JSON.parse(JSON.stringify(defaultWaveSchedule))}catch{waveSchedule=JSON.parse(JSON.stringify(defaultWaveSchedule))}renderWaveCalendar()}
-function renderWaveCalendar(){const cal=document.getElementById("waveCalendar");if(!cal)return;const admin=canEditSchedule();cal.innerHTML=waveDays.map(day=>`<section class="wave-day-card"><div class="wave-day-header">${day.label}</div><div class="wave-day-grid">${waveTimes.map(time=>`<div class="wave-time-row"><div class="wave-time-label">${time}</div><div class="wave-slot-pair">${waveAircraft.map(ac=>renderWaveSlot(day.date,time,ac,admin)).join("")}</div></div>`).join("")}</div></section>`).join("");if(admin)attachScheduleDragHandlers()}
+function canEditSchedule(){return userRole==="admin"}async function loadSchedule(){const guest=document.getElementById("scheduleGuestMessage"),app=document.getElementById("waveScheduleApp");if(!token){guest?.classList.remove("hidden");app?.classList.add("hidden");return}guest?.classList.add("hidden");app?.classList.remove("hidden");try{const r=await fetch("/api/wave-schedule",{headers:authHeaders()});const d=await r.json();waveSchedule=(r.ok&&Array.isArray(d.flights))?d.flights:[]}catch{waveSchedule=[]}renderWaveCalendar()}
+function formatWaveDayTitle(date,label){
+  const d=new Date(`${date}T12:00:00`);
+  if(Number.isNaN(d.getTime())) return label || date;
+  const day=d.toLocaleDateString("en-US",{weekday:"long"});
+  const dd=d.toLocaleDateString("en-GB",{day:"2-digit",month:"short"});
+  return `${day} ${dd}`;
+}
+
+function renderWaveCalendar(){
+  const cal=document.getElementById("waveCalendar");
+  if(!cal)return;
+  const admin=canEditSchedule();
+  cal.innerHTML=waveDays.map(day=>`<section class="wave-day-card" data-date="${day.date}">
+    <div class="wave-day-header">
+      <span>${formatWaveDayTitle(day.date,day.label)}</span>
+      <button class="day-share-btn" type="button" title="Create schedule image" onclick="event.stopPropagation();createDayScheduleImage('${day.date}','${escapeHtml(formatWaveDayTitle(day.date,day.label))}')">📸</button>
+    </div>
+    <div class="wave-day-grid">${waveTimes.map(time=>`<div class="wave-time-row"><div class="wave-time-label">${time}</div><div class="wave-slot-pair">${waveAircraft.map(ac=>renderWaveSlot(day.date,time,ac,admin)).join("")}</div></div>`).join("")}</div>
+  </section>`).join("");
+  if(admin)attachScheduleDragHandlers();
+}
+
+async function createDayScheduleImage(date,label){
+  const flights=waveSchedule
+    .filter(f=>f.date===date)
+    .sort((a,b)=>String(a.time||"").localeCompare(String(b.time||"")) || String(a.aircraft||"").localeCompare(String(b.aircraft||"")));
+  const width=1080;
+  const rowH=88;
+  const height=Math.max(520,180+Math.max(1,flights.length)*rowH+80);
+  const canvas=document.createElement("canvas");
+  canvas.width=width; canvas.height=height;
+  const ctx=canvas.getContext("2d");
+  ctx.fillStyle="#f5f9fd";ctx.fillRect(0,0,width,height);
+  const grad=ctx.createLinearGradient(0,0,width,0);
+  grad.addColorStop(0,"#0877d9");grad.addColorStop(1,"#34a8eb");
+  ctx.fillStyle=grad;ctx.fillRect(0,0,width,132);
+  ctx.fillStyle="#ffffff";ctx.font="bold 42px Arial";ctx.fillText("Avi Oren Aviation",48,54);
+  ctx.font="bold 34px Arial";ctx.fillText(`Training Schedule · ${label}`,48,104);
+  ctx.fillStyle="#102033";ctx.font="bold 24px Arial";ctx.fillText("Time",58,175);
+  ctx.fillText("Aircraft",188,175);
+  ctx.fillText("Student",345,175);
+  ctx.fillText("FI",620,175);
+  ctx.fillText("Notes",770,175);
+  let y=200;
+  if(!flights.length){
+    ctx.fillStyle="#60738a";ctx.font="26px Arial";ctx.fillText("No flights scheduled for this day.",58,y+45);
+  }else{
+    flights.forEach((f,i)=>{
+      ctx.fillStyle=i%2===0?"#ffffff":"#eef8ff";
+      roundRect(ctx,40,y,width-80,68,18,true,false);
+      ctx.fillStyle="#102033";ctx.font="bold 24px Arial";ctx.fillText(String(f.time||"").replace(/(\d{2})(\d{2})/,"$1:$2"),58,y+42);
+      ctx.fillStyle=f.aircraft==="C152"?"#9a5b00":"#075da8";ctx.font="bold 24px Arial";ctx.fillText(f.aircraft||"",188,y+42);
+      ctx.fillStyle="#102033";ctx.font="bold 24px Arial";ctx.fillText(f.student||"",345,y+42);
+      ctx.fillStyle="#0f7a37";ctx.font="bold 24px Arial";ctx.fillText(f.instructor||"Solo",620,y+42);
+      ctx.fillStyle="#60738a";ctx.font="22px Arial";ctx.fillText(f.note||"",770,y+42);
+      y+=rowH;
+    });
+  }
+  ctx.fillStyle="#60738a";ctx.font="18px Arial";ctx.fillText(`Generated ${new Date().toLocaleString()}`,48,height-36);
+  canvas.toBlob(async blob=>{
+    if(!blob)return;
+    const file=new File([blob],`AOA_schedule_${date}.png`,{type:"image/png"});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      try{await navigator.share({files:[file],title:`Schedule ${label}`,text:`Avi Oren Aviation schedule - ${label}`});return;}catch(e){}
+    }
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);a.download=`AOA_schedule_${date}.png`;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  },"image/png");
+}
+
+function roundRect(ctx,x,y,w,h,r,fill,stroke){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+  if(fill)ctx.fill();if(stroke)ctx.stroke();
+}
 function renderWaveSlot(date,time,aircraft,admin){const flights=waveSchedule.filter(f=>f.date===date&&f.time===time&&f.aircraft===aircraft);return `<div class="wave-slot ${aircraft==="C172"?"slot-c172":"slot-c152"}" data-date="${date}" data-time="${time}" data-aircraft="${aircraft}"><div class="slot-aircraft">${aircraft}</div>${flights.map(f=>renderFlightCard(f,admin)).join("")||'<div class="empty-slot">—</div>'}</div>`}
 function renderFlightCard(f,admin){const exam=String(f.note||"").toUpperCase().includes("EXAM");return `<div class="flight-card ${f.aircraft==="C172"?"flight-c172":"flight-c152"} ${exam?"exam-flight":""}" draggable="${admin?"true":"false"}" data-id="${escapeHtml(f.id)}" oncontextmenu="openSlotEditMenu(event, '${escapeHtml(f.id)}')"><strong>${escapeHtml(f.student)}</strong><div class="flight-tags"><span class="instructor-tag ${f.instructor==="Amir"?"tag-amir":"tag-avi"}">${escapeHtml(f.instructor)}</span><span class="aircraft-tag">${escapeHtml(f.aircraft)}</span>${f.note?`<span class="note-tag">${escapeHtml(f.note)}</span>`:""}</div></div>`}
 function attachScheduleDragHandlers(){document.querySelectorAll(".flight-card").forEach(card=>{card.addEventListener("dragstart",e=>{e.dataTransfer.setData("text/plain",card.dataset.id);card.classList.add("dragging")});card.addEventListener("dragend",()=>card.classList.remove("dragging"))});document.querySelectorAll(".wave-slot").forEach(slot=>{slot.addEventListener("dragover",e=>{e.preventDefault();slot.classList.add("drop-target")});slot.addEventListener("dragleave",()=>slot.classList.remove("drop-target"));slot.addEventListener("drop",e=>{e.preventDefault();slot.classList.remove("drop-target");const id=e.dataTransfer.getData("text/plain"),flight=waveSchedule.find(f=>f.id===id);if(!flight)return;flight.date=slot.dataset.date;flight.time=slot.dataset.time;flight.aircraft=slot.dataset.aircraft;renderWaveCalendar();toast("Schedule changed. Press Save changes.")})})}
@@ -1786,7 +1862,7 @@ renderFlightCard = function(f,admin){
 };
 
 
-/* v0.3.5 schedule day names, robust all/student/FI filters, conflict marking */
+/* v0.3.6 schedule day names, robust all/student/FI filters, conflict marking */
 function aoa035DateLabel(dateStr){
   const parts=String(dateStr||'').split('-').map(Number);
   const d=parts.length===3?new Date(parts[0],parts[1]-1,parts[2]):new Date(dateStr);
