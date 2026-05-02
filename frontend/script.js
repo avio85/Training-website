@@ -1,4 +1,39 @@
 
+/* v0.4.0 security: never allow credentials to remain in URL */
+function scrubCredentialQueryFromUrl(){
+  try{
+    const url = new URL(window.location.href);
+    const sensitive = ["password","pass","pwd","email"];
+    let changed = false;
+    sensitive.forEach(k=>{
+      if(url.searchParams.has(k)){
+        url.searchParams.delete(k);
+        changed = true;
+      }
+    });
+    if(changed){
+      const clean = url.pathname + (url.searchParams.toString()?`?${url.searchParams.toString()}`:"") + url.hash;
+      window.history.replaceState({}, document.title, clean);
+    }
+  }catch(e){}
+}
+scrubCredentialQueryFromUrl();
+
+function forceSafeAuthForms(){
+  ["loginForm","signupForm"].forEach(id=>{
+    const form=document.getElementById(id);
+    if(!form) return;
+    form.setAttribute("method","post");
+    form.setAttribute("action","javascript:void(0)");
+    form.setAttribute("autocomplete","on");
+    form.addEventListener("submit", ev=>{
+      ev.preventDefault();
+      scrubCredentialQueryFromUrl();
+    }, true);
+  });
+}
+
+
 const preloadedExercisePresentations = [
   {
     "title": "Exercise 1 (Part 1) - Aircraft Familiarisation",
@@ -826,12 +861,36 @@ function renderWaveCalendar(){
   cal.innerHTML=waveDays.map(day=>`<section class="wave-day-card" data-date="${day.date}">
     <div class="wave-day-header">
       <span>${formatWaveDayTitle(day.date,day.label)}</span>
-      <button class="day-share-btn" type="button" title="Share day schedule image" aria-label="Share day schedule image" onclick="event.stopPropagation();createDayScheduleImage('${day.date}','${escapeHtml(formatWaveDayTitle(day.date,day.label))}')"><span class="day-share-icon">📸</span><span class="day-share-text">Share image</span></button>
     </div>
     <div class="wave-day-grid">${waveTimes.map(time=>`<div class="wave-time-row"><div class="wave-time-label">${time}</div><div class="wave-slot-pair">${waveAircraft.map(ac=>renderWaveSlot(day.date,time,ac,admin)).join("")}</div></div>`).join("")}</div>
   </section>`).join("");
   if(admin)attachScheduleDragHandlers();
 }
+
+
+function openShareDailyScheduleModal(){
+  const modal=document.getElementById("dailyScheduleShareModal");
+  const select=document.getElementById("dailyScheduleShareDate");
+  if(!modal||!select)return;
+  select.innerHTML=waveDays.map(day=>`<option value="${day.date}">${escapeHtml(formatWaveDayTitle(day.date,day.label))}</option>`).join("");
+  const firstWithFlights=waveDays.find(day=>waveSchedule.some(f=>f.date===day.date));
+  if(firstWithFlights)select.value=firstWithFlights.date;
+  modal.classList.remove("hidden");
+}
+
+function closeShareDailyScheduleModal(){
+  document.getElementById("dailyScheduleShareModal")?.classList.add("hidden");
+}
+
+async function shareSelectedDailySchedule(){
+  const select=document.getElementById("dailyScheduleShareDate");
+  if(!select||!select.value)return toast("Choose a day");
+  const day=waveDays.find(d=>d.date===select.value);
+  const label=formatWaveDayTitle(select.value,day?.label||select.value);
+  closeShareDailyScheduleModal();
+  await createDayScheduleImage(select.value,label);
+}
+
 
 async function createDayScheduleImage(date,label){
   const card=document.querySelector(`.wave-day-card[data-date="${date}"]`);
@@ -969,7 +1028,7 @@ let adminFis=JSON.parse(localStorage.getItem("adminFis")||'["Avi","Amir"]');let 
 function renderAdminLists(){const fi=document.getElementById("fiAdminList");if(fi)fi.innerHTML=adminFis.map(x=>`<span>${escapeHtml(x)}</span>`).join("");const ap=document.getElementById("airplaneAdminList");if(ap)ap.innerHTML=adminAirplanes.map(a=>`<span>${escapeHtml(a.type)}${a.number?" · "+escapeHtml(a.number):""}</span>`).join("")}
 function addFiFromAdmin(){const i=document.getElementById("fiNameInput"),name=(i?.value||"").trim();if(!name)return toast("Enter FI name");if(!adminFis.includes(name))adminFis.push(name);localStorage.setItem("adminFis",JSON.stringify(adminFis));i.value="";renderAdminLists();toast("FI added")}function addAirplaneFromAdmin(){const type=document.getElementById("airplaneTypeInput")?.value||"C172",number=(document.getElementById("airplaneNumberInput")?.value||"").trim();adminAirplanes.push({type,number});localStorage.setItem("adminAirplanes",JSON.stringify(adminAirplanes));const i=document.getElementById("airplaneNumberInput");if(i)i.value="";renderAdminLists();toast("Airplane added")}function saveTrainingWaveSettings(){const name=document.getElementById("trainingWaveName")?.value||"Training wave",start=document.getElementById("trainingWaveStart")?.value||"2026-05-03",end=document.getElementById("trainingWaveEnd")?.value||"2026-05-10";localStorage.setItem("trainingWaveSettings",JSON.stringify({name,start,end}));toast("Training wave dates saved")}
 async function loadUsers(){const list=document.getElementById("usersList");if(!list)return;list.innerHTML="<p>Loading users...</p>";try{const r=await fetch("/api/users",{headers:authHeaders()}),users=await r.json();if(!r.ok)throw new Error(users.detail||"Could not load users");list.innerHTML=users.map(u=>`<div class="user-row"><strong>${escapeHtml(u.email)}</strong><span>${escapeHtml(u.role)} · ${u.approved?"approved":"pending"}</span>${!u.approved?`<button class="ghost-button" onclick="approveUser('${escapeHtml(u.id)}')">Approve</button>`:""}</div>`).join("")}catch(err){list.innerHTML=`<p>${escapeHtml(err.message)}</p>`}}async function approveUser(id){try{const r=await fetch(`/api/users/${encodeURIComponent(id)}/approve`,{method:"POST",headers:authHeaders()}),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||"Could not approve user");toast("User approved");loadUsers()}catch(err){toast(err.message)}}
-document.addEventListener("DOMContentLoaded",()=>{setAuthUi();loadHomeWeather();loadAtplAiSettings();renderAdminLists();document.getElementById("logoutBtn")?.addEventListener("click",logout);document.getElementById("loginForm")?.addEventListener("submit",async e=>{e.preventDefault();try{const d=await postForm("/api/login",e.target);token=d.token;userRole=d.role;localStorage.setItem("token",token);localStorage.setItem("role",userRole);setAuthUi();closeLoginModal();toast(d.approved?"Logged in":"Logged in, waiting for approval");if(userRole==="admin")showPage("admin")}catch(err){toast(err.message)}});document.getElementById("signupForm")?.addEventListener("submit",async e=>{e.preventDefault();try{const d=await postForm("/api/signup",e.target);toast(d.message||"Signup created");closeLoginModal()}catch(err){toast(err.message||"Signup failed")}});document.getElementById("studentForm")?.addEventListener("submit",async e=>{e.preventDefault();try{await postForm("/api/students",e.target);e.target.reset();toast("Student added")}catch(err){toast(err.message)}});document.getElementById("atplAiSettingsForm")?.addEventListener("submit",saveAtplAiSettings);document.querySelectorAll(".nav-item,.mobile-nav").forEach(btn=>btn.addEventListener("click",e=>{if(btn.dataset.page==="atplai")return handleAtplAiClick(e);showPage(btn.dataset.page)}));document.addEventListener("click",e=>{const menu=document.getElementById("slotEditMenu");if(menu&&!menu.classList.contains("hidden")&&!menu.contains(e.target))closeSlotEditMenu()});document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSlotEditMenu()});selectAirport("LHKA")});
+document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();scrubCredentialQueryFromUrl();setAuthUi();loadHomeWeather();loadAtplAiSettings();renderAdminLists();document.getElementById("logoutBtn")?.addEventListener("click",logout);document.getElementById("loginForm")?.addEventListener("submit",async e=>{e.preventDefault();try{const d=await postForm("/api/login",e.target);token=d.token;userRole=d.role;localStorage.setItem("token",token);localStorage.setItem("role",userRole);scrubCredentialQueryFromUrl();setAuthUi();closeLoginModal();toast(d.approved?"Logged in":"Logged in, waiting for approval");if(userRole==="admin")showPage("admin")}catch(err){toast(err.message)}});document.getElementById("signupForm")?.addEventListener("submit",async e=>{e.preventDefault();try{const d=await postForm("/api/signup",e.target);scrubCredentialQueryFromUrl();toast(d.message||"Signup created");closeLoginModal()}catch(err){toast(err.message||"Signup failed")}});document.getElementById("studentForm")?.addEventListener("submit",async e=>{e.preventDefault();try{await postForm("/api/students",e.target);e.target.reset();toast("Student added")}catch(err){toast(err.message)}});document.getElementById("atplAiSettingsForm")?.addEventListener("submit",saveAtplAiSettings);document.querySelectorAll(".nav-item,.mobile-nav").forEach(btn=>btn.addEventListener("click",e=>{if(btn.dataset.page==="atplai")return handleAtplAiClick(e);showPage(btn.dataset.page)}));document.addEventListener("click",e=>{const menu=document.getElementById("slotEditMenu");if(menu&&!menu.classList.contains("hidden")&&!menu.contains(e.target))closeSlotEditMenu()});document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSlotEditMenu()});selectAirport("LHKA")});
 
 /* v0.1.25 stable overrides: NOTAM, wave switcher, mobile polish */
 function scrollToLatestAssistantTop(){
@@ -1068,7 +1127,7 @@ loadNotam=async function(){
   }
 };
 
-document.addEventListener("DOMContentLoaded",()=>{
+document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();scrubCredentialQueryFromUrl();
   updateWaveLabel();
   const version=document.querySelector(".version");
   if(version) version.style.display="flex";
@@ -1282,7 +1341,7 @@ handleAtplAiClick=async function(e){
   showPage("atplai");
 };
 
-document.addEventListener("DOMContentLoaded",()=>{
+document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();scrubCredentialQueryFromUrl();
   updateWaveLabel();
   loadHomeWeather();
   selectAirport("LHKA");
@@ -1372,7 +1431,7 @@ saveAtplAiSettings=async function(e){
     toast('ATPL AI settings saved');
   }catch(err){toast(err.message)}
 };
-document.addEventListener("DOMContentLoaded",()=>{
+document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();scrubCredentialQueryFromUrl();
   setAuthUi();
   const pf=document.getElementById("profileForm");
   if(pf){
@@ -1398,7 +1457,7 @@ saveWaveSchedule=async function(){
 };
 
 // Capture signup before older listeners, so it submits once only.
-document.addEventListener("DOMContentLoaded",()=>{
+document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();scrubCredentialQueryFromUrl();
   const sf=document.getElementById("signupForm");
   if(sf){
     sf.addEventListener("submit",async e=>{
@@ -1933,7 +1992,7 @@ renderFlightCard = function(f,admin){
 };
 
 
-/* v0.3.8 schedule day names, robust all/student/FI filters, conflict marking */
+/* v0.4.0 schedule day names, robust all/student/FI filters, conflict marking */
 function aoa035DateLabel(dateStr){
   const parts=String(dateStr||'').split('-').map(Number);
   const d=parts.length===3?new Date(parts[0],parts[1]-1,parts[2]):new Date(dateStr);
