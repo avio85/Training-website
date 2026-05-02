@@ -1,5 +1,5 @@
 
-/* v0.4.1 security: never allow credentials to remain in URL */
+/* v0.4.2 security: never allow credentials to remain in URL */
 function scrubCredentialQueryFromUrl(){
   try{
     const url = new URL(window.location.href);
@@ -23,15 +23,15 @@ window.addEventListener("hashchange", scrubCredentialQueryFromUrl);
 
 function forceSafeAuthForms(){
   ["loginForm","signupForm"].forEach(id=>{
-    const form=document.getElementById(id);
-    if(!form) return;
-    form.setAttribute("method","post");
-    form.setAttribute("action","");
-    form.setAttribute("autocomplete","on");
-    form.addEventListener("submit", ev=>{
-      ev.preventDefault();
-      scrubCredentialQueryFromUrl();
-    }, true);
+    const box=document.getElementById(id);
+    if(!box) return;
+    // These are intentionally DIVs, not forms, to prevent browser GET submission.
+    if(box.tagName==="FORM"){
+      box.setAttribute("method","post");
+      box.setAttribute("action","");
+      box.setAttribute("onsubmit","return false;");
+      box.addEventListener("submit", ev=>{ev.preventDefault();scrubCredentialQueryFromUrl();}, true);
+    }
   });
 }
 
@@ -832,7 +832,22 @@ function authHeaders(){return token?{Authorization:"Bearer "+token}:{}}function 
 function escapeHtml(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
 function setAuthUi(){const logged=!!token;const s=document.getElementById("loginStatus");if(s)s.textContent=logged?(userRole==="admin"?"Admin online":"Member online"):"Guest mode";document.getElementById("logoutBtn")?.classList.toggle("hidden",!logged);const top=document.querySelector(".topbar .primary-button");if(top)top.classList.toggle("hidden",logged);document.querySelectorAll(".admin-only").forEach(e=>e.classList.toggle("hidden",userRole!=="admin"));document.querySelectorAll(".member-only").forEach(e=>e.classList.toggle("hidden",!logged));document.getElementById("scheduleGuestNotice")?.classList.toggle("hidden",logged)}
 function openLoginModal(){document.getElementById("loginModal")?.classList.remove("hidden")}function closeLoginModal(){document.getElementById("loginModal")?.classList.add("hidden")}function logout(){localStorage.removeItem("token");localStorage.removeItem("role");token="";userRole="";setAuthUi();showPage("dashboard");toast("Logged out")}
-async function postForm(url,form){const r=await fetch(url,{method:"POST",headers:authHeaders(),body:new FormData(form)});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||"Request failed");return d}
+function formDataFromContainer(container){
+  const fd=new FormData();
+  container.querySelectorAll("input,select,textarea").forEach(el=>{
+    if(!el.name)return;
+    if((el.type==="checkbox"||el.type==="radio")&&!el.checked)return;
+    fd.append(el.name,el.value);
+  });
+  return fd;
+}
+async function postForm(url,form){
+  const body=(form instanceof HTMLFormElement)?new FormData(form):formDataFromContainer(form);
+  const r=await fetch(url,{method:"POST",headers:authHeaders(),body});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.detail||"Request failed");
+  return d;
+}
 function showPage(id){if(id==="schedule"&&!token){openLoginModal();toast("Login required to view schedule");return}const target=document.getElementById(id);if(!target)return;document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));target.classList.add("active");const title=document.getElementById("pageTitle");if(title)title.textContent=pageTitles[id]||"Avi Oren Aviation";document.querySelectorAll(".nav-item,.mobile-nav").forEach(b=>b.classList.toggle("active",b.dataset.page===id));if(id==="schedule")loadSchedule(false);if(id==="briefingroom"){renderPreloadedExercisePresentations();selectAirport("LHKA")}if(id==="admin"){renderAdminLists();loadAtplAiSettings()}}
 async function loadAtplAiSettings(){const def="https://avioren-aviation-mvp.onrender.com/";try{const r=await fetch("/api/settings/atpl-ai");const d=await r.json();if(r.ok)atplAiSettings={url:d.url||def,active:!!d.active}}catch{atplAiSettings={url:def,active:false}}const u=document.getElementById("atplAiUrlInput"),a=document.getElementById("atplAiActiveInput");if(u)u.value=atplAiSettings.url||def;if(a)a.checked=!!atplAiSettings.active}
 async function saveAtplAiSettings(e){e.preventDefault();const f=e.target,fd=new FormData();fd.append("url",f.url.value||"https://avioren-aviation-mvp.onrender.com/");fd.append("active",f.active.checked?"true":"false");try{const r=await fetch("/api/settings/atpl-ai",{method:"POST",headers:authHeaders(),body:fd});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||"Could not save ATPL AI settings");atplAiSettings={url:d.url,active:!!d.active};toast("ATPL AI settings saved")}catch(err){toast(err.message)}}
@@ -895,55 +910,118 @@ async function shareSelectedDailySchedule(){
 
 
 async function createDayScheduleImage(date,label){
-  let card=document.querySelector(`.wave-day-card[data-date="${date}"]`);
-
-  // If the day is not in the DOM yet, re-render the calendar and try again.
-  if(!card){
-    try{ renderWaveCalendar(); }catch(e){}
-    await new Promise(r=>setTimeout(r,150));
-    card=document.querySelector(`.wave-day-card[data-date="${date}"]`);
-  }
-
-  // If still not found, do NOT fail. Generate from schedule data as fallback.
-  if(!card){
-    toast("Creating schedule image from schedule data...");
-    const canvas=buildFallbackDayCanvas(date,label);
-    await shareOrDownloadCanvas(canvas,date,label);
-    return;
-  }
-
-  const originalScrollX=window.scrollX;
-  const originalScrollY=window.scrollY;
-
   try{
     toast("Creating schedule image...");
-    card.scrollIntoView({behavior:"instant",block:"start"});
-    await new Promise(r=>setTimeout(r,250));
-
-    card.classList.add("capture-mode");
-
-    if(typeof html2canvas==="function"){
-      const canvas=await html2canvas(card,{
-        backgroundColor:"#f5f9fd",
-        scale:2,
-        useCORS:true,
-        allowTaint:true,
-        logging:false
-      });
-      await shareOrDownloadCanvas(canvas,date,label);
-      return;
-    }
-
-    const canvas=buildFallbackDayCanvas(date,label);
+    const canvas=buildTwoColumnDayCanvas(date,label);
     await shareOrDownloadCanvas(canvas,date,label);
   }catch(err){
     console.error(err);
-    const canvas=buildFallbackDayCanvas(date,label);
-    await shareOrDownloadCanvas(canvas,date,label);
-  }finally{
-    card?.classList.remove("capture-mode");
-    window.scrollTo(originalScrollX,originalScrollY);
+    toast("Could not create image. Try again after refresh.");
   }
+}
+
+function instructorColor(name){
+  const n=String(name||"").toLowerCase();
+  if(n.includes("amir"))return "#0f7a37";
+  if(n.includes("avi"))return "#075da8";
+  return "#344256";
+}
+
+function buildTwoColumnDayCanvas(date,label){
+  const flights=waveSchedule
+    .filter(f=>f.date===date)
+    .sort((a,b)=>String(a.time||"").localeCompare(String(b.time||"")) || String(a.aircraft||"").localeCompare(String(b.aircraft||"")));
+
+  const times=[...new Set([...waveTimes, ...flights.map(f=>String(f.time||""))])]
+    .filter(Boolean)
+    .sort();
+
+  const width=1200;
+  const rowH=126;
+  const height=Math.max(760,220+times.length*rowH+80);
+  const canvas=document.createElement("canvas");
+  canvas.width=width;
+  canvas.height=height;
+  const ctx=canvas.getContext("2d");
+
+  ctx.fillStyle="#f5f9fd";
+  ctx.fillRect(0,0,width,height);
+
+  const grad=ctx.createLinearGradient(0,0,width,0);
+  grad.addColorStop(0,"#0877d9");
+  grad.addColorStop(1,"#34a8eb");
+  ctx.fillStyle=grad;
+  roundRect(ctx,30,30,width-60,130,28,true,false);
+
+  ctx.fillStyle="#ffffff";
+  ctx.font="bold 38px Arial";
+  ctx.fillText("Avi Oren Aviation",62,82);
+  ctx.font="bold 30px Arial";
+  ctx.fillText(`Training Schedule · ${label}`,62,126);
+
+  const leftX=170, c172X=270, c152X=705;
+  ctx.fillStyle="#102033";
+  ctx.font="bold 24px Arial";
+  ctx.fillText("Time",62,205);
+  drawColumnHeader(ctx,c172X,180,370,48,"C172","#075da8","#e7f1ff");
+  drawColumnHeader(ctx,c152X,180,370,48,"C152","#9a5b00","#fff3dc");
+
+  let y=242;
+  times.forEach(time=>{
+    ctx.fillStyle="#075da8";
+    ctx.font="bold 28px Arial";
+    ctx.fillText(String(time).replace(/(\d{2})(\d{2})/,"$1:$2"),62,y+66);
+
+    drawSlotCard(ctx,c172X,y,370,96,flights.filter(f=>f.time===time&&f.aircraft==="C172"),"#075da8");
+    drawSlotCard(ctx,c152X,y,370,96,flights.filter(f=>f.time===time&&f.aircraft==="C152"),"#d48a00");
+    y+=rowH;
+  });
+
+  ctx.fillStyle="#60738a";
+  ctx.font="18px Arial";
+  ctx.fillText(`Generated ${new Date().toLocaleString()}`,62,height-40);
+  return canvas;
+}
+
+function drawColumnHeader(ctx,x,y,w,h,title,color,bg){
+  ctx.fillStyle=bg;
+  roundRect(ctx,x,y,w,h,18,true,false);
+  ctx.fillStyle=color;
+  ctx.font="bold 24px Arial";
+  ctx.fillText(title,x+22,y+32);
+}
+
+function drawSlotCard(ctx,x,y,w,h,flights,color){
+  ctx.fillStyle="#ffffff";
+  roundRect(ctx,x,y,w,h,20,true,false);
+  ctx.strokeStyle="#b8dff8";
+  ctx.lineWidth=2;
+  roundRect(ctx,x,y,w,h,20,false,true);
+
+  if(!flights.length){
+    ctx.fillStyle="#9aa9b8";
+    ctx.font="24px Arial";
+    ctx.fillText("—",x+w/2-8,y+58);
+    return;
+  }
+
+  let yy=y+30;
+  flights.forEach((f,idx)=>{
+    if(idx>0)yy+=36;
+    ctx.fillStyle=color;
+    ctx.fillRect(x+12,yy-22,6,34);
+    ctx.fillStyle="#102033";
+    ctx.font="bold 25px Arial";
+    ctx.fillText(String(f.student||""),x+28,yy);
+    ctx.fillStyle=instructorColor(f.instructor);
+    ctx.font="bold 21px Arial";
+    ctx.fillText(String(f.instructor||"Solo"),x+28,yy+28);
+    if(f.note){
+      ctx.fillStyle="#b42318";
+      ctx.font="bold 18px Arial";
+      ctx.fillText(String(f.note),x+190,yy+28);
+    }
+  });
 }
 
 async function shareOrDownloadCanvas(canvas,date,label){
@@ -1072,7 +1150,16 @@ async function submitSignupForm(){
 }
 
 
-document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();scrubCredentialQueryFromUrl();setAuthUi();loadHomeWeather();loadAtplAiSettings();renderAdminLists();document.getElementById("logoutBtn")?.addEventListener("click",logout);document.getElementById("loginForm")?.addEventListener("submit",async e=>{e.preventDefault();try{const d=await postForm("/api/login",e.target);token=d.token;userRole=d.role;localStorage.setItem("token",token);localStorage.setItem("role",userRole);scrubCredentialQueryFromUrl();setAuthUi();closeLoginModal();toast(d.approved?"Logged in":"Logged in, waiting for approval");if(userRole==="admin")showPage("admin")}catch(err){toast(err.message)}});document.getElementById("signupForm")?.addEventListener("submit",async e=>{e.preventDefault();try{const d=await postForm("/api/signup",e.target);scrubCredentialQueryFromUrl();toast(d.message||"Signup created");closeLoginModal()}catch(err){toast(err.message||"Signup failed")}});document.getElementById("studentForm")?.addEventListener("submit",async e=>{e.preventDefault();try{await postForm("/api/students",e.target);e.target.reset();toast("Student added")}catch(err){toast(err.message)}});document.getElementById("atplAiSettingsForm")?.addEventListener("submit",saveAtplAiSettings);document.querySelectorAll(".nav-item,.mobile-nav").forEach(btn=>btn.addEventListener("click",e=>{if(btn.dataset.page==="atplai")return handleAtplAiClick(e);showPage(btn.dataset.page)}));document.addEventListener("click",e=>{const menu=document.getElementById("slotEditMenu");if(menu&&!menu.classList.contains("hidden")&&!menu.contains(e.target))closeSlotEditMenu()});document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSlotEditMenu()});selectAirport("LHKA")});
+
+function wireAuthEnterKeys(){
+  const login=document.getElementById("loginForm");
+  const signup=document.getElementById("signupForm");
+  login?.querySelectorAll("input").forEach(i=>i.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();submitLoginForm();}}));
+  signup?.querySelectorAll("input").forEach(i=>i.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();submitSignupForm();}}));
+}
+
+
+document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();wireAuthEnterKeys();scrubCredentialQueryFromUrl();setAuthUi();loadHomeWeather();loadAtplAiSettings();renderAdminLists();document.getElementById("logoutBtn")?.addEventListener("click",logout);document.getElementById("loginForm")?.addEventListener("submit",async e=>{e.preventDefault();try{const d=await postForm("/api/login",e.target);token=d.token;userRole=d.role;localStorage.setItem("token",token);localStorage.setItem("role",userRole);scrubCredentialQueryFromUrl();setAuthUi();closeLoginModal();toast(d.approved?"Logged in":"Logged in, waiting for approval");if(userRole==="admin")showPage("admin")}catch(err){toast(err.message)}});document.getElementById("signupForm")?.addEventListener("submit",async e=>{e.preventDefault();try{const d=await postForm("/api/signup",e.target);scrubCredentialQueryFromUrl();toast(d.message||"Signup created");closeLoginModal()}catch(err){toast(err.message||"Signup failed")}});document.getElementById("studentForm")?.addEventListener("submit",async e=>{e.preventDefault();try{await postForm("/api/students",e.target);e.target.reset();toast("Student added")}catch(err){toast(err.message)}});document.getElementById("atplAiSettingsForm")?.addEventListener("submit",saveAtplAiSettings);document.querySelectorAll(".nav-item,.mobile-nav").forEach(btn=>btn.addEventListener("click",e=>{if(btn.dataset.page==="atplai")return handleAtplAiClick(e);showPage(btn.dataset.page)}));document.addEventListener("click",e=>{const menu=document.getElementById("slotEditMenu");if(menu&&!menu.classList.contains("hidden")&&!menu.contains(e.target))closeSlotEditMenu()});document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSlotEditMenu()});selectAirport("LHKA")});
 
 /* v0.1.25 stable overrides: NOTAM, wave switcher, mobile polish */
 function scrollToLatestAssistantTop(){
@@ -1206,7 +1293,16 @@ async function submitSignupForm(){
 }
 
 
-document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();scrubCredentialQueryFromUrl();
+
+function wireAuthEnterKeys(){
+  const login=document.getElementById("loginForm");
+  const signup=document.getElementById("signupForm");
+  login?.querySelectorAll("input").forEach(i=>i.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();submitLoginForm();}}));
+  signup?.querySelectorAll("input").forEach(i=>i.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();submitSignupForm();}}));
+}
+
+
+document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();wireAuthEnterKeys();scrubCredentialQueryFromUrl();
   updateWaveLabel();
   const version=document.querySelector(".version");
   if(version) version.style.display="flex";
@@ -1455,7 +1551,16 @@ async function submitSignupForm(){
 }
 
 
-document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();scrubCredentialQueryFromUrl();
+
+function wireAuthEnterKeys(){
+  const login=document.getElementById("loginForm");
+  const signup=document.getElementById("signupForm");
+  login?.querySelectorAll("input").forEach(i=>i.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();submitLoginForm();}}));
+  signup?.querySelectorAll("input").forEach(i=>i.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();submitSignupForm();}}));
+}
+
+
+document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();wireAuthEnterKeys();scrubCredentialQueryFromUrl();
   updateWaveLabel();
   loadHomeWeather();
   selectAirport("LHKA");
@@ -1580,7 +1685,16 @@ async function submitSignupForm(){
 }
 
 
-document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();scrubCredentialQueryFromUrl();
+
+function wireAuthEnterKeys(){
+  const login=document.getElementById("loginForm");
+  const signup=document.getElementById("signupForm");
+  login?.querySelectorAll("input").forEach(i=>i.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();submitLoginForm();}}));
+  signup?.querySelectorAll("input").forEach(i=>i.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();submitSignupForm();}}));
+}
+
+
+document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();wireAuthEnterKeys();scrubCredentialQueryFromUrl();
   setAuthUi();
   const pf=document.getElementById("profileForm");
   if(pf){
@@ -1641,7 +1755,16 @@ async function submitSignupForm(){
 }
 
 
-document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();scrubCredentialQueryFromUrl();
+
+function wireAuthEnterKeys(){
+  const login=document.getElementById("loginForm");
+  const signup=document.getElementById("signupForm");
+  login?.querySelectorAll("input").forEach(i=>i.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();submitLoginForm();}}));
+  signup?.querySelectorAll("input").forEach(i=>i.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();submitSignupForm();}}));
+}
+
+
+document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();wireAuthEnterKeys();scrubCredentialQueryFromUrl();
   const sf=document.getElementById("signupForm");
   if(sf){
     sf.addEventListener("submit",async e=>{
@@ -2176,7 +2299,7 @@ renderFlightCard = function(f,admin){
 };
 
 
-/* v0.4.1 schedule day names, robust all/student/FI filters, conflict marking */
+/* v0.4.2 schedule day names, robust all/student/FI filters, conflict marking */
 function aoa035DateLabel(dateStr){
   const parts=String(dateStr||'').split('-').map(Number);
   const d=parts.length===3?new Date(parts[0],parts[1]-1,parts[2]):new Date(dateStr);
