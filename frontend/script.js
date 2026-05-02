@@ -1,5 +1,5 @@
 
-/* v0.4.0 security: never allow credentials to remain in URL */
+/* v0.4.1 security: never allow credentials to remain in URL */
 function scrubCredentialQueryFromUrl(){
   try{
     const url = new URL(window.location.href);
@@ -18,13 +18,15 @@ function scrubCredentialQueryFromUrl(){
   }catch(e){}
 }
 scrubCredentialQueryFromUrl();
+window.addEventListener("pageshow", scrubCredentialQueryFromUrl);
+window.addEventListener("hashchange", scrubCredentialQueryFromUrl);
 
 function forceSafeAuthForms(){
   ["loginForm","signupForm"].forEach(id=>{
     const form=document.getElementById(id);
     if(!form) return;
     form.setAttribute("method","post");
-    form.setAttribute("action","javascript:void(0)");
+    form.setAttribute("action","");
     form.setAttribute("autocomplete","on");
     form.addEventListener("submit", ev=>{
       ev.preventDefault();
@@ -893,9 +895,20 @@ async function shareSelectedDailySchedule(){
 
 
 async function createDayScheduleImage(date,label){
-  const card=document.querySelector(`.wave-day-card[data-date="${date}"]`);
+  let card=document.querySelector(`.wave-day-card[data-date="${date}"]`);
+
+  // If the day is not in the DOM yet, re-render the calendar and try again.
   if(!card){
-    toast("Could not find this day on screen");
+    try{ renderWaveCalendar(); }catch(e){}
+    await new Promise(r=>setTimeout(r,150));
+    card=document.querySelector(`.wave-day-card[data-date="${date}"]`);
+  }
+
+  // If still not found, do NOT fail. Generate from schedule data as fallback.
+  if(!card){
+    toast("Creating schedule image from schedule data...");
+    const canvas=buildFallbackDayCanvas(date,label);
+    await shareOrDownloadCanvas(canvas,date,label);
     return;
   }
 
@@ -904,35 +917,31 @@ async function createDayScheduleImage(date,label){
 
   try{
     toast("Creating schedule image...");
+    card.scrollIntoView({behavior:"instant",block:"start"});
+    await new Promise(r=>setTimeout(r,250));
 
-    // Temporarily make the card capture-friendly.
     card.classList.add("capture-mode");
 
-    // html2canvas gives a real screenshot of the rendered DOM card.
     if(typeof html2canvas==="function"){
       const canvas=await html2canvas(card,{
         backgroundColor:"#f5f9fd",
         scale:2,
         useCORS:true,
         allowTaint:true,
-        logging:false,
-        scrollX:0,
-        scrollY:0,
-        windowWidth:document.documentElement.scrollWidth,
-        windowHeight:document.documentElement.scrollHeight
+        logging:false
       });
       await shareOrDownloadCanvas(canvas,date,label);
       return;
     }
 
-    // Fallback if CDN fails: generate a clean table image from the current data.
     const canvas=buildFallbackDayCanvas(date,label);
     await shareOrDownloadCanvas(canvas,date,label);
   }catch(err){
     console.error(err);
-    toast("Could not create image. Try again after refresh.");
+    const canvas=buildFallbackDayCanvas(date,label);
+    await shareOrDownloadCanvas(canvas,date,label);
   }finally{
-    card.classList.remove("capture-mode");
+    card?.classList.remove("capture-mode");
     window.scrollTo(originalScrollX,originalScrollY);
   }
 }
@@ -1028,6 +1037,41 @@ let adminFis=JSON.parse(localStorage.getItem("adminFis")||'["Avi","Amir"]');let 
 function renderAdminLists(){const fi=document.getElementById("fiAdminList");if(fi)fi.innerHTML=adminFis.map(x=>`<span>${escapeHtml(x)}</span>`).join("");const ap=document.getElementById("airplaneAdminList");if(ap)ap.innerHTML=adminAirplanes.map(a=>`<span>${escapeHtml(a.type)}${a.number?" · "+escapeHtml(a.number):""}</span>`).join("")}
 function addFiFromAdmin(){const i=document.getElementById("fiNameInput"),name=(i?.value||"").trim();if(!name)return toast("Enter FI name");if(!adminFis.includes(name))adminFis.push(name);localStorage.setItem("adminFis",JSON.stringify(adminFis));i.value="";renderAdminLists();toast("FI added")}function addAirplaneFromAdmin(){const type=document.getElementById("airplaneTypeInput")?.value||"C172",number=(document.getElementById("airplaneNumberInput")?.value||"").trim();adminAirplanes.push({type,number});localStorage.setItem("adminAirplanes",JSON.stringify(adminAirplanes));const i=document.getElementById("airplaneNumberInput");if(i)i.value="";renderAdminLists();toast("Airplane added")}function saveTrainingWaveSettings(){const name=document.getElementById("trainingWaveName")?.value||"Training wave",start=document.getElementById("trainingWaveStart")?.value||"2026-05-03",end=document.getElementById("trainingWaveEnd")?.value||"2026-05-10";localStorage.setItem("trainingWaveSettings",JSON.stringify({name,start,end}));toast("Training wave dates saved")}
 async function loadUsers(){const list=document.getElementById("usersList");if(!list)return;list.innerHTML="<p>Loading users...</p>";try{const r=await fetch("/api/users",{headers:authHeaders()}),users=await r.json();if(!r.ok)throw new Error(users.detail||"Could not load users");list.innerHTML=users.map(u=>`<div class="user-row"><strong>${escapeHtml(u.email)}</strong><span>${escapeHtml(u.role)} · ${u.approved?"approved":"pending"}</span>${!u.approved?`<button class="ghost-button" onclick="approveUser('${escapeHtml(u.id)}')">Approve</button>`:""}</div>`).join("")}catch(err){list.innerHTML=`<p>${escapeHtml(err.message)}</p>`}}async function approveUser(id){try{const r=await fetch(`/api/users/${encodeURIComponent(id)}/approve`,{method:"POST",headers:authHeaders()}),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||"Could not approve user");toast("User approved");loadUsers()}catch(err){toast(err.message)}}
+
+async function submitLoginForm(){
+  scrubCredentialQueryFromUrl();
+  const form=document.getElementById("loginForm");
+  if(!form) return;
+  try{
+    const d=await postForm("/api/login",form);
+    token=d.token;userRole=d.role;
+    localStorage.setItem("token",token);
+    localStorage.setItem("role",userRole);
+    scrubCredentialQueryFromUrl();
+    setAuthUi();
+    closeLoginModal();
+    toast(d.approved?"Logged in":"Logged in, waiting for approval");
+    if(userRole==="admin")showPage("admin");
+  }catch(err){
+    toast(err.message||"Login failed");
+  }
+}
+
+async function submitSignupForm(){
+  scrubCredentialQueryFromUrl();
+  const form=document.getElementById("signupForm");
+  if(!form) return;
+  try{
+    const d=await postForm("/api/signup",form);
+    scrubCredentialQueryFromUrl();
+    toast(d.message||"Signup created");
+    closeLoginModal();
+  }catch(err){
+    toast(err.message||"Signup failed");
+  }
+}
+
+
 document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();scrubCredentialQueryFromUrl();setAuthUi();loadHomeWeather();loadAtplAiSettings();renderAdminLists();document.getElementById("logoutBtn")?.addEventListener("click",logout);document.getElementById("loginForm")?.addEventListener("submit",async e=>{e.preventDefault();try{const d=await postForm("/api/login",e.target);token=d.token;userRole=d.role;localStorage.setItem("token",token);localStorage.setItem("role",userRole);scrubCredentialQueryFromUrl();setAuthUi();closeLoginModal();toast(d.approved?"Logged in":"Logged in, waiting for approval");if(userRole==="admin")showPage("admin")}catch(err){toast(err.message)}});document.getElementById("signupForm")?.addEventListener("submit",async e=>{e.preventDefault();try{const d=await postForm("/api/signup",e.target);scrubCredentialQueryFromUrl();toast(d.message||"Signup created");closeLoginModal()}catch(err){toast(err.message||"Signup failed")}});document.getElementById("studentForm")?.addEventListener("submit",async e=>{e.preventDefault();try{await postForm("/api/students",e.target);e.target.reset();toast("Student added")}catch(err){toast(err.message)}});document.getElementById("atplAiSettingsForm")?.addEventListener("submit",saveAtplAiSettings);document.querySelectorAll(".nav-item,.mobile-nav").forEach(btn=>btn.addEventListener("click",e=>{if(btn.dataset.page==="atplai")return handleAtplAiClick(e);showPage(btn.dataset.page)}));document.addEventListener("click",e=>{const menu=document.getElementById("slotEditMenu");if(menu&&!menu.classList.contains("hidden")&&!menu.contains(e.target))closeSlotEditMenu()});document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSlotEditMenu()});selectAirport("LHKA")});
 
 /* v0.1.25 stable overrides: NOTAM, wave switcher, mobile polish */
@@ -1126,6 +1170,41 @@ loadNotam=async function(){
     out.textContent=`Automatic NOTAM loading failed for ${icao}.\n\n${err.message}\n\nUse official verification: ${officialUrl}`;
   }
 };
+
+
+async function submitLoginForm(){
+  scrubCredentialQueryFromUrl();
+  const form=document.getElementById("loginForm");
+  if(!form) return;
+  try{
+    const d=await postForm("/api/login",form);
+    token=d.token;userRole=d.role;
+    localStorage.setItem("token",token);
+    localStorage.setItem("role",userRole);
+    scrubCredentialQueryFromUrl();
+    setAuthUi();
+    closeLoginModal();
+    toast(d.approved?"Logged in":"Logged in, waiting for approval");
+    if(userRole==="admin")showPage("admin");
+  }catch(err){
+    toast(err.message||"Login failed");
+  }
+}
+
+async function submitSignupForm(){
+  scrubCredentialQueryFromUrl();
+  const form=document.getElementById("signupForm");
+  if(!form) return;
+  try{
+    const d=await postForm("/api/signup",form);
+    scrubCredentialQueryFromUrl();
+    toast(d.message||"Signup created");
+    closeLoginModal();
+  }catch(err){
+    toast(err.message||"Signup failed");
+  }
+}
+
 
 document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();scrubCredentialQueryFromUrl();
   updateWaveLabel();
@@ -1341,6 +1420,41 @@ handleAtplAiClick=async function(e){
   showPage("atplai");
 };
 
+
+async function submitLoginForm(){
+  scrubCredentialQueryFromUrl();
+  const form=document.getElementById("loginForm");
+  if(!form) return;
+  try{
+    const d=await postForm("/api/login",form);
+    token=d.token;userRole=d.role;
+    localStorage.setItem("token",token);
+    localStorage.setItem("role",userRole);
+    scrubCredentialQueryFromUrl();
+    setAuthUi();
+    closeLoginModal();
+    toast(d.approved?"Logged in":"Logged in, waiting for approval");
+    if(userRole==="admin")showPage("admin");
+  }catch(err){
+    toast(err.message||"Login failed");
+  }
+}
+
+async function submitSignupForm(){
+  scrubCredentialQueryFromUrl();
+  const form=document.getElementById("signupForm");
+  if(!form) return;
+  try{
+    const d=await postForm("/api/signup",form);
+    scrubCredentialQueryFromUrl();
+    toast(d.message||"Signup created");
+    closeLoginModal();
+  }catch(err){
+    toast(err.message||"Signup failed");
+  }
+}
+
+
 document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();scrubCredentialQueryFromUrl();
   updateWaveLabel();
   loadHomeWeather();
@@ -1431,6 +1545,41 @@ saveAtplAiSettings=async function(e){
     toast('ATPL AI settings saved');
   }catch(err){toast(err.message)}
 };
+
+async function submitLoginForm(){
+  scrubCredentialQueryFromUrl();
+  const form=document.getElementById("loginForm");
+  if(!form) return;
+  try{
+    const d=await postForm("/api/login",form);
+    token=d.token;userRole=d.role;
+    localStorage.setItem("token",token);
+    localStorage.setItem("role",userRole);
+    scrubCredentialQueryFromUrl();
+    setAuthUi();
+    closeLoginModal();
+    toast(d.approved?"Logged in":"Logged in, waiting for approval");
+    if(userRole==="admin")showPage("admin");
+  }catch(err){
+    toast(err.message||"Login failed");
+  }
+}
+
+async function submitSignupForm(){
+  scrubCredentialQueryFromUrl();
+  const form=document.getElementById("signupForm");
+  if(!form) return;
+  try{
+    const d=await postForm("/api/signup",form);
+    scrubCredentialQueryFromUrl();
+    toast(d.message||"Signup created");
+    closeLoginModal();
+  }catch(err){
+    toast(err.message||"Signup failed");
+  }
+}
+
+
 document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();scrubCredentialQueryFromUrl();
   setAuthUi();
   const pf=document.getElementById("profileForm");
@@ -1457,6 +1606,41 @@ saveWaveSchedule=async function(){
 };
 
 // Capture signup before older listeners, so it submits once only.
+
+async function submitLoginForm(){
+  scrubCredentialQueryFromUrl();
+  const form=document.getElementById("loginForm");
+  if(!form) return;
+  try{
+    const d=await postForm("/api/login",form);
+    token=d.token;userRole=d.role;
+    localStorage.setItem("token",token);
+    localStorage.setItem("role",userRole);
+    scrubCredentialQueryFromUrl();
+    setAuthUi();
+    closeLoginModal();
+    toast(d.approved?"Logged in":"Logged in, waiting for approval");
+    if(userRole==="admin")showPage("admin");
+  }catch(err){
+    toast(err.message||"Login failed");
+  }
+}
+
+async function submitSignupForm(){
+  scrubCredentialQueryFromUrl();
+  const form=document.getElementById("signupForm");
+  if(!form) return;
+  try{
+    const d=await postForm("/api/signup",form);
+    scrubCredentialQueryFromUrl();
+    toast(d.message||"Signup created");
+    closeLoginModal();
+  }catch(err){
+    toast(err.message||"Signup failed");
+  }
+}
+
+
 document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();scrubCredentialQueryFromUrl();
   const sf=document.getElementById("signupForm");
   if(sf){
@@ -1992,7 +2176,7 @@ renderFlightCard = function(f,admin){
 };
 
 
-/* v0.4.0 schedule day names, robust all/student/FI filters, conflict marking */
+/* v0.4.1 schedule day names, robust all/student/FI filters, conflict marking */
 function aoa035DateLabel(dateStr){
   const parts=String(dateStr||'').split('-').map(Number);
   const d=parts.length===3?new Date(parts[0],parts[1]-1,parts[2]):new Date(dateStr);
