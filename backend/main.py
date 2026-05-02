@@ -763,10 +763,19 @@ def upsert_schedule_flight(conn, flight):
     return fid
 
 def ensure_default_wave_in_schedule(conn):
+    """Seed the original May wave only once.
+
+    Important: do NOT recreate individual deleted default flights.
+    If an admin deletes Lior 03/05 1400 or any other default row, it must stay deleted.
+    """
+    disabled = conn.execute("SELECT value FROM app_settings WHERE key=?", ("default_schedule_seeded",)).fetchone()
+    existing = conn.execute("SELECT COUNT(*) AS c FROM schedule").fetchone()
+    count = int(existing["c"] if hasattr(existing, "keys") else existing[0])
+    if disabled or count > 0:
+        return
     for f in DEFAULT_WAVE_SCHEDULE:
-        exists = conn.execute("SELECT id FROM schedule WHERE id=?", (f["id"],)).fetchone()
-        if not exists:
-            upsert_schedule_flight(conn, f)
+        upsert_schedule_flight(conn, f)
+    setting_put(conn, "default_schedule_seeded", "true")
 
 def get_wave_flights_from_schedule(conn):
     rows = conn.execute("SELECT * FROM schedule ORDER BY date,start_time,aircraft_type,student").fetchall()
@@ -926,23 +935,27 @@ def init_db():
         cur.execute("UPDATE users SET password_hash=?, role=?, approved=?, auth_provider='email' WHERE email=?", (
             admin_hash, "admin", admin_approved, admin_email
         ))
-    # demo data
-    # Seed/repair the real training people used by the schedule.
-    training_students = [
-        ("Nir K", "", "PPL(A)", "May training wave"),
-        ("Nir D", "", "PPL(A)", "May training wave"),
-        ("Ofek", "", "PPL(A)", "May training wave"),
-        ("Harel", "", "PPL(A)", "May training wave"),
-        ("Lior", "", "PPL(A)", "May training wave"),
-        ("Aviad", "", "PPL(A)", "May training wave"),
-        ("Ahmad", "", "PPL(A)", "May training wave")
-    ]
-    for name,email,program,notes in training_students:
-        if not conn.execute("SELECT id FROM students WHERE name=?", (name,)).fetchone():
+    # Seed initial students/instructors only when the table is completely empty.
+    # Do NOT re-create deleted/renamed people on every startup.
+    student_count_row = conn.execute("SELECT COUNT(*) AS c FROM students").fetchone()
+    student_count = int(student_count_row["c"] if hasattr(student_count_row, "keys") else student_count_row[0])
+    if student_count == 0:
+        training_students = [
+            ("Nir K", "", "PPL(A)", "May training wave"),
+            ("Nir D", "", "PPL(A)", "May training wave"),
+            ("Ofek", "", "PPL(A)", "May training wave"),
+            ("Harel", "", "PPL(A)", "May training wave"),
+            ("Lior", "", "PPL(A)", "May training wave"),
+            ("Aviad", "", "PPL(A)", "May training wave"),
+            ("Ahmad", "", "PPL(A)", "May training wave")
+        ]
+        for name,email,program,notes in training_students:
             conn.execute("INSERT INTO students VALUES (?,?,?,?,?)", (str(uuid.uuid4()), name, email, program, notes))
 
-    for name,email,phone,notes in [("Avi", "", "", "Instructor"), ("Amir", "", "", "Instructor")]:
-        if not conn.execute("SELECT id FROM instructors WHERE name=?", (name,)).fetchone():
+    instructor_count_row = conn.execute("SELECT COUNT(*) AS c FROM instructors").fetchone()
+    instructor_count = int(instructor_count_row["c"] if hasattr(instructor_count_row, "keys") else instructor_count_row[0])
+    if instructor_count == 0:
+        for name,email,phone,notes in [("Avi", "", "", "Instructor"), ("Amir", "", "", "Instructor")]:
             conn.execute("INSERT INTO instructors VALUES (?,?,?,?,?)", (str(uuid.uuid4()), name, email, phone, notes))
     cur.execute("SELECT COUNT(*) as c FROM schedule")
     if cur.fetchone()["c"] == 0:
@@ -1611,11 +1624,7 @@ def get_wave_schedule(user=Depends(require_member)):
     conn = db()
     try:
         flights = get_wave_flights_from_schedule(conn)
-        if not flights:
-            ensure_default_wave_in_schedule(conn)
-            conn.commit()
-            flights = get_wave_flights_from_schedule(conn)
-        return {"flights": flights or DEFAULT_WAVE_SCHEDULE}
+        return {"flights": flights}
     finally:
         conn.close()
 
@@ -1642,6 +1651,7 @@ def update_wave_schedule(payload: dict = Body(...), admin=Depends(require_admin)
                 raise HTTPException(400, f"Instructor is required for {student}. Only Time Building / CPL students may be assigned without FI.")
         flights = sync_wave_flights_to_schedule(conn, flights)
         setting_put(conn, "wave_schedule", json.dumps(flights))
+        setting_put(conn, "default_schedule_seeded", "true")
         conn.commit()
         return {"ok": True, "flights": flights}
     finally:
@@ -1651,8 +1661,6 @@ def update_wave_schedule(payload: dict = Body(...), admin=Depends(require_admin)
 def verify_wave_schedule(admin=Depends(require_admin)):
     conn = db()
     try:
-        ensure_default_wave_in_schedule(conn)
-        conn.commit()
         flights = get_wave_flights_from_schedule(conn)
         return {"ok": True, "count": len(flights), "flights": flights}
     finally:
