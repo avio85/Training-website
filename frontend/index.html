@@ -591,8 +591,14 @@
 
   </main>
 </div>
-<div class="bottom-nav"><button class="mobile-nav active" data-page="dashboard">Home</button><button class="mobile-nav member-only hidden" data-page="schedule">Schedule</button><button class="mobile-nav" data-page="briefingroom">Brief</button><button class="mobile-nav member-only hidden" data-page="profile">Profile</button>
-    <button class="mobile-nav atpl-ai-mobile" data-page="atplai" onclick="handleAtplAiClick(event)">ATPL AI</button></div>
+<div class="bottom-nav">
+  <button class="mobile-nav active" data-page="dashboard">Home</button>
+  <button class="mobile-nav member-only hidden" data-page="schedule">Schedule</button>
+  <button class="mobile-nav" data-page="briefingroom">Brief</button>
+  <button class="mobile-nav member-only hidden" data-page="profile">Profile</button>
+  <button class="mobile-nav admin-only hidden" data-page="admin">Admin</button>
+  <button class="mobile-nav atpl-ai-mobile" data-page="atplai" onclick="handleAtplAiClick(event)">ATPL AI</button>
+</div>
 <button id="mobileLogoutBtn" class="mobile-logout hidden" onclick="logout()">Logout</button>
 <div id="loginModal" class="modal hidden"><div class="modal-card"><button class="close" onclick="closeLoginModal()">×</button><h2>Member Access</h2><p>Login to view schedule and briefing files. New users require admin approval.</p><div class="auth-grid"><form id="loginForm" autocomplete="on"><h3>Login</h3><input name="email" type="email" placeholder="Email" autocomplete="username" required><input name="password" type="password" placeholder="Password" autocomplete="current-password" required><button class="primary-button" type="submit">Login</button></form><form id="signupForm" autocomplete="on"><h3>Sign up</h3><input name="email" type="email" placeholder="Email" required><input name="password" type="password" placeholder="Password" autocomplete="new-password" required><button class="ghost-button" type="submit">Sign up</button></form></div></div></div>
 
@@ -686,7 +692,7 @@
     </div>
   </div>
 <div id="toast" class="toast hidden"></div><footer class="version">
-    <span>Version 0.3.6</span>
+    <span>Version 0.3.7</span>
     <span>© Avi Oren Aviation · avi8or.easa@gmail.com</span>
   </footer><script src="script.js"></script>
 </body></html>

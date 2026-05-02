@@ -670,7 +670,7 @@
 .tag-solo{background:#fff7e6;color:#9a5b00}
 
 
-/* v0.3.6 schedule filter/day/conflict polish */
+/* v0.3.7 schedule filter/day/conflict polish */
 .schedule-filter-bar{display:flex;gap:12px;align-items:end;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:20px;padding:12px;margin:12px 0;box-shadow:var(--shadow)}
 .schedule-filter-bar label{min-width:160px}
 #scheduleFilterHint{color:var(--muted);font-size:13px;font-weight:800;align-self:center}
@@ -679,7 +679,7 @@
 @media(max-width:720px){.schedule-filter-bar{display:grid;grid-template-columns:1fr}.schedule-filter-bar label{min-width:0}}
 
 
-/* v0.3.6 day share image button */
+/* v0.3.7 day share image button */
 .wave-day-header{
   display:flex;
   align-items:center;
@@ -700,4 +700,56 @@
 }
 .day-share-btn:hover{
   background:rgba(255,255,255,.3);
+}
+
+
+/* v0.3.7 mobile admin access + visible day image button */
+.bottom-nav{
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.bottom-nav::-webkit-scrollbar{display:none}
+.bottom-nav .mobile-nav{
+  min-width:82px;
+  white-space:nowrap;
+}
+.day-share-btn{
+  min-width:92px!important;
+  width:auto!important;
+  height:38px!important;
+  padding:0 12px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:7px!important;
+  border:1px solid rgba(255,255,255,.85)!important;
+  background:rgba(255,255,255,.28)!important;
+  color:#fff!important;
+  font-weight:900!important;
+  font-size:14px!important;
+  border-radius:999px!important;
+  flex:0 0 auto;
+}
+.day-share-icon{font-size:18px;line-height:1}
+.day-share-text{font-size:13px}
+@media(max-width:720px){
+  .wave-day-header{padding-right:12px}
+  .day-share-btn{
+    min-width:86px!important;
+    height:36px!important;
+    padding:0 10px!important;
+    font-size:13px!important;
+  }
+  .bottom-nav{
+    grid-template-columns:none!important;
+    display:flex!important;
+    gap:8px!important;
+    left:8px!important;
+    right:8px!important;
+    padding:8px!important;
+  }
+  .bottom-nav .mobile-nav{
+    flex:0 0 auto;
+  }
 }

@@ -826,7 +826,7 @@ function renderWaveCalendar(){
   cal.innerHTML=waveDays.map(day=>`<section class="wave-day-card" data-date="${day.date}">
     <div class="wave-day-header">
       <span>${formatWaveDayTitle(day.date,day.label)}</span>
-      <button class="day-share-btn" type="button" title="Create schedule image" onclick="event.stopPropagation();createDayScheduleImage('${day.date}','${escapeHtml(formatWaveDayTitle(day.date,day.label))}')">📸</button>
+      <button class="day-share-btn" type="button" title="Create schedule image" aria-label="Create schedule image" onclick="event.stopPropagation();createDayScheduleImage('${day.date}','${escapeHtml(formatWaveDayTitle(day.date,day.label))}')"><span class="day-share-icon">📸</span><span class="day-share-text">Image</span></button>
     </div>
     <div class="wave-day-grid">${waveTimes.map(time=>`<div class="wave-time-row"><div class="wave-time-label">${time}</div><div class="wave-slot-pair">${waveAircraft.map(ac=>renderWaveSlot(day.date,time,ac,admin)).join("")}</div></div>`).join("")}</div>
   </section>`).join("");
@@ -1862,7 +1862,7 @@ renderFlightCard = function(f,admin){
 };
 
 
-/* v0.3.6 schedule day names, robust all/student/FI filters, conflict marking */
+/* v0.3.7 schedule day names, robust all/student/FI filters, conflict marking */
 function aoa035DateLabel(dateStr){
   const parts=String(dateStr||'').split('-').map(Number);
   const d=parts.length===3?new Date(parts[0],parts[1]-1,parts[2]):new Date(dateStr);
