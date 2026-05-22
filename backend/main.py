@@ -958,10 +958,25 @@ def init_db():
         for name,email,phone,notes in [("Avi", "", "", "Instructor"), ("Amir", "", "", "Instructor"), ("Vlad", "", "", "Instructor"), ("Examiner", "", "", "External examiner")]:
             conn.execute("INSERT INTO instructors VALUES (?,?,?,?,?)", (str(uuid.uuid4()), name, email, phone, notes))
     else:
-        # 0.6.4 safety: ensure new June wave FIs exist in DB even if table was seeded earlier.
+        # 0.6.5 safety: ensure new June wave FIs exist in DB even if table was seeded earlier.
         for name,email,phone,notes in [("Vlad", "", "", "Instructor"), ("Examiner", "", "", "External examiner")]:
             if not conn.execute("SELECT id FROM instructors WHERE LOWER(name)=LOWER(?)", (name,)).fetchone():
                 conn.execute("INSERT INTO instructors VALUES (?,?,?,?,?)", (str(uuid.uuid4()), name, email, phone, notes))
+    # 0.6.5 safety: ensure June wave students and FIs exist in DB.
+    for name,email,program,notes in [
+        ("Ahmad Z", "", "PPL(A)", "June training wave"),
+        ("Aviv E", "", "PPL(A)", "June training wave"),
+        ("Sharon C", "", "PPL(A)", "June training wave"),
+        ("Nadav L", "", "CPL", "June training wave"),
+        ("Harel T", "", "PPL(A)", "June training wave"),
+        ("Lior A", "", "PPL(A)", "June training wave")
+    ]:
+        if not conn.execute("SELECT id FROM students WHERE LOWER(name)=LOWER(?)", (name,)).fetchone():
+            conn.execute("INSERT INTO students VALUES (?,?,?,?,?)", (str(uuid.uuid4()), name, email, program, notes))
+    for name,email,phone,notes in [("Vlad", "", "", "Instructor"), ("Examiner", "", "", "External examiner")]:
+        if not conn.execute("SELECT id FROM instructors WHERE LOWER(name)=LOWER(?)", (name,)).fetchone():
+            conn.execute("INSERT INTO instructors VALUES (?,?,?,?,?)", (str(uuid.uuid4()), name, email, phone, notes))
+
     cur.execute("SELECT COUNT(*) as c FROM schedule")
     if cur.fetchone()["c"] == 0:
         demo_schedule = [
@@ -1625,7 +1640,7 @@ def get_notam(icao: str):
     return {"icao": icao, "source": "official-links-no-match", "official_url": faa_url, "ead_url": ead_url, "netbriefing_url": netbriefing_url, "ais_url": ais_url, "notams": text}
 
 
-# ===== 0.6.4 real multi-wave API =====
+# ===== 0.6.5 real multi-wave API =====
 WAVE_PRESETS = {
     "legacy": {"id": "legacy", "name": "Legacy Wave", "start_date": "2026-05-03", "end_date": "2026-05-10", "aircraft": ["C172", "C152"]},
     "may_2026": {"id": "may_2026", "name": "May 3–10", "start_date": "2026-05-03", "end_date": "2026-05-10", "aircraft": ["C172", "C152"]},
