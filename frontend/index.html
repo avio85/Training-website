@@ -112,6 +112,16 @@
 
       <div id="scheduleGuestMessage" class="empty-state">Login as an approved member to view the schedule.</div>
 
+      
+      <div class="aircraft-name-editor member-only hidden">
+        <label>Aircraft 1 name
+          <input id="aircraft1NameInput" placeholder="Aircraft 1" onchange="saveAircraftNames()">
+        </label>
+        <label>Aircraft 2 name
+          <input id="aircraft2NameInput" placeholder="Aircraft 2" onchange="saveAircraftNames()">
+        </label>
+      </div>
+
       <div id="waveScheduleApp" class="wave-schedule hidden">
         <div class="wave-toolbar">
           <div>
@@ -651,6 +661,8 @@
       <select id="slotEditInstructor">
         <option>Avi</option>
         <option>Amir</option>
+        <option>Vlad</option>
+        <option>Examiner</option>
       </select>
     </label>
     <div class="slot-edit-actions">
@@ -675,6 +687,9 @@
         </label>
         <label>Aircraft
           <select id="flightAircraftInput">
+            <option>Aircraft 1</option>
+            <option>Aircraft 2</option>
+            <option>Aircraft 3</option>
             <option>C172</option>
             <option>C152</option>
           </select>
@@ -687,6 +702,8 @@
             <option value="">No FI / solo flight</option>
             <option>Avi</option>
             <option>Amir</option>
+            <option>Vlad</option>
+            <option>Examiner</option>
           </select>
         </label>
         <label>Note
@@ -736,7 +753,7 @@
   </div>
 
   <div id="toast" class="toast hidden"></div><footer class="version">
-    <span>Version 0.6.5</span>
+    <span>Version 0.6.6</span>
     <span>© Avi Oren Aviation · avi8or.easa@gmail.com</span>
   </footer><script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script><script src="script.js"></script>
 </body></html>
