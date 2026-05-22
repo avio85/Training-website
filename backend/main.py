@@ -1619,21 +1619,602 @@ def get_notam(icao: str):
     )
     return {"icao": icao, "source": "official-links-no-match", "official_url": faa_url, "ead_url": ead_url, "netbriefing_url": netbriefing_url, "ais_url": ais_url, "notams": text}
 
+
+# ===== 0.6.2 real multi-wave API =====
+WAVE_PRESETS = {
+    "legacy": {"id": "legacy", "name": "Legacy Wave", "start_date": "2026-05-03", "end_date": "2026-05-10", "aircraft": ["C172", "C152"]},
+    "may_2026": {"id": "may_2026", "name": "May 3–10", "start_date": "2026-05-03", "end_date": "2026-05-10", "aircraft": ["C172", "C152"]},
+    "june_2026": {"id": "june_2026", "name": "June 3–8", "start_date": "2026-06-03", "end_date": "2026-06-08", "aircraft": ["Aircraft 1", "Aircraft 2"]},
+}
+
+JUNE_2026_DEFAULT_FLIGHTS = [
+  {
+    "id": "june_2026_20260603_0800_aircraft1",
+    "date": "2026-06-03",
+    "time": "0800",
+    "aircraft": "Aircraft 1",
+    "student": "Nadav L",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260603_0800_aircraft2",
+    "date": "2026-06-03",
+    "time": "0800",
+    "aircraft": "Aircraft 2",
+    "student": "Ahmad Z",
+    "instructor": "Vlad",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260603_1000_aircraft1",
+    "date": "2026-06-03",
+    "time": "1000",
+    "aircraft": "Aircraft 1",
+    "student": "Sharon C",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260603_1000_aircraft2",
+    "date": "2026-06-03",
+    "time": "1000",
+    "aircraft": "Aircraft 2",
+    "student": "Harel T",
+    "instructor": "Vlad",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260603_1200_aircraft1",
+    "date": "2026-06-03",
+    "time": "1200",
+    "aircraft": "Aircraft 1",
+    "student": "Aviv E",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260603_1200_aircraft2",
+    "date": "2026-06-03",
+    "time": "1200",
+    "aircraft": "Aircraft 2",
+    "student": "Lior A",
+    "instructor": "Vlad",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260603_1400_aircraft1",
+    "date": "2026-06-03",
+    "time": "1400",
+    "aircraft": "Aircraft 1",
+    "student": "Lior A",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260603_1400_aircraft2",
+    "date": "2026-06-03",
+    "time": "1400",
+    "aircraft": "Aircraft 2",
+    "student": "Sharon C",
+    "instructor": "Vlad",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260603_1600_aircraft1",
+    "date": "2026-06-03",
+    "time": "1600",
+    "aircraft": "Aircraft 1",
+    "student": "Harel T",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260603_1600_aircraft2",
+    "date": "2026-06-03",
+    "time": "1600",
+    "aircraft": "Aircraft 2",
+    "student": "Aviv E",
+    "instructor": "Vlad",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260604_0800_aircraft1",
+    "date": "2026-06-04",
+    "time": "0800",
+    "aircraft": "Aircraft 1",
+    "student": "Nadav L EXAM",
+    "instructor": "",
+    "note": "EXAM"
+  },
+  {
+    "id": "june_2026_20260604_0800_aircraft2",
+    "date": "2026-06-04",
+    "time": "0800",
+    "aircraft": "Aircraft 2",
+    "student": "Ahmad Z",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260604_1000_aircraft1",
+    "date": "2026-06-04",
+    "time": "1000",
+    "aircraft": "Aircraft 1",
+    "student": "Harel T",
+    "instructor": "Vlad",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260604_1000_aircraft2",
+    "date": "2026-06-04",
+    "time": "1000",
+    "aircraft": "Aircraft 2",
+    "student": "Sharon C",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260604_1200_aircraft1",
+    "date": "2026-06-04",
+    "time": "1200",
+    "aircraft": "Aircraft 1",
+    "student": "Aviv E",
+    "instructor": "Vlad",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260604_1200_aircraft2",
+    "date": "2026-06-04",
+    "time": "1200",
+    "aircraft": "Aircraft 2",
+    "student": "Harel T",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260604_1400_aircraft1",
+    "date": "2026-06-04",
+    "time": "1400",
+    "aircraft": "Aircraft 1",
+    "student": "Ahmad Z",
+    "instructor": "Vlad",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260604_1400_aircraft2",
+    "date": "2026-06-04",
+    "time": "1400",
+    "aircraft": "Aircraft 2",
+    "student": "Lior A",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260604_1600_aircraft1",
+    "date": "2026-06-04",
+    "time": "1600",
+    "aircraft": "Aircraft 1",
+    "student": "Aviv E",
+    "instructor": "Vlad",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260604_1600_aircraft2",
+    "date": "2026-06-04",
+    "time": "1600",
+    "aircraft": "Aircraft 2",
+    "student": "Sharon C",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260605_0800_aircraft1",
+    "date": "2026-06-05",
+    "time": "0800",
+    "aircraft": "Aircraft 1",
+    "student": "Ahmad Z",
+    "instructor": "Amir",
+    "note": "3h block"
+  },
+  {
+    "id": "june_2026_20260605_0800_aircraft2",
+    "date": "2026-06-05",
+    "time": "0800",
+    "aircraft": "Aircraft 2",
+    "student": "Sharon C",
+    "instructor": "Vlad",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260605_1000_aircraft1",
+    "date": "2026-06-05",
+    "time": "1000",
+    "aircraft": "Aircraft 1",
+    "student": "Ahmad Z",
+    "instructor": "Amir",
+    "note": "CONT"
+  },
+  {
+    "id": "june_2026_20260605_1000_aircraft2",
+    "date": "2026-06-05",
+    "time": "1000",
+    "aircraft": "Aircraft 2",
+    "student": "Lior A",
+    "instructor": "Vlad",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260605_1200_aircraft1",
+    "date": "2026-06-05",
+    "time": "1200",
+    "aircraft": "Aircraft 1",
+    "student": "Harel T",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260605_1200_aircraft2",
+    "date": "2026-06-05",
+    "time": "1200",
+    "aircraft": "Aircraft 2",
+    "student": "Aviv E",
+    "instructor": "Vlad",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260605_1400_aircraft1",
+    "date": "2026-06-05",
+    "time": "1400",
+    "aircraft": "Aircraft 1",
+    "student": "Sharon C",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260605_1400_aircraft2",
+    "date": "2026-06-05",
+    "time": "1400",
+    "aircraft": "Aircraft 2",
+    "student": "Lior A",
+    "instructor": "Vlad",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260605_1600_aircraft1",
+    "date": "2026-06-05",
+    "time": "1600",
+    "aircraft": "Aircraft 1",
+    "student": "Aviv E",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260605_1600_aircraft2",
+    "date": "2026-06-05",
+    "time": "1600",
+    "aircraft": "Aircraft 2",
+    "student": "Harel T",
+    "instructor": "Vlad",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260606_0800_aircraft1",
+    "date": "2026-06-06",
+    "time": "0800",
+    "aircraft": "Aircraft 1",
+    "student": "Ahmad Z",
+    "instructor": "Amir",
+    "note": "3h block"
+  },
+  {
+    "id": "june_2026_20260606_0800_aircraft2",
+    "date": "2026-06-06",
+    "time": "0800",
+    "aircraft": "Aircraft 2",
+    "student": "Aviv E",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260606_1000_aircraft1",
+    "date": "2026-06-06",
+    "time": "1000",
+    "aircraft": "Aircraft 1",
+    "student": "Ahmad Z",
+    "instructor": "Amir",
+    "note": "CONT"
+  },
+  {
+    "id": "june_2026_20260606_1000_aircraft2",
+    "date": "2026-06-06",
+    "time": "1000",
+    "aircraft": "Aircraft 2",
+    "student": "Harel T",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260606_1200_aircraft1",
+    "date": "2026-06-06",
+    "time": "1200",
+    "aircraft": "Aircraft 1",
+    "student": "Sharon C",
+    "instructor": "Amir",
+    "note": "3h block"
+  },
+  {
+    "id": "june_2026_20260606_1200_aircraft2",
+    "date": "2026-06-06",
+    "time": "1200",
+    "aircraft": "Aircraft 2",
+    "student": "Lior A",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260606_1400_aircraft1",
+    "date": "2026-06-06",
+    "time": "1400",
+    "aircraft": "Aircraft 1",
+    "student": "Sharon C",
+    "instructor": "Amir",
+    "note": "CONT"
+  },
+  {
+    "id": "june_2026_20260606_1400_aircraft2",
+    "date": "2026-06-06",
+    "time": "1400",
+    "aircraft": "Aircraft 2",
+    "student": "Aviv E",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260606_1600_aircraft1",
+    "date": "2026-06-06",
+    "time": "1600",
+    "aircraft": "Aircraft 1",
+    "student": "Lior A",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260606_1600_aircraft2",
+    "date": "2026-06-06",
+    "time": "1600",
+    "aircraft": "Aircraft 2",
+    "student": "Harel T",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260607_0800_aircraft1",
+    "date": "2026-06-07",
+    "time": "0800",
+    "aircraft": "Aircraft 1",
+    "student": "Sharon C",
+    "instructor": "Amir",
+    "note": "3h block"
+  },
+  {
+    "id": "june_2026_20260607_0800_aircraft2",
+    "date": "2026-06-07",
+    "time": "0800",
+    "aircraft": "Aircraft 2",
+    "student": "Lior A",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260607_1000_aircraft1",
+    "date": "2026-06-07",
+    "time": "1000",
+    "aircraft": "Aircraft 1",
+    "student": "Sharon C",
+    "instructor": "Amir",
+    "note": "CONT"
+  },
+  {
+    "id": "june_2026_20260607_1000_aircraft2",
+    "date": "2026-06-07",
+    "time": "1000",
+    "aircraft": "Aircraft 2",
+    "student": "Ahmad Z",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260607_1200_aircraft1",
+    "date": "2026-06-07",
+    "time": "1200",
+    "aircraft": "Aircraft 1",
+    "student": "Harel T",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260607_1200_aircraft2",
+    "date": "2026-06-07",
+    "time": "1200",
+    "aircraft": "Aircraft 2",
+    "student": "Aviv E",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260607_1400_aircraft1",
+    "date": "2026-06-07",
+    "time": "1400",
+    "aircraft": "Aircraft 1",
+    "student": "Lior A",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260607_1400_aircraft2",
+    "date": "2026-06-07",
+    "time": "1400",
+    "aircraft": "Aircraft 2",
+    "student": "Harel T",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260607_1600_aircraft1",
+    "date": "2026-06-07",
+    "time": "1600",
+    "aircraft": "Aircraft 1",
+    "student": "Ahmad Z",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260607_1600_aircraft2",
+    "date": "2026-06-07",
+    "time": "1600",
+    "aircraft": "Aircraft 2",
+    "student": "Aviv E",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260608_0800_aircraft1",
+    "date": "2026-06-08",
+    "time": "0800",
+    "aircraft": "Aircraft 1",
+    "student": "Harel T",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260608_0800_aircraft2",
+    "date": "2026-06-08",
+    "time": "0800",
+    "aircraft": "Aircraft 2",
+    "student": "Ahmad Z EXAM",
+    "instructor": "",
+    "note": "EXAM"
+  },
+  {
+    "id": "june_2026_20260608_1000_aircraft1",
+    "date": "2026-06-08",
+    "time": "1000",
+    "aircraft": "Aircraft 1",
+    "student": "Lior A",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260608_1000_aircraft2",
+    "date": "2026-06-08",
+    "time": "1000",
+    "aircraft": "Aircraft 2",
+    "student": "Sharon C EXAM",
+    "instructor": "",
+    "note": "EXAM"
+  },
+  {
+    "id": "june_2026_20260608_1200_aircraft1",
+    "date": "2026-06-08",
+    "time": "1200",
+    "aircraft": "Aircraft 1",
+    "student": "Aviv E",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260608_1200_aircraft2",
+    "date": "2026-06-08",
+    "time": "1200",
+    "aircraft": "Aircraft 2",
+    "student": "Harel T",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260608_1400_aircraft1",
+    "date": "2026-06-08",
+    "time": "1400",
+    "aircraft": "Aircraft 1",
+    "student": "Lior A",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260608_1400_aircraft2",
+    "date": "2026-06-08",
+    "time": "1400",
+    "aircraft": "Aircraft 2",
+    "student": "Aviv E",
+    "instructor": "Amir",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260608_1600_aircraft1",
+    "date": "2026-06-08",
+    "time": "1600",
+    "aircraft": "Aircraft 1",
+    "student": "Harel T",
+    "instructor": "Avi",
+    "note": ""
+  },
+  {
+    "id": "june_2026_20260608_1600_aircraft2",
+    "date": "2026-06-08",
+    "time": "1600",
+    "aircraft": "Aircraft 2",
+    "student": "Lior A",
+    "instructor": "Amir",
+    "note": ""
+  }
+]
+
+def wave_setting_key(wave_id: str) -> str:
+    safe = re.sub(r"[^a-zA-Z0-9_\-]", "_", str(wave_id or "legacy"))
+    return f"wave_schedule_{safe}"
+
+def get_wave_schedule_json(conn, wave_id: str):
+    key = wave_setting_key(wave_id)
+    row = conn.execute("SELECT value FROM app_settings WHERE key=?", (key,)).fetchone()
+    if row:
+        try:
+            return json.loads(row["value"])
+        except Exception:
+            return []
+    if wave_id == "june_2026":
+        setting_put(conn, key, json.dumps(JUNE_2026_DEFAULT_FLIGHTS))
+        conn.commit()
+        return JUNE_2026_DEFAULT_FLIGHTS
+    if wave_id in ("legacy", "may_2026"):
+        flights = get_wave_flights_from_schedule(conn)
+        setting_put(conn, key, json.dumps(flights))
+        conn.commit()
+        return flights
+    setting_put(conn, key, "[]")
+    conn.commit()
+    return []
+
+@app.get("/api/training-waves")
+def list_training_waves(user=Depends(require_member)):
+    return {"waves": list(WAVE_PRESETS.values())}
+
 @app.get("/api/wave-schedule")
-def get_wave_schedule(user=Depends(require_member)):
+def get_wave_schedule(wave_id: str = "legacy", user=Depends(require_member)):
     conn = db()
     try:
-        flights = get_wave_flights_from_schedule(conn)
-        return {"flights": flights}
+        flights = get_wave_schedule_json(conn, wave_id)
+        meta = WAVE_PRESETS.get(wave_id, {"id": wave_id, "name": wave_id, "start_date": "", "end_date": "", "aircraft": ["Aircraft 1", "Aircraft 2"]})
+        return {"wave": meta, "flights": flights}
     finally:
         conn.close()
 
 @app.post("/api/wave-schedule")
-def update_wave_schedule(payload: dict = Body(...), admin=Depends(require_admin)):
+def update_wave_schedule(payload: dict = Body(...), wave_id: str = "legacy", admin=Depends(require_admin)):
     flights = payload.get("flights")
     if not isinstance(flights, list):
         raise HTTPException(400, "Invalid schedule payload")
-    allowed_aircraft = {"C172", "C152"}
+    allowed_aircraft = {"C172", "C152", "Aircraft 1", "Aircraft 2", "Aircraft 3"}
     conn = db()
     try:
         for flight in flights:
@@ -1643,28 +2224,26 @@ def update_wave_schedule(payload: dict = Body(...), admin=Depends(require_admin)
                 raise HTTPException(400, "Invalid time slot")
             if flight.get("aircraft") not in allowed_aircraft:
                 raise HTTPException(400, "Invalid aircraft")
-            student = str(flight.get("student") or "").strip()
-            instructor = str(flight.get("instructor") or "").strip()
-            if not student:
+            if not str(flight.get("student") or "").strip():
                 raise HTTPException(400, "Student is required")
-            if not instructor and not solo_flight_allowed(conn, student):
-                raise HTTPException(400, f"Instructor is required for {student}. Only Time Building / CPL students may be assigned without FI.")
-        flights = sync_wave_flights_to_schedule(conn, flights)
-        setting_put(conn, "wave_schedule", json.dumps(flights))
-        setting_put(conn, "default_schedule_seeded", "true")
+        setting_put(conn, wave_setting_key(wave_id), json.dumps(flights))
+        if wave_id == "legacy":
+            sync_wave_flights_to_schedule(conn, flights)
         conn.commit()
-        return {"ok": True, "flights": flights}
+        return {"ok": True, "wave_id": wave_id, "flights": flights}
     finally:
         conn.close()
 
 @app.post("/api/wave-schedule/verify")
-def verify_wave_schedule(admin=Depends(require_admin)):
+def verify_wave_schedule(wave_id: str = "legacy", admin=Depends(require_admin)):
     conn = db()
     try:
-        flights = get_wave_flights_from_schedule(conn)
-        return {"ok": True, "count": len(flights), "flights": flights}
+        flights = get_wave_schedule_json(conn, wave_id)
+        return {"ok": True, "wave_id": wave_id, "count": len(flights), "flights": flights}
     finally:
         conn.close()
+
+
 
 
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
