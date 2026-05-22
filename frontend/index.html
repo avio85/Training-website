@@ -58,7 +58,18 @@
         <div>
           <h2>Training schedule</h2>
         </div>
-        <div class="schedule-actions">
+        
+<div class="wave-toolbar">
+  <label class="wave-label">Wave:</label>
+  <select id="waveSelector" onchange="switchTrainingWave()">
+    <option value="legacy">Legacy Wave</option>
+    <option value="may_2026">May 3-10</option>
+    <option value="june_2026">June 3-8</option>
+  </select>
+  <button class="primary-button" onclick="createTrainingWave()">+ New Wave</button>
+</div>
+
+<div class="schedule-actions">
           <button class="primary-button member-only hidden" onclick="openShareDailyScheduleModal()">📸 Share day</button>
           <button class="primary-button member-only hidden wave-export-btn" onclick="exportFullWaveImage()">🗓️ Export full wave</button>
           <button class="primary-button admin-only hidden" onclick="openFlightModal()">+ Add flight</button>

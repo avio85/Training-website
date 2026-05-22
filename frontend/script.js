@@ -2556,3 +2556,92 @@ loadSchedule=async function(){
   populateScheduleStudentFilter();
   populateScheduleInstructorFilter();
 };
+
+
+/* ===== 0.6.0 multi-wave system ===== */
+let currentTrainingWave = localStorage.getItem("aoa_active_wave") || "legacy";
+
+function initializeTrainingWaveSystem(){
+  try{
+    const selector=document.getElementById("waveSelector");
+    if(selector){
+      selector.value=currentTrainingWave;
+    }
+    migrateLegacyWaveData();
+    loadWaveSchedule();
+  }catch(err){
+    console.error("wave init failed",err);
+  }
+}
+
+function migrateLegacyWaveData(){
+  try{
+    const existing=localStorage.getItem("schedule");
+    const legacy=localStorage.getItem("schedule_legacy");
+    if(existing && !legacy){
+      localStorage.setItem("schedule_legacy", existing);
+    }
+  }catch(err){
+    console.error(err);
+  }
+}
+
+function getWaveScheduleKey(){
+  return "schedule_" + currentTrainingWave;
+}
+
+function switchTrainingWave(){
+  const selector=document.getElementById("waveSelector");
+  if(!selector)return;
+  currentTrainingWave=selector.value;
+  localStorage.setItem("aoa_active_wave", currentTrainingWave);
+  loadWaveSchedule();
+  toast("Switched to " + selector.options[selector.selectedIndex].text);
+}
+
+function createTrainingWave(){
+  const name=prompt("Wave ID (example: july_2026)");
+  if(!name)return;
+  const selector=document.getElementById("waveSelector");
+  const option=document.createElement("option");
+  option.value=name;
+  option.textContent=name.replace(/_/g," ");
+  selector.appendChild(option);
+  selector.value=name;
+  currentTrainingWave=name;
+  localStorage.setItem("aoa_active_wave", currentTrainingWave);
+
+  const waves=JSON.parse(localStorage.getItem("aoa_wave_list")||"[]");
+  if(!waves.includes(name)){
+    waves.push(name);
+    localStorage.setItem("aoa_wave_list", JSON.stringify(waves));
+  }
+
+  localStorage.setItem(getWaveScheduleKey(), JSON.stringify([]));
+  loadWaveSchedule();
+}
+
+function loadWaveSchedule(){
+  try{
+    const raw=localStorage.getItem(getWaveScheduleKey()) || "[]";
+    window.waveSchedule=JSON.parse(raw);
+    if(typeof renderSchedule === "function"){
+      renderSchedule();
+    }
+  }catch(err){
+    console.error(err);
+  }
+}
+
+function saveCurrentWaveSchedule(){
+  try{
+    localStorage.setItem(getWaveScheduleKey(), JSON.stringify(window.waveSchedule || []));
+  }catch(err){
+    console.error(err);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", ()=>{
+  setTimeout(initializeTrainingWaveSystem,300);
+});
+/* ===== end 0.6.0 ===== */
