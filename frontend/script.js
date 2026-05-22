@@ -1,5 +1,5 @@
 
-/* v0.5.0 security: never allow credentials to remain in URL */
+/* v0.6.1 security: never allow credentials to remain in URL */
 function scrubCredentialQueryFromUrl(){
   try{
     const url = new URL(window.location.href);
@@ -2441,7 +2441,7 @@ renderFlightCard = function(f,admin){
 };
 
 
-/* v0.5.0 schedule day names, robust all/student/FI filters, conflict marking */
+/* v0.6.1 schedule day names, robust all/student/FI filters, conflict marking */
 function aoa035DateLabel(dateStr){
   const parts=String(dateStr||'').split('-').map(Number);
   const d=parts.length===3?new Date(parts[0],parts[1]-1,parts[2]):new Date(dateStr);
@@ -2558,7 +2558,7 @@ loadSchedule=async function(){
 };
 
 
-/* ===== 0.6.0 multi-wave system ===== */
+/* ===== 0.6.1 multi-wave system ===== */
 let currentTrainingWave = localStorage.getItem("aoa_active_wave") || "legacy";
 
 function initializeTrainingWaveSystem(){
@@ -2644,4 +2644,165 @@ function saveCurrentWaveSchedule(){
 document.addEventListener("DOMContentLoaded", ()=>{
   setTimeout(initializeTrainingWaveSystem,300);
 });
-/* ===== end 0.6.0 ===== */
+/* ===== end 0.6.1 ===== */
+
+
+/* ===== 0.6.1 real wave switcher override ===== */
+const AOA_WAVES = {
+  legacy: {
+    id:"legacy",
+    name:"Legacy Wave",
+    start:"2026-05-03",
+    end:"2026-05-10",
+    aircraft:["C172","C152"]
+  },
+  may_2026: {
+    id:"may_2026",
+    name:"May 3–10",
+    start:"2026-05-03",
+    end:"2026-05-10",
+    aircraft:["C172","C152"]
+  },
+  june_2026: {
+    id:"june_2026",
+    name:"June 3–8",
+    start:"2026-06-03",
+    end:"2026-06-08",
+    aircraft:["Aircraft 1","Aircraft 2"]
+  }
+};
+
+function getCurrentWaveConfig(){
+  return AOA_WAVES[currentTrainingWave] || AOA_WAVES.legacy;
+}
+
+function getWaveScheduleKey(){
+  return "aoa_wave_schedule_" + currentTrainingWave;
+}
+
+function setActiveWaveLabel(){
+  const label=document.getElementById("activeWaveLabel");
+  const cfg=getCurrentWaveConfig();
+  if(label) label.textContent=cfg.name;
+}
+
+function getWaveDaysForCurrentWave(){
+  const cfg=getCurrentWaveConfig();
+  const out=[];
+  const start=new Date(`${cfg.start}T12:00:00`);
+  const end=new Date(`${cfg.end}T12:00:00`);
+  for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){
+    const y=d.getFullYear();
+    const m=String(d.getMonth()+1).padStart(2,"0");
+    const day=String(d.getDate()).padStart(2,"0");
+    const date=`${y}-${m}-${day}`;
+    out.push({date,label:d.toLocaleDateString("en-US",{month:"short",day:"numeric"})});
+  }
+  return out;
+}
+
+function getWaveAircraftForCurrentWave(){
+  return getCurrentWaveConfig().aircraft || ["C172","C152"];
+}
+
+function migrateCurrentDbScheduleIntoWaveIfNeeded(){
+  try{
+    const key=getWaveScheduleKey();
+    if(localStorage.getItem(key)) return;
+    if(currentTrainingWave==="legacy" || currentTrainingWave==="may_2026"){
+      localStorage.setItem(key, JSON.stringify(waveSchedule || []));
+    }else{
+      localStorage.setItem(key, JSON.stringify([]));
+    }
+  }catch(e){}
+}
+
+function switchTrainingWave(){
+  const selector=document.getElementById("waveSelector");
+  if(!selector)return;
+  currentTrainingWave=selector.value;
+  localStorage.setItem("aoa_active_wave",currentTrainingWave);
+  setActiveWaveLabel();
+  loadSchedule();
+  toast("Switched to " + selector.options[selector.selectedIndex].text);
+}
+
+async function loadSchedule(){
+  const guest=document.getElementById("scheduleGuestMessage"),app=document.getElementById("waveScheduleApp");
+  if(!token){
+    guest?.classList.remove("hidden");
+    app?.classList.add("hidden");
+    return;
+  }
+  guest?.classList.add("hidden");
+  app?.classList.remove("hidden");
+  setActiveWaveLabel();
+
+  try{
+    if(currentTrainingWave==="legacy" && !localStorage.getItem(getWaveScheduleKey())){
+      const r=await fetch("/api/wave-schedule",{headers:authHeaders()});
+      const d=await r.json();
+      waveSchedule=(r.ok&&Array.isArray(d.flights))?d.flights:[];
+      localStorage.setItem(getWaveScheduleKey(),JSON.stringify(waveSchedule));
+    }else{
+      const raw=localStorage.getItem(getWaveScheduleKey());
+      waveSchedule=raw?JSON.parse(raw):[];
+    }
+  }catch(err){
+    console.error(err);
+    waveSchedule=[];
+  }
+  renderWaveCalendar();
+}
+
+async function saveWaveSchedule(){
+  if(!canEditSchedule())return toast("Admin only");
+  try{
+    localStorage.setItem(getWaveScheduleKey(),JSON.stringify(waveSchedule||[]));
+    if(currentTrainingWave==="legacy"){
+      const r=await fetch("/api/wave-schedule",{method:"POST",headers:{...authHeaders(),"Content-Type":"application/json"},body:JSON.stringify({flights:waveSchedule})});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok)throw new Error(d.detail||"Could not save schedule");
+    }
+    toast("Training wave schedule saved");
+  }catch(err){
+    toast(err.message||"Could not save schedule");
+  }
+}
+
+async function resetWaveSchedule(){
+  if(!canEditSchedule())return toast("Admin only");
+  waveSchedule=[];
+  localStorage.setItem(getWaveScheduleKey(),JSON.stringify(waveSchedule));
+  renderWaveCalendar();
+  toast("Wave cleared");
+}
+
+function renderWaveCalendar(){
+  const cal=document.getElementById("waveCalendar");
+  if(!cal)return;
+  const admin=canEditSchedule();
+  const days=getWaveDaysForCurrentWave();
+  const aircraft=getWaveAircraftForCurrentWave();
+  cal.innerHTML=days.map(day=>`<section class="wave-day-card" data-date="${day.date}">
+    <div class="wave-day-header"><span>${formatWaveDayTitle(day.date,day.label)}</span></div>
+    <div class="wave-day-grid">${waveTimes.map(time=>`<div class="wave-time-row"><div class="wave-time-label">${time}</div><div class="wave-slot-pair">${aircraft.map(ac=>renderWaveSlot(day.date,time,ac,admin)).join("")}</div></div>`).join("")}</div>
+  </section>`).join("");
+  if(admin)attachScheduleDragHandlers();
+}
+
+function renderWaveSlot(date,time,aircraft,admin){
+  const flights=waveSchedule.filter(f=>f.date===date&&String(f.time)===String(time)&&String(f.aircraft)===String(aircraft));
+  const acClass=(String(aircraft).includes("2")||aircraft==="C152")?"slot-c152":"slot-c172";
+  return `<div class="wave-slot ${acClass}" data-date="${date}" data-time="${time}" data-aircraft="${escapeHtml(aircraft)}"><div class="slot-aircraft">${escapeHtml(aircraft)}</div>${flights.map(f=>renderFlightCard(f,admin)).join("")||'<div class="empty-slot">—</div>'}</div>`;
+}
+
+function initializeTrainingWaveSystem(){
+  const selector=document.getElementById("waveSelector");
+  if(selector){
+    selector.value=currentTrainingWave;
+    if(!selector.value){selector.value="legacy";currentTrainingWave="legacy";}
+  }
+  setActiveWaveLabel();
+}
+/* ===== end 0.6.1 real wave switcher override ===== */
