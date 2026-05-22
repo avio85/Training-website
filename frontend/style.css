@@ -670,7 +670,7 @@
 .tag-solo{background:#fff7e6;color:#9a5b00}
 
 
-/* v0.6.4 schedule filter/day/conflict polish */
+/* v0.6.5 schedule filter/day/conflict polish */
 .schedule-filter-bar{display:flex;gap:12px;align-items:end;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:20px;padding:12px;margin:12px 0;box-shadow:var(--shadow)}
 .schedule-filter-bar label{min-width:160px}
 #scheduleFilterHint{color:var(--muted);font-size:13px;font-weight:800;align-self:center}
@@ -679,7 +679,7 @@
 @media(max-width:720px){.schedule-filter-bar{display:grid;grid-template-columns:1fr}.schedule-filter-bar label{min-width:0}}
 
 
-/* v0.6.4 day share image button */
+/* v0.6.5 day share image button */
 .wave-day-header{
   display:flex;
   align-items:center;
@@ -703,7 +703,7 @@
 }
 
 
-/* v0.6.4 mobile admin access + visible day image button */
+/* v0.6.5 mobile admin access + visible day image button */
 .bottom-nav{
   overflow-x:auto;
   -webkit-overflow-scrolling:touch;
@@ -754,7 +754,7 @@
   }
 }
 
-/* v0.6.4 real DOM screenshot capture */
+/* v0.6.5 real DOM screenshot capture */
 .day-share-btn{
   min-width:132px!important;
   height:40px!important;
@@ -793,7 +793,7 @@
   }
 }
 
-/* v0.6.4 clear daily schedule share action */
+/* v0.6.5 clear daily schedule share action */
 .schedule-actions .primary-button.member-only{
   background:linear-gradient(135deg,#149447,#0f7a37);
 }
@@ -817,7 +817,7 @@
   }
 }
 
-/* v0.6.4 auth divs replace forms to prevent URL credential leaks */
+/* v0.6.5 auth divs replace forms to prevent URL credential leaks */
 .auth-form{
   display:block;
 }
@@ -825,7 +825,7 @@
   margin:0 0 8px;
 }
 
-/* v0.6.4 schedule export buttons */
+/* v0.6.5 schedule export buttons */
 .wave-export-btn{
   background:linear-gradient(135deg,#173b64,#0a6fd6)!important;
 }
@@ -840,7 +840,7 @@
   }
 }
 
-/* ===== 0.6.4 waves ===== */
+/* ===== 0.6.5 waves ===== */
 .wave-toolbar{
   display:flex;
   gap:10px;
@@ -869,7 +869,7 @@
   }
 }
 
-/* 0.6.4 wave switcher fix */
+/* 0.6.5 wave switcher fix */
 .wave-toolbar{
   border:1px solid #c6d8ea;
   background:#fff;
@@ -877,7 +877,7 @@
   padding:12px;
 }
 
-/* 0.6.4 verified wave selector */
+/* 0.6.5 verified wave selector */
 .wave-toolbar{
   border:2px solid #b8dff8;
   background:#ffffff;
@@ -889,7 +889,7 @@
   font-weight:900;
 }
 
-/* 0.6.4 hard verified wave state */
+/* 0.6.5 hard verified wave state */
 .wave-debug-status{
   display:inline-flex;
   margin-left:8px;
@@ -901,7 +901,7 @@
   outline:2px solid #b8dff8;
 }
 
-/* 0.6.4 colors and legend */
+/* 0.6.5 colors and legend */
 .flight-c172{border-left:6px solid #075da8!important}
 .flight-c152{border-left:6px solid #9a5b00!important}
 .flight-aircraft3{border-left:6px solid #6c2eb9!important}
@@ -911,6 +911,22 @@
 .instructor-vlad,.tag-vlad{color:#7d4bd6!important}
 .instructor-examiner,.tag-examiner{color:#c0392b!important}
 .legend-pill.instructor-dynamic{background:#fff;font-weight:900}
+.legend-pill.aircraft-1{background:#edf6ff;color:#075da8;border-color:#b8dff8}
+.legend-pill.aircraft-2{background:#fff5e7;color:#9a5b00;border-color:#f0d3a0}
+.legend-pill.aircraft-3{background:#f3ecff;color:#6c2eb9;border-color:#d9c5ff}
+
+/* 0.6.5 flight edit controls, aircraft color, FI stripe */
+.flight-card{position:relative;padding-left:18px!important;overflow:hidden}
+.flight-card.flight-c172{border-left:8px solid #075da8!important;background:#edf6ff!important}
+.flight-card.flight-c152{border-left:8px solid #9a5b00!important;background:#fff5e7!important}
+.flight-card.flight-aircraft3{border-left:8px solid #6c2eb9!important;background:#f3ecff!important}
+.flight-card .fi-stripe{position:absolute;left:8px;top:0;bottom:0;width:5px;opacity:.95}
+.flight-actions{display:flex;gap:6px;margin-top:8px}
+.mini-edit-btn,.mini-delete-btn{border:1px solid #c6d8ea;background:#fff;color:#12385c;border-radius:10px;padding:4px 8px;font-size:12px;font-weight:900}
+.mini-delete-btn{color:#b42318;border-color:#ffd1d1}
+.slot-c172{background:#edf6ff!important;border-color:#b8dff8!important}
+.slot-c152{background:#fff5e7!important;border-color:#f0d3a0!important}
+.slot-aircraft3{background:#f3ecff!important;border-color:#d9c5ff!important}
 .legend-pill.aircraft-1{background:#edf6ff;color:#075da8;border-color:#b8dff8}
 .legend-pill.aircraft-2{background:#fff5e7;color:#9a5b00;border-color:#f0d3a0}
 .legend-pill.aircraft-3{background:#f3ecff;color:#6c2eb9;border-color:#d9c5ff}
