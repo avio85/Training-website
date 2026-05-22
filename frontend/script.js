@@ -1,5 +1,5 @@
 
-/* v0.4.2 security: never allow credentials to remain in URL */
+/* v0.5.0 security: never allow credentials to remain in URL */
 function scrubCredentialQueryFromUrl(){
   try{
     const url = new URL(window.location.href);
@@ -911,76 +911,197 @@ async function shareSelectedDailySchedule(){
 
 async function createDayScheduleImage(date,label){
   try{
-    toast("Creating schedule image...");
+    toast("Creating daily schedule image...");
     const canvas=buildTwoColumnDayCanvas(date,label);
     await shareOrDownloadCanvas(canvas,date,label);
   }catch(err){
     console.error(err);
-    toast("Could not create image. Try again after refresh.");
+    toast("Could not create daily image.");
+  }
+}
+
+async function exportFullWaveImage(){
+  try{
+    toast("Creating full wave image...");
+    const canvas=buildFullWaveCanvas();
+    await shareOrDownloadCanvas(canvas,"full_wave","June Training Wave");
+  }catch(err){
+    console.error(err);
+    toast("Could not create full wave image.");
   }
 }
 
 function instructorColor(name){
   const n=String(name||"").toLowerCase();
   if(n.includes("amir"))return "#0f7a37";
+  if(n.includes("vlad"))return "#7d4bd6";
   if(n.includes("avi"))return "#075da8";
+  if(n.includes("exam"))return "#c0392b";
   return "#344256";
 }
 
+function aircraftMeta(ac){
+  const n=String(ac||"").toLowerCase();
+  if(n.includes("2"))return {title:"Aircraft 2", color:"#9a5b00", bg:"#fff5e7", border:"#f0d3a0"};
+  if(n.includes("3"))return {title:"Aircraft 3", color:"#6c2eb9", bg:"#f3ecff", border:"#d9c5ff"};
+  return {title:"Aircraft 1", color:"#075da8", bg:"#edf6ff", border:"#b8dff8"};
+}
+
+function flightDisplayStudent(f){
+  return String(f?.student||"").trim();
+}
+
+function flightDisplayInstructor(f){
+  const instr=String(f?.instructor||"").trim();
+  const note=String(f?.note||"").toUpperCase();
+  if(note.includes("EXAM") || flightDisplayStudent(f).toUpperCase().includes("EXAM")) return "EXAM";
+  return instr || "Solo";
+}
+
+function isExamFlight(f){
+  return String(f?.note||"").toUpperCase().includes("EXAM") || String(f?.student||"").toUpperCase().includes("EXAM");
+}
+
+function normalizedExportTime(t){
+  return String(t||"").replace(/^(\d{2})(\d{2})$/,"$1:$2");
+}
+
+function getExportDays(){
+  const days = Array.isArray(waveDays) && waveDays.length ? waveDays : [];
+  const byDate = new Map(days.map(d=>[d.date,d]));
+  waveSchedule.forEach(f=>{
+    if(f.date && !byDate.has(f.date)){
+      byDate.set(f.date,{date:f.date,label:f.date});
+    }
+  });
+  return [...byDate.values()].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+}
+
+function getExportTimesForDay(date){
+  const configured = Array.isArray(waveTimes) && waveTimes.length ? waveTimes : [];
+  const fromFlights = waveSchedule.filter(f=>f.date===date).map(f=>String(f.time||""));
+  return [...new Set([...configured,...fromFlights])].filter(Boolean).sort();
+}
+
+function getFlightFor(date,time,aircraft){
+  return waveSchedule.find(f=>f.date===date && String(f.time||"")===String(time) && String(f.aircraft||"")===String(aircraft));
+}
+
 function buildTwoColumnDayCanvas(date,label){
-  const flights=waveSchedule
-    .filter(f=>f.date===date)
-    .sort((a,b)=>String(a.time||"").localeCompare(String(b.time||"")) || String(a.aircraft||"").localeCompare(String(b.aircraft||"")));
-
-  const times=[...new Set([...waveTimes, ...flights.map(f=>String(f.time||""))])]
+  const aircrafts=[...new Set(["Aircraft 1","Aircraft 2",...waveSchedule.filter(f=>f.date===date).map(f=>String(f.aircraft||""))])]
     .filter(Boolean)
-    .sort();
-
-  const width=1200;
-  const rowH=126;
-  const height=Math.max(760,220+times.length*rowH+80);
+    .slice(0,3);
+  const times=getExportTimesForDay(date);
+  const cols=aircrafts.length;
+  const width=cols===3?1500:1200;
+  const left=58;
+  const timeW=118;
+  const gap=22;
+  const colW=Math.floor((width-left*2-timeW-gap*(cols-1))/cols);
+  const rowH=116;
+  const height=Math.max(620,220+times.length*rowH+80);
   const canvas=document.createElement("canvas");
-  canvas.width=width;
-  canvas.height=height;
+  canvas.width=width;canvas.height=height;
   const ctx=canvas.getContext("2d");
 
-  ctx.fillStyle="#f5f9fd";
-  ctx.fillRect(0,0,width,height);
+  drawExportBackground(ctx,width,height,`Training Schedule · ${label}`,`Generated ${new Date().toLocaleString()}`);
 
-  const grad=ctx.createLinearGradient(0,0,width,0);
-  grad.addColorStop(0,"#0877d9");
-  grad.addColorStop(1,"#34a8eb");
-  ctx.fillStyle=grad;
-  roundRect(ctx,30,30,width-60,130,28,true,false);
-
-  ctx.fillStyle="#ffffff";
-  ctx.font="bold 38px Arial";
-  ctx.fillText("Avi Oren Aviation",62,82);
-  ctx.font="bold 30px Arial";
-  ctx.fillText(`Training Schedule · ${label}`,62,126);
-
-  const leftX=170, c172X=270, c152X=705;
   ctx.fillStyle="#102033";
   ctx.font="bold 24px Arial";
-  ctx.fillText("Time",62,205);
-  drawColumnHeader(ctx,c172X,180,370,48,"C172","#075da8","#e7f1ff");
-  drawColumnHeader(ctx,c152X,180,370,48,"C152","#9a5b00","#fff3dc");
+  ctx.fillText("Time",left,205);
+  aircrafts.forEach((ac,i)=>{
+    const meta=aircraftMeta(ac);
+    drawColumnHeader(ctx,left+timeW+i*(colW+gap),180,colW,48,meta.title,meta.color,meta.bg);
+  });
 
   let y=242;
   times.forEach(time=>{
     ctx.fillStyle="#075da8";
     ctx.font="bold 28px Arial";
-    ctx.fillText(String(time).replace(/(\d{2})(\d{2})/,"$1:$2"),62,y+66);
-
-    drawSlotCard(ctx,c172X,y,370,96,flights.filter(f=>f.time===time&&f.aircraft==="C172"),"#075da8");
-    drawSlotCard(ctx,c152X,y,370,96,flights.filter(f=>f.time===time&&f.aircraft==="C152"),"#d48a00");
+    ctx.fillText(normalizedExportTime(time),left,y+65);
+    aircrafts.forEach((ac,i)=>{
+      const x=left+timeW+i*(colW+gap);
+      drawExportSlotCard(ctx,x,y,colW,92,getFlightFor(date,time,ac),aircraftMeta(ac));
+    });
     y+=rowH;
   });
-
-  ctx.fillStyle="#60738a";
-  ctx.font="18px Arial";
-  ctx.fillText(`Generated ${new Date().toLocaleString()}`,62,height-40);
   return canvas;
+}
+
+function buildFullWaveCanvas(){
+  const days=getExportDays();
+  const cardW=565;
+  const cardH=650;
+  const margin=40;
+  const gap=30;
+  const cols=3;
+  const rows=Math.max(1,Math.ceil(days.length/cols));
+  const width=cols*cardW+(cols-1)*gap+margin*2;
+  const height=180+rows*cardH+(rows-1)*gap+80;
+  const canvas=document.createElement("canvas");
+  canvas.width=width;canvas.height=height;
+  const ctx=canvas.getContext("2d");
+
+  drawExportBackground(ctx,width,height,"Avi Oren Aviation · Full Training Wave",`Generated ${new Date().toLocaleString()}`);
+
+  days.forEach((day,idx)=>{
+    const col=idx%cols;
+    const row=Math.floor(idx/cols);
+    const x=margin+col*(cardW+gap);
+    const y=180+row*(cardH+gap);
+    drawWaveDayCard(ctx,x,y,cardW,cardH,day);
+  });
+
+  return canvas;
+}
+
+function drawExportBackground(ctx,width,height,title,subtitle){
+  ctx.fillStyle="#eef4fb";
+  ctx.fillRect(0,0,width,height);
+  const grad=ctx.createLinearGradient(0,0,width,0);
+  grad.addColorStop(0,"#0877d9");
+  grad.addColorStop(1,"#34a8eb");
+  ctx.fillStyle=grad;
+  roundRect(ctx,34,30,width-68,120,28,true,false);
+  ctx.fillStyle="#ffffff";
+  ctx.font="bold 38px Arial";
+  ctx.fillText(title,62,82);
+  ctx.font="20px Arial";
+  ctx.fillText(subtitle,62,120);
+}
+
+function drawWaveDayCard(ctx,x,y,w,h,day){
+  ctx.fillStyle="#ffffff";
+  roundRect(ctx,x,y,w,h,24,true,false);
+  ctx.strokeStyle="#c6d8ea";
+  ctx.lineWidth=3;
+  roundRect(ctx,x,y,w,h,24,false,true);
+
+  ctx.fillStyle="#12385c";
+  roundRect(ctx,x,y,w,56,24,true,false);
+  ctx.fillStyle="#ffffff";
+  ctx.font="bold 21px Arial";
+  ctx.fillText(formatWaveDayTitle(day.date,day.label),x+20,y+36);
+
+  const aircrafts=["Aircraft 1","Aircraft 2"];
+  const times=getExportTimesForDay(day.date).slice(0,5);
+  ctx.fillStyle="#102033";
+  ctx.font="bold 17px Arial";
+  ctx.fillText("Time",x+16,y+86);
+  ctx.fillStyle=aircraftMeta("Aircraft 1").color;
+  ctx.fillText("Aircraft 1",x+116,y+86);
+  ctx.fillStyle=aircraftMeta("Aircraft 2").color;
+  ctx.fillText("Aircraft 2",x+345,y+86);
+
+  let yy=y+110;
+  times.forEach(time=>{
+    ctx.fillStyle="#102033";
+    ctx.font="bold 18px Arial";
+    ctx.fillText(String(time).replace(/^(\d{2})(\d{2})$/,"$1:$2"),x+16,yy+48);
+    drawMiniSlotCard(ctx,x+98,yy,210,80,getFlightFor(day.date,time,"Aircraft 1"),aircraftMeta("Aircraft 1"));
+    drawMiniSlotCard(ctx,x+326,yy,210,80,getFlightFor(day.date,time,"Aircraft 2"),aircraftMeta("Aircraft 2"));
+    yy+=100;
+  });
 }
 
 function drawColumnHeader(ctx,x,y,w,h,title,color,bg){
@@ -991,37 +1112,58 @@ function drawColumnHeader(ctx,x,y,w,h,title,color,bg){
   ctx.fillText(title,x+22,y+32);
 }
 
-function drawSlotCard(ctx,x,y,w,h,flights,color){
-  ctx.fillStyle="#ffffff";
+function drawExportSlotCard(ctx,x,y,w,h,flight,meta){
+  ctx.fillStyle=flight && isExamFlight(flight) ? "#fff0f0" : meta.bg;
   roundRect(ctx,x,y,w,h,20,true,false);
-  ctx.strokeStyle="#b8dff8";
+  ctx.strokeStyle=flight && isExamFlight(flight) ? "#ffb4b4" : meta.border;
   ctx.lineWidth=2;
   roundRect(ctx,x,y,w,h,20,false,true);
 
-  if(!flights.length){
+  if(!flight){
     ctx.fillStyle="#9aa9b8";
     ctx.font="24px Arial";
-    ctx.fillText("—",x+w/2-8,y+58);
+    ctx.fillText("—",x+w/2-8,y+56);
     return;
   }
+  ctx.fillStyle=meta.color;
+  ctx.fillRect(x+14,y+18,7,h-36);
 
-  let yy=y+30;
-  flights.forEach((f,idx)=>{
-    if(idx>0)yy+=36;
-    ctx.fillStyle=color;
-    ctx.fillRect(x+12,yy-22,6,34);
-    ctx.fillStyle="#102033";
-    ctx.font="bold 25px Arial";
-    ctx.fillText(String(f.student||""),x+28,yy);
-    ctx.fillStyle=instructorColor(f.instructor);
-    ctx.font="bold 21px Arial";
-    ctx.fillText(String(f.instructor||"Solo"),x+28,yy+28);
-    if(f.note){
-      ctx.fillStyle="#b42318";
-      ctx.font="bold 18px Arial";
-      ctx.fillText(String(f.note),x+190,yy+28);
-    }
-  });
+  ctx.fillStyle="#102033";
+  ctx.font="bold 25px Arial";
+  ctx.fillText(flightDisplayStudent(flight),x+34,y+38);
+
+  const fi=flightDisplayInstructor(flight);
+  ctx.fillStyle=instructorColor(fi);
+  ctx.font="bold 22px Arial";
+  ctx.fillText(fi,x+34,y+70);
+
+  const note=String(flight.note||"").trim();
+  if(note && !note.toUpperCase().includes("EXAM")){
+    ctx.fillStyle="#60738a";
+    ctx.font="18px Arial";
+    ctx.fillText(note,x+180,y+70);
+  }
+}
+
+function drawMiniSlotCard(ctx,x,y,w,h,flight,meta){
+  ctx.fillStyle=flight && isExamFlight(flight) ? "#fff0f0" : meta.bg;
+  roundRect(ctx,x,y,w,h,16,true,false);
+  ctx.strokeStyle=flight && isExamFlight(flight) ? "#ffb4b4" : meta.border;
+  ctx.lineWidth=1.5;
+  roundRect(ctx,x,y,w,h,16,false,true);
+  if(!flight){
+    ctx.fillStyle="#9aa9b8";
+    ctx.font="18px Arial";
+    ctx.fillText("—",x+w/2-5,y+48);
+    return;
+  }
+  ctx.fillStyle="#102033";
+  ctx.font="bold 17px Arial";
+  ctx.fillText(flightDisplayStudent(flight),x+10,y+28);
+  const fi=flightDisplayInstructor(flight);
+  ctx.fillStyle=instructorColor(fi);
+  ctx.font="bold 16px Arial";
+  ctx.fillText(fi,x+10,y+55);
 }
 
 async function shareOrDownloadCanvas(canvas,date,label){
@@ -2299,7 +2441,7 @@ renderFlightCard = function(f,admin){
 };
 
 
-/* v0.4.2 schedule day names, robust all/student/FI filters, conflict marking */
+/* v0.5.0 schedule day names, robust all/student/FI filters, conflict marking */
 function aoa035DateLabel(dateStr){
   const parts=String(dateStr||'').split('-').map(Number);
   const d=parts.length===3?new Date(parts[0],parts[1]-1,parts[2]):new Date(dateStr);
