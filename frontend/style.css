@@ -50,7 +50,7 @@
 }
 
 
-/* v0.1.8 refinements */
+/* v0.7.3 refinements */
 .cpl-hero,.aircraft-hero{
   display:grid;grid-template-columns:1.15fr .85fr;gap:22px;
   background:#fff;border:1px solid var(--line);border-radius:28px;
@@ -143,7 +143,7 @@
 }
 
 
-/* v0.1.11 weather + briefing room redesign */
+/* v0.7.3 weather + briefing room redesign */
 .airport-weather-tabs{
   display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0;
 }
@@ -214,7 +214,7 @@
 }
 
 
-/* v0.1.12 patch */
+/* v0.7.3 patch */
 .ato-certificate-panel{
   display:flex;gap:14px;align-items:center;background:#fff;border:1px solid var(--line);
   border-radius:24px;padding:18px;box-shadow:var(--shadow);margin:14px 0 18px;
@@ -232,7 +232,7 @@
 }
 
 
-/* v0.1.13 ATPL AI */
+/* v0.7.3 ATPL AI */
 .atpl-ai-link,
 .atpl-ai-mobile{
   color:#149447!important;
@@ -309,7 +309,7 @@
 }
 
 
-/* v0.1.15 fixes */
+/* v0.7.3 fixes */
 .weather-header-actions #weatherMapsLink{display:none!important}
 .atpl-ai-link,.atpl-ai-mobile{color:#149447!important;font-weight:900}
 .atpl-ai-link:hover,.atpl-ai-link.active,.atpl-ai-mobile.active{background:#e9fff0!important;color:#0f7a37!important}
@@ -328,7 +328,7 @@
 @media(max-width:980px){.bottom-nav{grid-template-columns:repeat(5,1fr)}.atpl-soon-card h2{font-size:32px}}
 
 
-/* v0.1.16 briefing room redesign */
+/* v0.7.3 briefing room redesign */
 .briefing-room-tabs{
   display:grid;
   grid-template-columns:repeat(5,1fr);
@@ -378,7 +378,7 @@
 }
 
 
-/* v0.1.17 briefing/login/notam updates */
+/* v0.7.3 briefing/login/notam updates */
 .oauth-note{display:none!important}
 .chart-extra-links{
   display:flex;
@@ -427,7 +427,7 @@
 }
 
 
-/* v0.1.18 wave schedule */
+/* v0.7.3 wave schedule */
 .schedule-actions{display:flex;gap:10px;flex-wrap:wrap}
 .wave-legend{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 16px}
 .legend-pill{border-radius:999px;padding:7px 11px;font-weight:900;font-size:13px;border:1px solid var(--line)}
@@ -468,7 +468,7 @@
 @media(max-width:720px){.wave-time-row{grid-template-columns:1fr}.wave-slot-pair{grid-template-columns:1fr}.wave-toolbar{flex-direction:column}}
 
 
-/* v0.1.20 schedule right-click editing */
+/* v0.7.3 schedule right-click editing */
 .slot-edit-menu{
   position:fixed;
   z-index:1000;
@@ -508,7 +508,7 @@
 }
 
 
-/* v0.1.21 admin + briefing refinements */
+/* v0.7.3 admin + briefing refinements */
 .admin-dashboard-grid{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
@@ -539,7 +539,7 @@
   .admin-dashboard-grid{grid-template-columns:1fr}
 }
 
-/* v0.1.23 CLEAN stabilization */
+/* v0.7.3 CLEAN stabilization */
 .briefing-room-tabs{grid-template-columns:repeat(6,1fr)}
 .briefing-tab-panel.active{animation:fadeIn .18s ease}
 .chart-extra-links button{min-width:130px}
@@ -551,7 +551,7 @@
 .user-row{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.user-row span{color:var(--muted);font-size:13px}
 @media(max-width:980px){.briefing-room-tabs{grid-template-columns:repeat(2,1fr)}.wave-calendar{grid-template-columns:1fr}.user-row{grid-template-columns:1fr}}
 
-/* v0.1.26 mobile polish + wave manager */
+/* v0.7.3 mobile polish + wave manager */
 .wave-date-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .version{z-index:20}
 .notam-source-line{margin-top:10px;color:var(--muted);font-size:12px}
@@ -581,7 +581,7 @@
 }
 
 
-/* v0.1.26 schedule wave selector + mobile polish */
+/* v0.7.3 schedule wave selector + mobile polish */
 .wave-selector-scroll{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 14px;margin:0 0 14px;scroll-snap-type:x mandatory}
 .wave-choice{min-width:190px;scroll-snap-align:start;border:1px solid #b8dff8;background:#fff;color:#075da8;border-radius:18px;padding:12px;text-align:left;box-shadow:0 10px 28px rgba(20,70,120,.08);font-weight:900}
 .wave-choice span{display:block;color:var(--muted);font-size:12px;margin-top:4px;font-weight:800}
@@ -589,7 +589,7 @@
 .wave-toolbar{align-items:center}
 @media(max-width:720px){.wave-selector-scroll{margin-left:-2px;margin-right:-2px}.wave-choice{min-width:165px}.topbar{gap:10px}.topbar .primary-button{padding:9px 11px}.metric-card strong{font-size:22px}.version{position:static!important;transform:none!important;margin:14px auto 88px!important;justify-content:center;width:calc(100% - 24px)}}
 
-/* v0.2.10 mobile logout/profile */
+/* v0.7.3 mobile logout/profile */
 .mobile-logout{
   display:none;
   position:fixed;
@@ -611,12 +611,12 @@
   .bottom-nav{grid-template-columns:repeat(5,1fr)!important;}
 }
 
-/* v0.2.12 dashboard 5-box layout */
+/* v0.7.3 dashboard 5-box layout */
 @media(min-width:981px){
   .homepage-weather-grid{grid-template-columns:repeat(5,1fr)!important;}
 }
 
-/* v0.3.0 schedule manager + user admin */
+/* v0.7.3 schedule manager + user admin */
 .small-modal-card{max-width:520px!important}
 .flight-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .flight-form label{display:block}
@@ -630,7 +630,7 @@
 .user-row{grid-template-columns:minmax(180px,1fr) auto minmax(260px,auto)!important}
 @media(max-width:720px){.flight-form{grid-template-columns:1fr}.flight-form .slot-edit-actions{grid-column:auto}.user-row{grid-template-columns:1fr!important}.user-actions{justify-content:flex-start}}
 
-/* v0.3.1 admin UX + schedule filter */
+/* v0.7.3 admin UX + schedule filter */
 .schedule-filter-bar{
   display:flex;
   align-items:end;
@@ -657,7 +657,7 @@
 #flightStudentInput{width:100%;padding:13px;margin:7px 0;border-radius:14px;border:1px solid #cfe1f2;background:#fff;color:var(--text)}
 @media(max-width:980px){.compact-user-row{grid-template-columns:1fr!important}.user-actions{justify-content:flex-start}.admin-tabs{position:sticky;top:8px;z-index:5}.admin-card form{grid-template-columns:1fr}.schedule-filter-bar{align-items:stretch}.schedule-filter-bar label{min-width:0;width:100%}}
 
-/* v0.3.2 schedule/admin refinements */
+/* v0.7.3 schedule/admin refinements */
 .schedule-filter-bar{display:flex;gap:12px;align-items:end;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:20px;padding:12px;margin:10px 0 16px;box-shadow:var(--shadow)}
 .schedule-filter-bar label{min-width:170px}.schedule-filter-bar span{color:var(--muted);font-size:13px;font-weight:800}
 .student-admin-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;width:100%;background:#f8fcff;border:1px solid #d7e7f7;border-radius:14px;padding:10px;margin:6px 0}
@@ -665,12 +665,12 @@
 .admin-list-preview{align-items:stretch}.admin-list-preview .student-admin-row span{border:0;background:transparent;padding:0;border-radius:0;color:var(--muted)}
 @media(max-width:720px){.student-admin-row{grid-template-columns:1fr}.schedule-filter-bar label{width:100%}}
 
-/* v0.3.3 student alias + solo flight UI */
+/* v0.7.3 student alias + solo flight UI */
 .field-hint{font-size:12px;color:var(--muted);font-weight:700;margin-top:2px}
 .tag-solo{background:#fff7e6;color:#9a5b00}
 
 
-/* v0.7.2 schedule filter/day/conflict polish */
+/* v0.7.3 schedule filter/day/conflict polish */
 .schedule-filter-bar{display:flex;gap:12px;align-items:end;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:20px;padding:12px;margin:12px 0;box-shadow:var(--shadow)}
 .schedule-filter-bar label{min-width:160px}
 #scheduleFilterHint{color:var(--muted);font-size:13px;font-weight:800;align-self:center}
@@ -679,7 +679,7 @@
 @media(max-width:720px){.schedule-filter-bar{display:grid;grid-template-columns:1fr}.schedule-filter-bar label{min-width:0}}
 
 
-/* v0.7.2 day share image button */
+/* v0.7.3 day share image button */
 .wave-day-header{
   display:flex;
   align-items:center;
@@ -703,7 +703,7 @@
 }
 
 
-/* v0.7.2 mobile admin access + visible day image button */
+/* v0.7.3 mobile admin access + visible day image button */
 .bottom-nav{
   overflow-x:auto;
   -webkit-overflow-scrolling:touch;
@@ -754,7 +754,7 @@
   }
 }
 
-/* v0.7.2 real DOM screenshot capture */
+/* v0.7.3 real DOM screenshot capture */
 .day-share-btn{
   min-width:132px!important;
   height:40px!important;
@@ -793,7 +793,7 @@
   }
 }
 
-/* v0.7.2 clear daily schedule share action */
+/* v0.7.3 clear daily schedule share action */
 .schedule-actions .primary-button.member-only{
   background:linear-gradient(135deg,#149447,#0f7a37);
 }
@@ -817,7 +817,7 @@
   }
 }
 
-/* v0.7.2 auth divs replace forms to prevent URL credential leaks */
+/* v0.7.3 auth divs replace forms to prevent URL credential leaks */
 .auth-form{
   display:block;
 }
@@ -825,7 +825,7 @@
   margin:0 0 8px;
 }
 
-/* v0.7.2 schedule export buttons */
+/* v0.7.3 schedule export buttons */
 .wave-export-btn{
   background:linear-gradient(135deg,#173b64,#0a6fd6)!important;
 }
@@ -840,7 +840,7 @@
   }
 }
 
-/* ===== 0.7.2 waves ===== */
+/* ===== 0.7.3 waves ===== */
 .wave-toolbar{
   display:flex;
   gap:10px;
@@ -869,7 +869,7 @@
   }
 }
 
-/* 0.7.2 wave switcher fix */
+/* 0.7.3 wave switcher fix */
 .wave-toolbar{
   border:1px solid #c6d8ea;
   background:#fff;
@@ -877,7 +877,7 @@
   padding:12px;
 }
 
-/* 0.7.2 verified wave selector */
+/* 0.7.3 verified wave selector */
 .wave-toolbar{
   border:2px solid #b8dff8;
   background:#ffffff;
@@ -889,7 +889,7 @@
   font-weight:900;
 }
 
-/* 0.7.2 hard verified wave state */
+/* 0.7.3 hard verified wave state */
 .wave-debug-status{
   display:inline-flex;
   margin-left:8px;
@@ -901,7 +901,7 @@
   outline:2px solid #b8dff8;
 }
 
-/* 0.7.2 colors and legend */
+/* 0.7.3 colors and legend */
 .flight-c172{border-left:6px solid #075da8!important}
 .flight-c152{border-left:6px solid #9a5b00!important}
 .flight-aircraft3{border-left:6px solid #6c2eb9!important}
@@ -915,7 +915,7 @@
 .legend-pill.aircraft-2{background:#fff5e7;color:#9a5b00;border-color:#f0d3a0}
 .legend-pill.aircraft-3{background:#f3ecff;color:#6c2eb9;border-color:#d9c5ff}
 
-/* 0.7.2 flight edit controls, aircraft color, FI stripe */
+/* 0.7.3 flight edit controls, aircraft color, FI stripe */
 .flight-card{position:relative;padding-left:18px!important;overflow:hidden}
 .flight-card.flight-c172{border-left:8px solid #075da8!important;background:#edf6ff!important}
 .flight-card.flight-c152{border-left:8px solid #9a5b00!important;background:#fff5e7!important}
@@ -931,7 +931,7 @@
 .legend-pill.aircraft-2{background:#fff5e7;color:#9a5b00;border-color:#f0d3a0}
 .legend-pill.aircraft-3{background:#f3ecff;color:#6c2eb9;border-color:#d9c5ff}
 
-/* 0.7.2 remove FI stripe, keep clean aircraft stripe */
+/* 0.7.3 remove FI stripe, keep clean aircraft stripe */
 .flight-card .fi-stripe{display:none!important}
 .flight-card{padding-left:12px!important}
 .aircraft-name-editor{
