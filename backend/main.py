@@ -958,11 +958,11 @@ def init_db():
         for name,email,phone,notes in [("Avi", "", "", "Instructor"), ("Amir", "", "", "Instructor"), ("Vlad", "", "", "Instructor"), ("Examiner", "", "", "External examiner")]:
             conn.execute("INSERT INTO instructors VALUES (?,?,?,?,?)", (str(uuid.uuid4()), name, email, phone, notes))
     else:
-        # 0.6.8 safety: ensure new June wave FIs exist in DB even if table was seeded earlier.
+        # 0.6.9 safety: ensure new June wave FIs exist in DB even if table was seeded earlier.
         for name,email,phone,notes in [("Vlad", "", "", "Instructor"), ("Examiner", "", "", "External examiner")]:
             if not conn.execute("SELECT id FROM instructors WHERE LOWER(name)=LOWER(?)", (name,)).fetchone():
                 conn.execute("INSERT INTO instructors VALUES (?,?,?,?,?)", (str(uuid.uuid4()), name, email, phone, notes))
-    # 0.6.8 safety: ensure June wave students and FIs exist in DB.
+    # 0.6.9 safety: ensure June wave students and FIs exist in DB.
     for name,email,program,notes in [
         ("Ahmad Z", "", "PPL(A)", "June training wave"),
         ("Aviv E", "", "PPL(A)", "June training wave"),
@@ -987,6 +987,40 @@ def init_db():
         ]
         for row in demo_schedule:
             cur.execute("INSERT INTO schedule VALUES (?,?,?,?,?,?,?,?,?)", (str(uuid.uuid4()), *row))
+
+    # 0.6.9 DB DATA MIGRATION: persisted June wave must not keep Lior A.
+    # This runs on every backend startup and edits the app_settings JSON directly.
+    try:
+        june_key = "wave_schedule_june_2026"
+        row = conn.execute("SELECT value FROM app_settings WHERE key=?", (june_key,)).fetchone()
+        if row:
+            raw = row["value"] if hasattr(row, "keys") else row[0]
+            flights = json.loads(raw or "[]")
+            changed = 0
+            if isinstance(flights, list):
+                for f in flights:
+                    if not isinstance(f, dict):
+                        continue
+                    student = str(f.get("student") or "").strip()
+                    date = str(f.get("date") or "")
+                    time = str(f.get("time") or "")
+                    aircraft = str(f.get("aircraft") or "")
+                    if student == "Lior A":
+                        if date >= "2026-06-04":
+                            f["student"] = "Nir Kohol"
+                            changed += 1
+                        elif date == "2026-06-03" and time == "1200" and aircraft == "Aircraft 2":
+                            f["student"] = "Ahmad Z"
+                            changed += 1
+                        elif date == "2026-06-03" and time == "1400" and aircraft == "Aircraft 1":
+                            f["student"] = "Nadav L"
+                            changed += 1
+                if changed:
+                    setting_put(conn, june_key, json.dumps(flights))
+                    print(f"✅ 0.6.9 migrated June wave: replaced {changed} Lior slots", flush=True)
+    except Exception as e:
+        print(f"⚠️ 0.6.9 June migration skipped: {e}", flush=True)
+
     conn.commit()
     conn.close()
 
@@ -1641,7 +1675,7 @@ def get_notam(icao: str):
     return {"icao": icao, "source": "official-links-no-match", "official_url": faa_url, "ead_url": ead_url, "netbriefing_url": netbriefing_url, "ais_url": ais_url, "notams": text}
 
 
-# ===== 0.6.8 real multi-wave API =====
+# ===== 0.6.9 real multi-wave API =====
 WAVE_PRESETS = {
     "legacy": {"id": "legacy", "name": "Legacy Wave", "start_date": "2026-05-03", "end_date": "2026-05-10", "aircraft": ["C172", "C152"]},
     "may_2026": {"id": "may_2026", "name": "May 3–10", "start_date": "2026-05-03", "end_date": "2026-05-10", "aircraft": ["C172", "C152"]},
@@ -2195,12 +2229,43 @@ def wave_setting_key(wave_id: str) -> str:
     safe = re.sub(r"[^a-zA-Z0-9_\-]", "_", str(wave_id or "legacy"))
     return f"wave_schedule_{safe}"
 
+def normalize_june_wave_flights(conn, flights):
+    if not isinstance(flights, list):
+        return []
+    changed = 0
+    for f in flights:
+        if not isinstance(f, dict):
+            continue
+        student = str(f.get("student") or "").strip()
+        date = str(f.get("date") or "")
+        time = str(f.get("time") or "")
+        aircraft = str(f.get("aircraft") or "")
+        if student == "Lior A":
+            if date >= "2026-06-04":
+                f["student"] = "Nir Kohol"
+                changed += 1
+            elif date == "2026-06-03" and time == "1200" and aircraft == "Aircraft 2":
+                f["student"] = "Ahmad Z"
+                changed += 1
+            elif date == "2026-06-03" and time == "1400" and aircraft == "Aircraft 1":
+                f["student"] = "Nadav L"
+                changed += 1
+    return flights
+
 def get_wave_schedule_json(conn, wave_id: str):
     key = wave_setting_key(wave_id)
     row = conn.execute("SELECT value FROM app_settings WHERE key=?", (key,)).fetchone()
     if row:
         try:
-            return json.loads(row["value"])
+            flights = json.loads(row["value"])
+            if wave_id == "june_2026":
+                before = json.dumps(flights, sort_keys=True)
+                flights = normalize_june_wave_flights(conn, flights)
+                after = json.dumps(flights, sort_keys=True)
+                if before != after:
+                    setting_put(conn, key, json.dumps(flights))
+                    conn.commit()
+            return flights
         except Exception:
             return []
     if wave_id == "june_2026":
