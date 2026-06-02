@@ -958,18 +958,19 @@ def init_db():
         for name,email,phone,notes in [("Avi", "", "", "Instructor"), ("Amir", "", "", "Instructor"), ("Vlad", "", "", "Instructor"), ("Examiner", "", "", "External examiner")]:
             conn.execute("INSERT INTO instructors VALUES (?,?,?,?,?)", (str(uuid.uuid4()), name, email, phone, notes))
     else:
-        # 0.6.6 safety: ensure new June wave FIs exist in DB even if table was seeded earlier.
+        # 0.6.7 safety: ensure new June wave FIs exist in DB even if table was seeded earlier.
         for name,email,phone,notes in [("Vlad", "", "", "Instructor"), ("Examiner", "", "", "External examiner")]:
             if not conn.execute("SELECT id FROM instructors WHERE LOWER(name)=LOWER(?)", (name,)).fetchone():
                 conn.execute("INSERT INTO instructors VALUES (?,?,?,?,?)", (str(uuid.uuid4()), name, email, phone, notes))
-    # 0.6.6 safety: ensure June wave students and FIs exist in DB.
+    # 0.6.7 safety: ensure June wave students and FIs exist in DB.
     for name,email,program,notes in [
         ("Ahmad Z", "", "PPL(A)", "June training wave"),
         ("Aviv E", "", "PPL(A)", "June training wave"),
         ("Sharon C", "", "PPL(A)", "June training wave"),
         ("Nadav L", "", "CPL", "June training wave"),
         ("Harel T", "", "PPL(A)", "June training wave"),
-        ("Lior A", "", "PPL(A)", "June training wave")
+        ("Nir Kohol", "", "Time Building", "June training wave"),
+        ("Lior A", "", "PPL(A)", "Previous wave")
     ]:
         if not conn.execute("SELECT id FROM students WHERE LOWER(name)=LOWER(?)", (name,)).fetchone():
             conn.execute("INSERT INTO students VALUES (?,?,?,?,?)", (str(uuid.uuid4()), name, email, program, notes))
@@ -1640,7 +1641,7 @@ def get_notam(icao: str):
     return {"icao": icao, "source": "official-links-no-match", "official_url": faa_url, "ead_url": ead_url, "netbriefing_url": netbriefing_url, "ais_url": ais_url, "notams": text}
 
 
-# ===== 0.6.6 real multi-wave API =====
+# ===== 0.6.7 real multi-wave API =====
 WAVE_PRESETS = {
     "legacy": {"id": "legacy", "name": "Legacy Wave", "start_date": "2026-05-03", "end_date": "2026-05-10", "aircraft": ["C172", "C152"]},
     "may_2026": {"id": "may_2026", "name": "May 3–10", "start_date": "2026-05-03", "end_date": "2026-05-10", "aircraft": ["C172", "C152"]},
@@ -1698,7 +1699,7 @@ JUNE_2026_DEFAULT_FLIGHTS = [
     "date": "2026-06-03",
     "time": "1200",
     "aircraft": "Aircraft 2",
-    "student": "Lior A",
+    "student": "Ahmad Z",
     "instructor": "Vlad",
     "note": ""
   },
@@ -1707,7 +1708,7 @@ JUNE_2026_DEFAULT_FLIGHTS = [
     "date": "2026-06-03",
     "time": "1400",
     "aircraft": "Aircraft 1",
-    "student": "Lior A",
+    "student": "Nadav L",
     "instructor": "Avi",
     "note": ""
   },
@@ -1806,7 +1807,7 @@ JUNE_2026_DEFAULT_FLIGHTS = [
     "date": "2026-06-04",
     "time": "1400",
     "aircraft": "Aircraft 2",
-    "student": "Lior A",
+    "student": "Nir Kohol",
     "instructor": "Avi",
     "note": ""
   },
@@ -1860,7 +1861,7 @@ JUNE_2026_DEFAULT_FLIGHTS = [
     "date": "2026-06-05",
     "time": "1000",
     "aircraft": "Aircraft 2",
-    "student": "Lior A",
+    "student": "Nir Kohol",
     "instructor": "Vlad",
     "note": ""
   },
@@ -1896,7 +1897,7 @@ JUNE_2026_DEFAULT_FLIGHTS = [
     "date": "2026-06-05",
     "time": "1400",
     "aircraft": "Aircraft 2",
-    "student": "Lior A",
+    "student": "Nir Kohol",
     "instructor": "Vlad",
     "note": ""
   },
@@ -1968,7 +1969,7 @@ JUNE_2026_DEFAULT_FLIGHTS = [
     "date": "2026-06-06",
     "time": "1200",
     "aircraft": "Aircraft 2",
-    "student": "Lior A",
+    "student": "Nir Kohol",
     "instructor": "Avi",
     "note": ""
   },
@@ -1995,7 +1996,7 @@ JUNE_2026_DEFAULT_FLIGHTS = [
     "date": "2026-06-06",
     "time": "1600",
     "aircraft": "Aircraft 1",
-    "student": "Lior A",
+    "student": "Nir Kohol",
     "instructor": "Amir",
     "note": ""
   },
@@ -2022,7 +2023,7 @@ JUNE_2026_DEFAULT_FLIGHTS = [
     "date": "2026-06-07",
     "time": "0800",
     "aircraft": "Aircraft 2",
-    "student": "Lior A",
+    "student": "Nir Kohol",
     "instructor": "Avi",
     "note": ""
   },
@@ -2067,7 +2068,7 @@ JUNE_2026_DEFAULT_FLIGHTS = [
     "date": "2026-06-07",
     "time": "1400",
     "aircraft": "Aircraft 1",
-    "student": "Lior A",
+    "student": "Nir Kohol",
     "instructor": "Amir",
     "note": ""
   },
@@ -2121,7 +2122,7 @@ JUNE_2026_DEFAULT_FLIGHTS = [
     "date": "2026-06-08",
     "time": "1000",
     "aircraft": "Aircraft 1",
-    "student": "Lior A",
+    "student": "Nir Kohol",
     "instructor": "Amir",
     "note": ""
   },
@@ -2157,7 +2158,7 @@ JUNE_2026_DEFAULT_FLIGHTS = [
     "date": "2026-06-08",
     "time": "1400",
     "aircraft": "Aircraft 1",
-    "student": "Lior A",
+    "student": "Nir Kohol",
     "instructor": "Avi",
     "note": ""
   },
@@ -2184,7 +2185,7 @@ JUNE_2026_DEFAULT_FLIGHTS = [
     "date": "2026-06-08",
     "time": "1600",
     "aircraft": "Aircraft 2",
-    "student": "Lior A",
+    "student": "Nir Kohol",
     "instructor": "Amir",
     "note": ""
   }
