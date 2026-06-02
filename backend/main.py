@@ -18,7 +18,7 @@ FRONTEND_DIR = os.getenv("FRONTEND_DIR", str(BASE_DIR / "frontend"))
 DATABASE_URL = os.getenv("DATABASE_URL")
 USE_POSTGRES = bool(DATABASE_URL)
 
-# v0.3.3: canonical student aliases to avoid mismatches after display-name edits.
+# v0.7.3: canonical student aliases to avoid mismatches after display-name edits.
 STUDENT_CANONICAL_ALIASES = {
     "harel t": "Harel", "harel": "Harel",
     "lior a": "Lior", "lior": "Lior",
@@ -958,11 +958,11 @@ def init_db():
         for name,email,phone,notes in [("Avi", "", "", "Instructor"), ("Amir", "", "", "Instructor"), ("Vlad", "", "", "Instructor"), ("Examiner", "", "", "External examiner")]:
             conn.execute("INSERT INTO instructors VALUES (?,?,?,?,?)", (str(uuid.uuid4()), name, email, phone, notes))
     else:
-        # 0.7.2 safety: ensure new June wave FIs exist in DB even if table was seeded earlier.
+        # 0.7.3 safety: ensure new June wave FIs exist in DB even if table was seeded earlier.
         for name,email,phone,notes in [("Vlad", "", "", "Instructor"), ("Examiner", "", "", "External examiner")]:
             if not conn.execute("SELECT id FROM instructors WHERE LOWER(name)=LOWER(?)", (name,)).fetchone():
                 conn.execute("INSERT INTO instructors VALUES (?,?,?,?,?)", (str(uuid.uuid4()), name, email, phone, notes))
-    # 0.7.2 safety: ensure June wave students and FIs exist in DB.
+    # 0.7.3 safety: ensure June wave students and FIs exist in DB.
     for name,email,program,notes in [
         ("Ahmad Z", "", "PPL(A)", "June training wave"),
         ("Aviv E", "", "PPL(A)", "June training wave"),
@@ -988,7 +988,7 @@ def init_db():
         for row in demo_schedule:
             cur.execute("INSERT INTO schedule VALUES (?,?,?,?,?,?,?,?,?)", (str(uuid.uuid4()), *row))
 
-    # 0.7.2 DB DATA MIGRATION: persisted June wave must not keep Lior A.
+    # 0.7.3 DB DATA MIGRATION: persisted June wave must not keep Lior A.
     # This runs on every backend startup and edits the app_settings JSON directly.
     try:
         june_key = "wave_schedule_june_2026"
@@ -1015,12 +1015,12 @@ def init_db():
                         elif date == "2026-06-03" and time == "1400" and aircraft == "Aircraft 1":
                             f["student"] = "Nadav L"
                             changed += 1
-                # Apply full 0.7.2 June normalization, including 03 Jun aircraft/FI changes.
+                # Apply full 0.7.3 June normalization, including 03 Jun aircraft/FI changes.
                 flights = normalize_june_wave_flights(conn, flights) if "normalize_june_wave_flights" in globals() else flights
                 setting_put(conn, june_key, json.dumps(flights))
-                print(f"✅ 0.7.2 migrated June wave: normalized June schedule", flush=True)
+                print(f"✅ 0.7.3 migrated June wave: normalized June schedule", flush=True)
     except Exception as e:
-        print(f"⚠️ 0.7.2 June migration skipped: {e}", flush=True)
+        print(f"⚠️ 0.7.3 June migration skipped: {e}", flush=True)
 
     conn.commit()
     conn.close()
@@ -1676,7 +1676,7 @@ def get_notam(icao: str):
     return {"icao": icao, "source": "official-links-no-match", "official_url": faa_url, "ead_url": ead_url, "netbriefing_url": netbriefing_url, "ais_url": ais_url, "notams": text}
 
 
-# ===== 0.7.2 real multi-wave API =====
+# ===== 0.7.3 real multi-wave API =====
 WAVE_PRESETS = {
     "legacy": {"id": "legacy", "name": "Legacy Wave", "start_date": "2026-05-03", "end_date": "2026-05-10", "aircraft": ["C172", "C152"]},
     "may_2026": {"id": "may_2026", "name": "May 3–10", "start_date": "2026-05-03", "end_date": "2026-05-10", "aircraft": ["C172", "C152"]},
@@ -2234,7 +2234,7 @@ def normalize_june_wave_flights(conn, flights):
     if not isinstance(flights, list):
         return []
     changed = 0
-    # 0.7.2: 03 Jun aircraft mapping:
+    # 0.7.3: 03 Jun aircraft mapping:
     # Aircraft 1 = DEMWA, Aircraft 2 = DEKJJ.
     # Avi goes on DEKJJ, Vlad goes on DEMWA.
     remove_ids = set()
