@@ -958,11 +958,11 @@ def init_db():
         for name,email,phone,notes in [("Avi", "", "", "Instructor"), ("Amir", "", "", "Instructor"), ("Vlad", "", "", "Instructor"), ("Examiner", "", "", "External examiner")]:
             conn.execute("INSERT INTO instructors VALUES (?,?,?,?,?)", (str(uuid.uuid4()), name, email, phone, notes))
     else:
-        # 0.6.7 safety: ensure new June wave FIs exist in DB even if table was seeded earlier.
+        # 0.6.8 safety: ensure new June wave FIs exist in DB even if table was seeded earlier.
         for name,email,phone,notes in [("Vlad", "", "", "Instructor"), ("Examiner", "", "", "External examiner")]:
             if not conn.execute("SELECT id FROM instructors WHERE LOWER(name)=LOWER(?)", (name,)).fetchone():
                 conn.execute("INSERT INTO instructors VALUES (?,?,?,?,?)", (str(uuid.uuid4()), name, email, phone, notes))
-    # 0.6.7 safety: ensure June wave students and FIs exist in DB.
+    # 0.6.8 safety: ensure June wave students and FIs exist in DB.
     for name,email,program,notes in [
         ("Ahmad Z", "", "PPL(A)", "June training wave"),
         ("Aviv E", "", "PPL(A)", "June training wave"),
@@ -1641,7 +1641,7 @@ def get_notam(icao: str):
     return {"icao": icao, "source": "official-links-no-match", "official_url": faa_url, "ead_url": ead_url, "netbriefing_url": netbriefing_url, "ais_url": ais_url, "notams": text}
 
 
-# ===== 0.6.7 real multi-wave API =====
+# ===== 0.6.8 real multi-wave API =====
 WAVE_PRESETS = {
     "legacy": {"id": "legacy", "name": "Legacy Wave", "start_date": "2026-05-03", "end_date": "2026-05-10", "aircraft": ["C172", "C152"]},
     "may_2026": {"id": "may_2026", "name": "May 3–10", "start_date": "2026-05-03", "end_date": "2026-05-10", "aircraft": ["C172", "C152"]},
@@ -2264,6 +2264,35 @@ def verify_wave_schedule(wave_id: str = "legacy", admin=Depends(require_admin)):
     finally:
         conn.close()
 
+
+
+@app.post("/api/wave-schedule/june-replace-lior")
+def june_replace_lior(admin=Depends(require_admin)):
+    wave_id = "june_2026"
+    conn = db()
+    try:
+        if not conn.execute("SELECT id FROM students WHERE LOWER(name)=LOWER(?)", ("Nir Kohol",)).fetchone():
+            conn.execute("INSERT INTO students VALUES (?,?,?,?,?)", (str(uuid.uuid4()), "Nir Kohol", "", "Time Building", "June wave"))
+
+        flights = get_wave_schedule_json(conn, wave_id)
+        changed = 0
+        for f in flights:
+            if str(f.get("student") or "").strip() == "Lior A":
+                if str(f.get("date") or "") >= "2026-06-04":
+                    f["student"] = "Nir Kohol"
+                    changed += 1
+                elif str(f.get("date") or "") == "2026-06-03" and str(f.get("time") or "") == "1200" and str(f.get("aircraft") or "") == "Aircraft 2":
+                    f["student"] = "Ahmad Z"
+                    changed += 1
+                elif str(f.get("date") or "") == "2026-06-03" and str(f.get("time") or "") == "1400" and str(f.get("aircraft") or "") == "Aircraft 1":
+                    f["student"] = "Nadav L"
+                    changed += 1
+
+        setting_put(conn, wave_setting_key(wave_id), json.dumps(flights))
+        conn.commit()
+        return {"ok": True, "changed": changed, "flights": flights}
+    finally:
+        conn.close()
 
 
 
