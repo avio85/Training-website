@@ -1,5 +1,5 @@
 
-/* v0.7.5 security: never allow credentials to remain in URL */
+/* v0.7.6 security: never allow credentials to remain in URL */
 function scrubCredentialQueryFromUrl(){
   try{
     const url = new URL(window.location.href);
@@ -944,7 +944,7 @@ function exportTruncateText(ctx,text,maxWidth){
 
 
 
-/* ===== 0.7.5 ACTUAL LOADED SCHEDULE EXPORT SOURCE ===== */
+/* ===== 0.7.6 ACTUAL LOADED SCHEDULE EXPORT SOURCE ===== */
 function exportLoadedSchedule(){
   return Array.isArray(window.waveSchedule) ? window.waveSchedule : (Array.isArray(waveSchedule) ? waveSchedule : []);
 }
@@ -1034,7 +1034,7 @@ function exportTimesForDate(date){
 function exportFlight(date,time,aircraft){
   return exportLoadedSchedule().find(f=>f.date===date && String(f.time)===String(time) && String(f.aircraft)===String(aircraft));
 }
-/* ===== end 0.7.5 helpers ===== */
+/* ===== end 0.7.6 helpers ===== */
 
 
 function openShareDailyScheduleModal(){
@@ -1465,7 +1465,7 @@ function wireAuthEnterKeys(){
 
 document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();wireAuthEnterKeys();scrubCredentialQueryFromUrl();setAuthUi();loadHomeWeather();loadAtplAiSettings();renderAdminLists();document.getElementById("logoutBtn")?.addEventListener("click",logout);document.getElementById("loginForm")?.addEventListener("submit",async e=>{e.preventDefault();try{const d=await postForm("/api/login",e.target);token=d.token;userRole=d.role;localStorage.setItem("token",token);localStorage.setItem("role",userRole);scrubCredentialQueryFromUrl();setAuthUi();closeLoginModal();toast(d.approved?"Logged in":"Logged in, waiting for approval");if(userRole==="admin")showPage("admin")}catch(err){toast(err.message)}});document.getElementById("signupForm")?.addEventListener("submit",async e=>{e.preventDefault();try{const d=await postForm("/api/signup",e.target);scrubCredentialQueryFromUrl();toast(d.message||"Signup created");closeLoginModal()}catch(err){toast(err.message||"Signup failed")}});document.getElementById("studentForm")?.addEventListener("submit",async e=>{e.preventDefault();try{await postForm("/api/students",e.target);e.target.reset();toast("Student added")}catch(err){toast(err.message)}});document.getElementById("atplAiSettingsForm")?.addEventListener("submit",saveAtplAiSettings);document.querySelectorAll(".nav-item,.mobile-nav").forEach(btn=>btn.addEventListener("click",e=>{if(btn.dataset.page==="atplai")return handleAtplAiClick(e);showPage(btn.dataset.page)}));document.addEventListener("click",e=>{const menu=document.getElementById("slotEditMenu");if(menu&&!menu.classList.contains("hidden")&&!menu.contains(e.target))closeSlotEditMenu()});document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSlotEditMenu()});selectAirport("LHKA")});
 
-/* v0.7.5 stable overrides: NOTAM, wave switcher, mobile polish */
+/* v0.7.6 stable overrides: NOTAM, wave switcher, mobile polish */
 function scrollToLatestAssistantTop(){
   window.scrollTo({top:0, behavior:"smooth"});
 }
@@ -1612,7 +1612,7 @@ document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();wireAuthE
   if(version) version.style.display="flex";
 });
 
-/* v0.7.5 emergency stabilization patch */
+/* v0.7.6 emergency stabilization patch */
 const AOA_MAY_WAVE_SETTINGS={name:"May 3–10 training wave",start:"2026-05-03",end:"2026-05-10"};
 function setWaveChoiceActive(key){
   document.querySelectorAll('.wave-choice').forEach(b=>b.classList.toggle('active', b.getAttribute('onclick')?.includes(`'${key}'`)));
@@ -1734,7 +1734,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
 });
 
-/* v0.7.5 stabilization: fixed May wave, English dates, dashboard LHKA, chart buttons, ATPL new tab */
+/* v0.7.6 stabilization: fixed May wave, English dates, dashboard LHKA, chart buttons, ATPL new tab */
 function aoaEnglishMayDays(){
   return [
     {date:"2026-05-03",label:"May 3"},{date:"2026-05-04",label:"May 4"},
@@ -1871,7 +1871,7 @@ document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();wireAuthE
 });
 
 
-/* v0.7.5 auth/profile/mobile hotfix */
+/* v0.7.6 auth/profile/mobile hotfix */
 function clearAuthState(){
   localStorage.removeItem("token");
   localStorage.removeItem("role");
@@ -2014,7 +2014,7 @@ document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();wireAuthE
   }
 });
 
-/* v0.7.5 token-safe schedule + signup/auth recovery */
+/* v0.7.6 token-safe schedule + signup/auth recovery */
 saveWaveSchedule=async function(){
   if(!canEditSchedule())return toast("Admin only");
   try{
@@ -2083,7 +2083,7 @@ document.addEventListener("DOMContentLoaded",()=>{forceSafeAuthForms();wireAuthE
   }
 });
 
-/* v0.7.5 Schedule Manager + User Management */
+/* v0.7.6 Schedule Manager + User Management */
 function scheduleTimes(){
   const times=new Set([...(Array.isArray(waveTimes)?waveTimes:[])]);
   (waveSchedule||[]).forEach(f=>{if(f.time)times.add(String(f.time).replace(':','').padStart(4,'0'))});
@@ -2192,7 +2192,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(ff){ff.addEventListener('submit',e=>{e.preventDefault();saveFlightFromModal();});}
 });
 
-/* v0.7.5 people DB, my-flights filter, admin UX, NOTAM honesty */
+/* v0.7.6 people DB, my-flights filter, admin UX, NOTAM honesty */
 let scheduleStudents=[];
 let scheduleInstructors=[];
 let currentUserProfile=null;
@@ -2354,7 +2354,7 @@ loadNotam=async function(){
   }catch(err){out.textContent=`${err.message}\n\nUse official NOTAM briefing source.`;}
 };
 
-/* v0.7.5 student filter, editable students, improved NOTAM source */
+/* v0.7.6 student filter, editable students, improved NOTAM source */
 function userCanFilterByStudent(){
   return userRole==='admin' || userRole==='instructor';
 }
@@ -2490,7 +2490,7 @@ loadNotam=async function(){
   }catch(err){out.textContent=`${err.message}\n\nUse EAD Basic / HungaroControl NetBriefing / FAA NOTAM Search.`;}
 };
 
-/* v0.7.5 canonical student aliases + solo Time Building/CPL flights */
+/* v0.7.6 canonical student aliases + solo Time Building/CPL flights */
 const STUDENT_CANONICAL_ALIASES = {
   'harel t':'Harel','harel':'Harel',
   'lior a':'Lior','lior':'Lior',
@@ -2603,7 +2603,7 @@ renderFlightCard = function(f,admin){
 };
 
 
-/* v0.7.5 schedule day names, robust all/student/FI filters, conflict marking */
+/* v0.7.6 schedule day names, robust all/student/FI filters, conflict marking */
 function aoa035DateLabel(dateStr){
   const parts=String(dateStr||'').split('-').map(Number);
   const d=parts.length===3?new Date(parts[0],parts[1]-1,parts[2]):new Date(dateStr);
@@ -2720,7 +2720,7 @@ loadSchedule=async function(){
 };
 
 
-/* ===== 0.7.5 multi-wave system ===== */
+/* ===== 0.7.6 multi-wave system ===== */
 let currentTrainingWave = localStorage.getItem("aoa_active_wave") || "legacy";
 
 function initializeTrainingWaveSystem(){
@@ -2806,10 +2806,10 @@ function saveCurrentWaveSchedule(){
 document.addEventListener("DOMContentLoaded", ()=>{
   setTimeout(initializeTrainingWaveSystem,300);
 });
-/* ===== end 0.7.5 ===== */
+/* ===== end 0.7.6 ===== */
 
 
-/* ===== 0.7.5 real wave switcher override ===== */
+/* ===== 0.7.6 real wave switcher override ===== */
 const AOA_WAVES = {
   legacy: {
     id:"legacy",
@@ -2967,10 +2967,10 @@ function initializeTrainingWaveSystem(){
   }
   setActiveWaveLabel();
 }
-/* ===== end 0.7.5 real wave switcher override ===== */
+/* ===== end 0.7.6 real wave switcher override ===== */
 
 
-/* ===== 0.7.5 verified backend-driven multi-wave override ===== */
+/* ===== 0.7.6 verified backend-driven multi-wave override ===== */
 const AOA_WAVES_062 = {
   legacy: {id:"legacy", name:"Legacy Wave", start:"2026-05-03", end:"2026-05-10", aircraft:["C172","C152"]},
   may_2026: {id:"may_2026", name:"May 3–10", start:"2026-05-03", end:"2026-05-10", aircraft:["C172","C152"]},
@@ -3111,10 +3111,10 @@ function initializeTrainingWaveSystem(){
   }
   setActiveWaveLabel();
 }
-/* ===== end 0.7.5 verified backend-driven multi-wave override ===== */
+/* ===== end 0.7.6 verified backend-driven multi-wave override ===== */
 
 
-/* ===== 0.7.5 HARD VERIFIED WAVE SYSTEM ===== */
+/* ===== 0.7.6 HARD VERIFIED WAVE SYSTEM ===== */
 window.AOA_JUNE_2026_SEED = [{"id": "june_2026_20260603_0800_aircraft1", "date": "2026-06-03", "time": "0800", "aircraft": "Aircraft 1", "student": "Nadav L", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260603_0800_aircraft2", "date": "2026-06-03", "time": "0800", "aircraft": "Aircraft 2", "student": "Ahmad Z", "instructor": "Vlad", "note": ""}, {"id": "june_2026_20260603_1000_aircraft1", "date": "2026-06-03", "time": "1000", "aircraft": "Aircraft 1", "student": "Sharon C", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260603_1000_aircraft2", "date": "2026-06-03", "time": "1000", "aircraft": "Aircraft 2", "student": "Harel T", "instructor": "Vlad", "note": ""}, {"id": "june_2026_20260603_1200_aircraft1", "date": "2026-06-03", "time": "1200", "aircraft": "Aircraft 1", "student": "Aviv E", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260603_1200_aircraft2", "date": "2026-06-03", "time": "1200", "aircraft": "Aircraft 2", "student": "Lior A", "instructor": "Vlad", "note": ""}, {"id": "june_2026_20260603_1400_aircraft1", "date": "2026-06-03", "time": "1400", "aircraft": "Aircraft 1", "student": "Lior A", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260603_1400_aircraft2", "date": "2026-06-03", "time": "1400", "aircraft": "Aircraft 2", "student": "Sharon C", "instructor": "Vlad", "note": ""}, {"id": "june_2026_20260603_1600_aircraft1", "date": "2026-06-03", "time": "1600", "aircraft": "Aircraft 1", "student": "Harel T", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260603_1600_aircraft2", "date": "2026-06-03", "time": "1600", "aircraft": "Aircraft 2", "student": "Aviv E", "instructor": "Vlad", "note": ""}, {"id": "june_2026_20260604_0800_aircraft1", "date": "2026-06-04", "time": "0800", "aircraft": "Aircraft 1", "student": "Nadav L EXAM", "instructor": "", "note": "EXAM"}, {"id": "june_2026_20260604_0800_aircraft2", "date": "2026-06-04", "time": "0800", "aircraft": "Aircraft 2", "student": "Ahmad Z", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260604_1000_aircraft1", "date": "2026-06-04", "time": "1000", "aircraft": "Aircraft 1", "student": "Harel T", "instructor": "Vlad", "note": ""}, {"id": "june_2026_20260604_1000_aircraft2", "date": "2026-06-04", "time": "1000", "aircraft": "Aircraft 2", "student": "Sharon C", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260604_1200_aircraft1", "date": "2026-06-04", "time": "1200", "aircraft": "Aircraft 1", "student": "Aviv E", "instructor": "Vlad", "note": ""}, {"id": "june_2026_20260604_1200_aircraft2", "date": "2026-06-04", "time": "1200", "aircraft": "Aircraft 2", "student": "Harel T", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260604_1400_aircraft1", "date": "2026-06-04", "time": "1400", "aircraft": "Aircraft 1", "student": "Ahmad Z", "instructor": "Vlad", "note": ""}, {"id": "june_2026_20260604_1400_aircraft2", "date": "2026-06-04", "time": "1400", "aircraft": "Aircraft 2", "student": "Lior A", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260604_1600_aircraft1", "date": "2026-06-04", "time": "1600", "aircraft": "Aircraft 1", "student": "Aviv E", "instructor": "Vlad", "note": ""}, {"id": "june_2026_20260604_1600_aircraft2", "date": "2026-06-04", "time": "1600", "aircraft": "Aircraft 2", "student": "Sharon C", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260605_0800_aircraft1", "date": "2026-06-05", "time": "0800", "aircraft": "Aircraft 1", "student": "Ahmad Z", "instructor": "Amir", "note": "3h block"}, {"id": "june_2026_20260605_0800_aircraft2", "date": "2026-06-05", "time": "0800", "aircraft": "Aircraft 2", "student": "Sharon C", "instructor": "Vlad", "note": ""}, {"id": "june_2026_20260605_1000_aircraft1", "date": "2026-06-05", "time": "1000", "aircraft": "Aircraft 1", "student": "Ahmad Z", "instructor": "Amir", "note": "CONT"}, {"id": "june_2026_20260605_1000_aircraft2", "date": "2026-06-05", "time": "1000", "aircraft": "Aircraft 2", "student": "Lior A", "instructor": "Vlad", "note": ""}, {"id": "june_2026_20260605_1200_aircraft1", "date": "2026-06-05", "time": "1200", "aircraft": "Aircraft 1", "student": "Harel T", "instructor": "Amir", "note": ""}, {"id": "june_2026_20260605_1200_aircraft2", "date": "2026-06-05", "time": "1200", "aircraft": "Aircraft 2", "student": "Aviv E", "instructor": "Vlad", "note": ""}, {"id": "june_2026_20260605_1400_aircraft1", "date": "2026-06-05", "time": "1400", "aircraft": "Aircraft 1", "student": "Sharon C", "instructor": "Amir", "note": ""}, {"id": "june_2026_20260605_1400_aircraft2", "date": "2026-06-05", "time": "1400", "aircraft": "Aircraft 2", "student": "Lior A", "instructor": "Vlad", "note": ""}, {"id": "june_2026_20260605_1600_aircraft1", "date": "2026-06-05", "time": "1600", "aircraft": "Aircraft 1", "student": "Aviv E", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260605_1600_aircraft2", "date": "2026-06-05", "time": "1600", "aircraft": "Aircraft 2", "student": "Harel T", "instructor": "Vlad", "note": ""}, {"id": "june_2026_20260606_0800_aircraft1", "date": "2026-06-06", "time": "0800", "aircraft": "Aircraft 1", "student": "Ahmad Z", "instructor": "Amir", "note": "3h block"}, {"id": "june_2026_20260606_0800_aircraft2", "date": "2026-06-06", "time": "0800", "aircraft": "Aircraft 2", "student": "Aviv E", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260606_1000_aircraft1", "date": "2026-06-06", "time": "1000", "aircraft": "Aircraft 1", "student": "Ahmad Z", "instructor": "Amir", "note": "CONT"}, {"id": "june_2026_20260606_1000_aircraft2", "date": "2026-06-06", "time": "1000", "aircraft": "Aircraft 2", "student": "Harel T", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260606_1200_aircraft1", "date": "2026-06-06", "time": "1200", "aircraft": "Aircraft 1", "student": "Sharon C", "instructor": "Amir", "note": "3h block"}, {"id": "june_2026_20260606_1200_aircraft2", "date": "2026-06-06", "time": "1200", "aircraft": "Aircraft 2", "student": "Lior A", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260606_1400_aircraft1", "date": "2026-06-06", "time": "1400", "aircraft": "Aircraft 1", "student": "Sharon C", "instructor": "Amir", "note": "CONT"}, {"id": "june_2026_20260606_1400_aircraft2", "date": "2026-06-06", "time": "1400", "aircraft": "Aircraft 2", "student": "Aviv E", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260606_1600_aircraft1", "date": "2026-06-06", "time": "1600", "aircraft": "Aircraft 1", "student": "Lior A", "instructor": "Amir", "note": ""}, {"id": "june_2026_20260606_1600_aircraft2", "date": "2026-06-06", "time": "1600", "aircraft": "Aircraft 2", "student": "Harel T", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260607_0800_aircraft1", "date": "2026-06-07", "time": "0800", "aircraft": "Aircraft 1", "student": "Sharon C", "instructor": "Amir", "note": "3h block"}, {"id": "june_2026_20260607_0800_aircraft2", "date": "2026-06-07", "time": "0800", "aircraft": "Aircraft 2", "student": "Lior A", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260607_1000_aircraft1", "date": "2026-06-07", "time": "1000", "aircraft": "Aircraft 1", "student": "Sharon C", "instructor": "Amir", "note": "CONT"}, {"id": "june_2026_20260607_1000_aircraft2", "date": "2026-06-07", "time": "1000", "aircraft": "Aircraft 2", "student": "Ahmad Z", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260607_1200_aircraft1", "date": "2026-06-07", "time": "1200", "aircraft": "Aircraft 1", "student": "Harel T", "instructor": "Amir", "note": ""}, {"id": "june_2026_20260607_1200_aircraft2", "date": "2026-06-07", "time": "1200", "aircraft": "Aircraft 2", "student": "Aviv E", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260607_1400_aircraft1", "date": "2026-06-07", "time": "1400", "aircraft": "Aircraft 1", "student": "Lior A", "instructor": "Amir", "note": ""}, {"id": "june_2026_20260607_1400_aircraft2", "date": "2026-06-07", "time": "1400", "aircraft": "Aircraft 2", "student": "Harel T", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260607_1600_aircraft1", "date": "2026-06-07", "time": "1600", "aircraft": "Aircraft 1", "student": "Ahmad Z", "instructor": "Amir", "note": ""}, {"id": "june_2026_20260607_1600_aircraft2", "date": "2026-06-07", "time": "1600", "aircraft": "Aircraft 2", "student": "Aviv E", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260608_0800_aircraft1", "date": "2026-06-08", "time": "0800", "aircraft": "Aircraft 1", "student": "Harel T", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260608_0800_aircraft2", "date": "2026-06-08", "time": "0800", "aircraft": "Aircraft 2", "student": "Ahmad Z EXAM", "instructor": "", "note": "EXAM"}, {"id": "june_2026_20260608_1000_aircraft1", "date": "2026-06-08", "time": "1000", "aircraft": "Aircraft 1", "student": "Lior A", "instructor": "Amir", "note": ""}, {"id": "june_2026_20260608_1000_aircraft2", "date": "2026-06-08", "time": "1000", "aircraft": "Aircraft 2", "student": "Sharon C EXAM", "instructor": "", "note": "EXAM"}, {"id": "june_2026_20260608_1200_aircraft1", "date": "2026-06-08", "time": "1200", "aircraft": "Aircraft 1", "student": "Aviv E", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260608_1200_aircraft2", "date": "2026-06-08", "time": "1200", "aircraft": "Aircraft 2", "student": "Harel T", "instructor": "Amir", "note": ""}, {"id": "june_2026_20260608_1400_aircraft1", "date": "2026-06-08", "time": "1400", "aircraft": "Aircraft 1", "student": "Lior A", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260608_1400_aircraft2", "date": "2026-06-08", "time": "1400", "aircraft": "Aircraft 2", "student": "Aviv E", "instructor": "Amir", "note": ""}, {"id": "june_2026_20260608_1600_aircraft1", "date": "2026-06-08", "time": "1600", "aircraft": "Aircraft 1", "student": "Harel T", "instructor": "Avi", "note": ""}, {"id": "june_2026_20260608_1600_aircraft2", "date": "2026-06-08", "time": "1600", "aircraft": "Aircraft 2", "student": "Lior A", "instructor": "Amir", "note": ""}];
 
 window.AOA_WAVES_063 = {
@@ -3289,10 +3289,10 @@ window.getExportTimesForDay = function(date){
   const fromFlights = (window.waveSchedule||[]).filter(f=>f.date===date).map(f=>String(f.time||""));
   return [...new Set([...configured,...fromFlights])].filter(Boolean).sort();
 };
-/* ===== END 0.7.5 HARD VERIFIED WAVE SYSTEM ===== */
+/* ===== END 0.7.6 HARD VERIFIED WAVE SYSTEM ===== */
 
 
-/* ===== 0.7.5 export/legend/color/db verification fixes ===== */
+/* ===== 0.7.6 export/legend/color/db verification fixes ===== */
 window.AOA_FI_COLORS = {
   "Avi":"#0a6fd6",
   "Amir":"#0f8b44",
@@ -3444,10 +3444,10 @@ window.loadSchedule = async function(){
   window.renderWaveCalendar();
   window.checkDbConnection();
 };
-/* ===== end 0.7.5 fixes ===== */
+/* ===== end 0.7.6 fixes ===== */
 
 
-/* ===== 0.7.5 edit/filter/aircraft/FI stripes fixes ===== */
+/* ===== 0.7.6 edit/filter/aircraft/FI stripes fixes ===== */
 window.AOA_065_STUDENTS = ["Ahmad Z","Aviv E","Sharon C","Nadav L","Harel T","Lior A"];
 window.AOA_065_FIS = ["Avi","Amir","Vlad","Examiner"];
 
@@ -3585,10 +3585,10 @@ window.renderWaveCalendar=function(){
   cal.innerHTML=days.map(day=>`<section class="wave-day-card" data-date="${day.date}"><div class="wave-day-header"><span>${formatWaveDayTitle(day.date,day.label)}</span></div><div class="wave-day-grid">${waveTimes.map(time=>`<div class="wave-time-row"><div class="wave-time-label">${time}</div><div class="wave-slot-pair">${aircraft.map(ac=>window.renderWaveSlot(day.date,time,ac,admin)).join("")}</div></div>`).join("")}</div></section>`).join("");
   window.setActiveWaveLabel?.(); window.updateWaveLegend(); if(admin)attachScheduleDragHandlers();
 };
-/* ===== end 0.7.5 fixes ===== */
+/* ===== end 0.7.6 fixes ===== */
 
 
-/* ===== 0.7.5 edit modal / aircraft names / no FI stripe ===== */
+/* ===== 0.7.6 edit modal / aircraft names / no FI stripe ===== */
 function aircraftNamesKey(){
   return `aoa_aircraft_names_${currentTrainingWave||"legacy"}`;
 }
@@ -3753,10 +3753,10 @@ document.addEventListener("DOMContentLoaded",()=>{
   },true);
   window.loadAircraftNameInputs?.();
 });
-/* ===== end 0.7.5 fixes ===== */
+/* ===== end 0.7.6 fixes ===== */
 
 
-/* ===== 0.7.5 Nir Kohol / full student-list edit / DB verification ===== */
+/* ===== 0.7.6 Nir Kohol / full student-list edit / DB verification ===== */
 window.AOA_067_STUDENT_PROGRAMS = {"Nir Kohol":"Time Building"};
 
 function replaceLiorWithNirInJuneSeed(){
@@ -3870,10 +3870,10 @@ window.verifyCurrentDbFlights = async function(){
     return null;
   }
 };
-/* ===== end 0.7.5 fixes ===== */
+/* ===== end 0.7.6 fixes ===== */
 
 
-/* ===== 0.7.5 hard DB student list + persisted Lior replacement ===== */
+/* ===== 0.7.6 hard DB student list + persisted Lior replacement ===== */
 async function loadAllDbStudents(){
   try{
     const r=await fetch("/api/students",{headers:authHeaders()});
@@ -3974,10 +3974,10 @@ window.fixJuneLiorNow = async function(){
   window.renderWaveCalendar?.();
   return (window.waveSchedule||[]).filter(f=>String(f.student||"").toLowerCase().includes("lior"));
 };
-/* ===== end 0.7.5 ===== */
+/* ===== end 0.7.6 ===== */
 
 
-/* ===== 0.7.5 hard no-Lior June normalization ===== */
+/* ===== 0.7.6 hard no-Lior June normalization ===== */
 window.normalizeJuneNoLior = function(){
   let changed=false;
   if(currentTrainingWave==="june_2026" && Array.isArray(window.waveSchedule)){
@@ -3989,7 +3989,7 @@ window.normalizeJuneNoLior = function(){
       }
     });
   }
-  if(changed) console.warn("0.7.5 normalized June wave: Lior removed", window.waveSchedule.filter(f=>String(f.student||"").includes("Lior")));
+  if(changed) console.warn("0.7.6 normalized June wave: Lior removed", window.waveSchedule.filter(f=>String(f.student||"").includes("Lior")));
   return changed;
 };
 
@@ -3997,7 +3997,7 @@ const AOA_069_loadSchedule = window.loadSchedule;
 window.loadSchedule = async function(){
   await AOA_069_loadSchedule();
   if(window.normalizeJuneNoLior()){
-    try{await window.saveWaveSchedule();}catch(e){console.warn("0.7.5 save after normalize failed",e);}
+    try{await window.saveWaveSchedule();}catch(e){console.warn("0.7.6 save after normalize failed",e);}
   }
   window.renderWaveCalendar?.();
 };
@@ -4013,10 +4013,10 @@ window.exportFullWaveImage = async function(){
 window.findLiorInCurrentWave = function(){
   return (window.waveSchedule||[]).filter(f=>String(f.student||"").toLowerCase().includes("lior"));
 };
-/* ===== end 0.7.5 ===== */
+/* ===== end 0.7.6 ===== */
 
 
-/* ===== 0.7.5 delete fix + 03 Jun DEKJJ/DEMWA changes ===== */
+/* ===== 0.7.6 delete fix + 03 Jun DEKJJ/DEMWA changes ===== */
 window.normalizeJune0306 = function(){
   if(currentTrainingWave !== "june_2026" || !Array.isArray(window.waveSchedule)) return false;
   let changed=false;
@@ -4056,7 +4056,7 @@ const AOA_070_loadSchedule = window.loadSchedule;
 window.loadSchedule = async function(){
   await AOA_070_loadSchedule();
   if(window.normalizeJune0306()){
-    try{await window.saveWaveSchedule();}catch(e){console.warn("0.7.5 save after 03 Jun normalize failed",e);}
+    try{await window.saveWaveSchedule();}catch(e){console.warn("0.7.6 save after 03 Jun normalize failed",e);}
   }
   window.renderWaveCalendar?.();
 };
@@ -4068,10 +4068,10 @@ window.exportFullWaveImage = async function(){
   }
   return AOA_070_exportFullWaveImage();
 };
-/* ===== end 0.7.5 ===== */
+/* ===== end 0.7.6 ===== */
 
 
-/* ===== 0.7.5 current-wave export fixes ===== */
+/* ===== 0.7.6 current-wave export fixes ===== */
 window.currentExportDays = function(){
   if(typeof window.getWaveDaysForCurrentWave === "function") return window.getWaveDaysForCurrentWave();
   return Array.isArray(waveDays) ? waveDays : [];
@@ -4292,112 +4292,133 @@ window.buildFullWaveCanvas = function(){
   });
   return canvas;
 };
-/* ===== end 0.7.5 ===== */
+/* ===== end 0.7.6 ===== */
 
 
-/* ===== 0.7.5 BRUTE FORCE DAILY EXPORT DROPDOWN FIX =====
-   This does NOT trust currentTrainingWave, waveDays, or old wave config.
-   It reads the visible schedule cards on screen first.
-*/
+/* ===== 0.7.6 VERSION + HARD DELETE FIX ===== */
 (function(){
-  function dayLabelFromDate075(date){
-    const d = new Date(`${date}T12:00:00`);
-    if(Number.isNaN(d.getTime())) return date;
-    const weekday = d.toLocaleDateString("en-US",{weekday:"long"});
-    const dd = d.toLocaleDateString("en-GB",{day:"2-digit",month:"short"});
-    return `${weekday} ${dd}`;
-  }
+  const VERSION_076 = "0.7.6";
 
-  function visibleScheduleDays075(){
-    const cards = Array.from(document.querySelectorAll(".wave-day-card[data-date]"));
-    const dates = [...new Set(cards.map(c=>c.getAttribute("data-date")).filter(Boolean))].sort();
-    if(dates.length){
-      return dates.map(date=>({date,label:dayLabelFromDate075(date)}));
+  function setVersion076(){
+    const els = [
+      document.getElementById("appVersion"),
+      document.getElementById("version"),
+      document.querySelector("[data-app-version]"),
+      document.querySelector(".app-version"),
+      document.querySelector(".version-badge")
+    ].filter(Boolean);
+
+    if(els.length){
+      els.forEach(el => el.textContent = `Version ${VERSION_076}`);
+    }else if(document.body){
+      const div=document.createElement("div");
+      div.id="appVersion";
+      div.className="app-version";
+      div.setAttribute("data-app-version","");
+      div.textContent=`Version ${VERSION_076}`;
+      div.style.cssText="position:fixed;right:10px;bottom:6px;z-index:9999;font-size:11px;color:#60738a;font-weight:800;background:rgba(255,255,255,.85);padding:3px 7px;border-radius:10px;";
+      document.body.appendChild(div);
     }
 
-    // second fallback: actual loaded flight data
-    let flights = [];
-    try{ if(Array.isArray(window.waveSchedule)) flights = window.waveSchedule; }catch(e){}
-    try{ if(Array.isArray(waveSchedule) && waveSchedule.length > flights.length) flights = waveSchedule; }catch(e){}
-    const flightDates = [...new Set(flights.map(f=>f && f.date).filter(Boolean))].sort();
-    if(flightDates.length){
-      return flightDates.map(date=>({date,label:dayLabelFromDate075(date)}));
-    }
-
-    // final fallback only, should almost never be used
-    return [
-      {date:"2026-06-03",label:"Wednesday 03 Jun"},
-      {date:"2026-06-04",label:"Thursday 04 Jun"},
-      {date:"2026-06-05",label:"Friday 05 Jun"},
-      {date:"2026-06-06",label:"Saturday 06 Jun"},
-      {date:"2026-06-07",label:"Sunday 07 Jun"},
-      {date:"2026-06-08",label:"Monday 08 Jun"}
-    ];
+    document.querySelectorAll("*").forEach(el=>{
+      if(el.childNodes && el.childNodes.length===1 && el.childNodes[0].nodeType===3 && /Version\s+0\.\d+\.\d+/.test(el.textContent||"")){
+        el.textContent = el.textContent.replace(/Version\s+0\.\d+\.\d+/g, `Version ${VERSION_076}`);
+      }
+    });
   }
 
-  function fillDailySelect075(){
-    const select = document.getElementById("dailyScheduleShareDate");
-    if(!select) return false;
+  function schedule076(){
+    try{ if(Array.isArray(window.waveSchedule)) return window.waveSchedule; }catch(e){}
+    try{ if(Array.isArray(waveSchedule)) return waveSchedule; }catch(e){}
+    window.waveSchedule=[];
+    return window.waveSchedule;
+  }
 
-    const days = visibleScheduleDays075();
+  async function save076(){
+    const flights=schedule076();
+    try{
+      const waveId=(document.getElementById("waveSelector")?.value)||localStorage.getItem("aoa_active_wave")||(typeof currentTrainingWave!=="undefined"?currentTrainingWave:"legacy")||"legacy";
+      const r=await fetch(`/api/wave-schedule?wave_id=${encodeURIComponent(waveId)}`,{
+        method:"POST",
+        headers:{...authHeaders(),"Content-Type":"application/json"},
+        body:JSON.stringify({flights})
+      });
+      if(r.ok)return true;
+    }catch(e){console.warn("direct delete save failed",e);}
 
-    // Do not allow May dates if visible schedule is June.
-    select.innerHTML = days.map(day => {
-      const label = day.label.includes("2026") ? day.label : dayLabelFromDate075(day.date);
-      return `<option value="${day.date}">${label}</option>`;
-    }).join("");
+    try{
+      if(typeof window.saveWaveSchedule==="function"){await window.saveWaveSchedule();return true;}
+      if(typeof saveWaveSchedule==="function"){await saveWaveSchedule();return true;}
+    }catch(e){console.warn("existing save failed",e);}
+    return false;
+  }
 
-    if(days[0]) select.value = days[0].date;
+  function render076(){
+    try{
+      if(typeof window.renderWaveCalendar==="function") window.renderWaveCalendar();
+      else if(typeof renderWaveCalendar==="function") renderWaveCalendar();
+    }catch(e){console.warn("render after delete failed",e);}
+  }
+
+  async function hardDelete076(id){
+    if(typeof canEditSchedule==="function" && !canEditSchedule()){
+      if(typeof toast==="function") toast("Admin only");
+      return false;
+    }
+    id=String(id||"");
+    if(!id){ if(typeof toast==="function") toast("Missing flight id"); return false; }
+
+    const arr=schedule076();
+    const idx=arr.findIndex(f=>String(f?.id)===id);
+    if(idx<0){ if(typeof toast==="function") toast("Flight not found"); return false; }
+
+    const f=arr[idx];
+    if(!confirm(`Delete flight?\n${f.student||""} ${f.date||""} ${f.time||""}`)) return false;
+
+    arr.splice(idx,1);
+    try{window.waveSchedule=arr;}catch(e){}
+    try{waveSchedule=arr;}catch(e){}
+
+    render076();
+    const saved=await save076();
+    if(typeof toast==="function") toast(saved ? "Flight deleted and saved" : "Flight deleted locally. Press Save changes.");
     return true;
   }
 
-  function openDailyModal075(){
-    fillDailySelect075();
-    document.getElementById("dailyScheduleShareModal")?.classList.remove("hidden");
-    setTimeout(fillDailySelect075,50);
-    setTimeout(fillDailySelect075,250);
-    setTimeout(fillDailySelect075,750);
-  }
+  window.deleteFlight=hardDelete076;
+  try{deleteFlight=hardDelete076;}catch(e){}
 
-  window.openShareDailyScheduleModal = openDailyModal075;
-  try{ openShareDailyScheduleModal = openDailyModal075; }catch(e){}
+  document.addEventListener("click",function(e){
+    const btn=e.target?.closest?.("button,.mini-delete-btn,[data-delete-flight]");
+    if(!btn)return;
+    const text=String(btn.textContent||"").toLowerCase().trim();
+    const oc=String(btn.getAttribute("onclick")||"");
+    if(!(btn.classList.contains("mini-delete-btn") || btn.hasAttribute("data-delete-flight") || text==="delete" || oc.includes("deleteFlight"))) return;
 
-  // Capture the click before any old onclick can leave stale May options.
-  document.addEventListener("click", function(e){
-    const target = e.target && e.target.closest ? e.target.closest("button,a,[onclick]") : null;
-    if(!target) return;
-    const txt = String(target.textContent || "").toLowerCase();
-    const oc = String(target.getAttribute("onclick") || "").toLowerCase();
-    if(txt.includes("share day") || txt.includes("daily") || oc.includes("opensharedailyschedulemodal")){
-      setTimeout(fillDailySelect075,0);
-      setTimeout(fillDailySelect075,80);
-      setTimeout(fillDailySelect075,300);
+    let id=btn.getAttribute("data-delete-flight") || btn.dataset.flightId || btn.closest("[data-id]")?.getAttribute("data-id") || "";
+    if(!id){
+      const m=oc.match(/deleteFlight\(['"]?([^'")]+)['"]?\)/);
+      if(m)id=m[1];
     }
-  }, true);
+    if(id){
+      e.preventDefault();
+      e.stopPropagation();
+      hardDelete076(id);
+    }
+  },true);
 
-  // Also fix it whenever the modal becomes visible or the select is touched.
-  document.addEventListener("focusin", function(e){
-    if(e.target && e.target.id === "dailyScheduleShareDate") fillDailySelect075();
-  }, true);
-  document.addEventListener("touchstart", function(e){
-    if(e.target && e.target.id === "dailyScheduleShareDate") fillDailySelect075();
-  }, true);
-  document.addEventListener("pointerdown", function(e){
-    if(e.target && e.target.id === "dailyScheduleShareDate") fillDailySelect075();
-  }, true);
+  document.addEventListener("DOMContentLoaded",setVersion076);
+  setTimeout(setVersion076,50);
+  setTimeout(setVersion076,500);
 
-  const mo = new MutationObserver(function(){
-    const modal = document.getElementById("dailyScheduleShareModal");
-    if(modal && !modal.classList.contains("hidden")) fillDailySelect075();
-  });
-  mo.observe(document.documentElement,{subtree:true,attributes:true,childList:true,attributeFilter:["class","style"]});
-
-  window.debugDailyExport075 = function(){
+  window.debugDelete076=function(){
     return {
-      visibleCards:Array.from(document.querySelectorAll(".wave-day-card[data-date]")).map(c=>c.getAttribute("data-date")),
-      options:Array.from(document.querySelectorAll("#dailyScheduleShareDate option")).map(o=>({value:o.value,text:o.textContent})),
-      days:visibleScheduleDays075()
+      version:VERSION_076,
+      scheduleCount:schedule076().length,
+      buttons:Array.from(document.querySelectorAll("button,.mini-delete-btn,[data-delete-flight]"))
+        .filter(b=>String(b.textContent||"").toLowerCase().includes("delete")||String(b.getAttribute("onclick")||"").includes("deleteFlight"))
+        .map(b=>({text:b.textContent,onclick:b.getAttribute("onclick"),dataId:b.closest("[data-id]")?.getAttribute("data-id")||null}))
     };
   };
 })();
-/* ===== end 0.7.5 brute force fix ===== */
+/* ===== end 0.7.6 ===== */
